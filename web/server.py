@@ -44,6 +44,15 @@ _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
 APP_VERSION = "v37"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
+# ── 실시간 접속자 (인메모리) ──────────────────────────────────
+# 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
+import time as _time  # noqa: E402
+_PRESENCE: dict[str, float] = {}      # visitor_id -> last_seen(ts)
+_PRESENCE_WINDOW = 75.0                # 이 초 안에 하트비트가 있으면 '접속 중'
+_SEEN_TODAY: dict[str, float] = {}     # visitor_id -> 첫 방문(ts), 누적 고유수 산정
+_DAY_ANCHOR = {"day": _time.gmtime().tm_yday}
+_PRESENCE_MAX = 20000                  # 메모리 폭주 방지 상한
+
 app = FastAPI(title="위탁판매 소싱 작업대")
 
 _FEE_PCT = 0.25
@@ -296,6 +305,42 @@ async def version():
     return {"version": APP_VERSION}
 
 
+@app.get("/api/presence")
+async def presence(id: str = ""):
+    """실시간 접속자 하트비트.
+    - online : 최근 75초 안에 신호를 보낸 고유 방문자 수 (=지금 접속 중)
+    - total  : 오늘(UTC 날짜 기준) 다녀간 고유 방문자 수
+    무료 플랜 재시작/슬립 시 두 값 모두 초기화됩니다.
+    """
+    now = _time.time()
+    # 날짜가 바뀌면 누적 리셋
+    today = _time.gmtime().tm_yday
+    if today != _DAY_ANCHOR["day"]:
+        _DAY_ANCHOR["day"] = today
+        _SEEN_TODAY.clear()
+
+    vid = (id or "").strip()[:64]
+    if not vid:
+        vid = "anon"
+
+    if vid not in _SEEN_TODAY:
+        _SEEN_TODAY[vid] = now
+    _PRESENCE[vid] = now
+
+    # 오래된 접속 정리
+    dead = [k for k, ts in _PRESENCE.items() if now - ts > _PRESENCE_WINDOW]
+    for k in dead:
+        _PRESENCE.pop(k, None)
+
+    # 상한 방어 (혹시 모를 폭주)
+    if len(_SEEN_TODAY) > _PRESENCE_MAX:
+        # 가장 오래된 것부터 잘라냄
+        for k in sorted(_SEEN_TODAY, key=_SEEN_TODAY.get)[:len(_SEEN_TODAY) - _PRESENCE_MAX]:
+            _SEEN_TODAY.pop(k, None)
+
+    return {"online": max(1, len(_PRESENCE)), "total": len(_SEEN_TODAY)}
+
+
 @app.get("/api/categories")
 async def get_categories():
     from discovery.auto_scan import categories
@@ -346,7 +391,9 @@ async def auto(req: AutoReq):
     # 영원히 발동하지 않는다. 상위 후보만 데이터랩으로 실제 수요를 받아 남긴다.
     top_n = 5
     demands: dict = {}
+    seasons: dict = {}    # 🏷️ 계절 연동: 키워드 → 시즌 프로파일
     try:
+        from discovery.season import analyze_season
         # 데이터랩은 한도가 좁다. 재시도를 2회로 줄여 '몇 분 멈춤'을 막는다.
         # (trend_of 는 429 를 안에서 삼키고 found=False 로 준다 → 예외로는
         #  못 잡는다. found 가 False 면 한도로 보고 즉시 포기한다.)
@@ -360,6 +407,21 @@ async def auto(req: AutoReq):
                 t = await d2.trend_of(f.keyword, cat_id)
                 if t and t.found:
                     demands[f.keyword] = float(t.level or 0)
+                    # 12개월 시계열로 성수기 선행 판정 (이미 받은 데이터 재활용)
+                    try:
+                        sp = analyze_season(t.points, periods=t.periods)
+                        if sp.stage and sp.stage != "판단불가":
+                            seasons[f.keyword] = {
+                                "has_season": sp.has_season,
+                                "peak_month": sp.peak_month,
+                                "rise_month": sp.rise_month,
+                                "peak_ratio": sp.peak_ratio,
+                                "stage": sp.stage,
+                                "note": sp.note,
+                                "action": sp.action,
+                            }
+                    except Exception:  # noqa: BLE001
+                        pass
                 else:
                     break   # 한도 소진 — 더 기다려도 어차피 실패
     except Exception:  # noqa: BLE001
@@ -390,6 +452,7 @@ async def auto(req: AutoReq):
     for f in finds[:60]:
         d = f.as_dict()
         d["movement"] = moves.get(f.keyword)
+        d["season"] = seasons.get(f.keyword)
         out.append(d)
     try:
         hr = hit_rate()
@@ -776,6 +839,138 @@ async def watch_list_api(owner: str = "local"):
         return {"ok": True, "items": items, "count": len(items)}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc), "items": []}
+
+
+@app.get("/api/watch/moves")
+async def watch_moves_api(owner: str = "local"):
+    """관심 키워드별 '변동 신호' 요약 — 골든타임/치킨게임 등.
+    movement_of() 가 두 시점 스냅샷을 비교해 방향을 알려준다.
+    스냅샷은 찾기/확인을 돌릴 때마다 record() 로 쌓인다(무료 플랜은 재시작 시 초기화)."""
+    who = (owner or "local")[:64]
+    try:
+        items = watch_list(who)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc), "items": []}
+
+    out = []
+    for it in items:
+        kw = it.get("keyword")
+        if not kw:
+            continue
+        try:
+            mv = movement_of(kw)
+        except Exception:  # noqa: BLE001
+            continue
+        out.append({
+            "keyword": kw,
+            "category": it.get("category", ""),
+            "stage": mv.stage,
+            "note": mv.note,
+            "action": mv.action,
+            "points": mv.points,
+            "days": round(mv.days, 1),
+            "total_change": mv.total_change,
+            "price_change": mv.price_change,
+            "demand_change": mv.demand_change,
+            "golden": mv.golden,
+            "season": it.get("season"),   # 🏷️ 담을 때 저장된 시즌 프로파일
+        })
+
+    # 눈에 띄어야 하는 순서: 골든타임 → 치킨게임 → 몰리는중 → 식는중 → 조용함 → 데이터부족
+    order = {"골든타임": 0, "치킨게임": 1, "몰리는중": 2,
+             "식는중": 3, "조용함": 4, "데이터부족": 5}
+    out.sort(key=lambda x: order.get(x["stage"], 9))
+    golden = sum(1 for x in out if x["stage"] == "골든타임")
+    chicken = sum(1 for x in out if x["stage"] == "치킨게임")
+    crowding = sum(1 for x in out if x["stage"] == "몰리는중")
+    ready = sum(1 for x in out if x["points"] >= 2 and x["stage"] != "데이터부족")
+    return {"ok": True, "items": out, "count": len(out),
+            "golden": golden, "chicken": chicken, "crowding": crowding,
+            "ready": ready}
+
+
+class MetaReq(BaseModel):
+    url: str
+
+
+_META_ALLOW = ("smartstore.naver.com", "m.smartstore.naver.com",
+               "brand.naver.com", "shopping.naver.com",
+               "search.shopping.naver.com", "msearch.shopping.naver.com",
+               "naver.me")
+
+
+def _og(html_text: str, prop: str) -> str:
+    """OG/메타 태그 하나의 content 를 뽑는다 (속성 순서 무관)."""
+    m = re.search(
+        r'<meta\b[^>]*\b(?:property|name)\s*=\s*["\']' + re.escape(prop)
+        + r'["\'][^>]*>', html_text, re.I)
+    if not m:
+        return ""
+    cm = re.search(r'\bcontent\s*=\s*["\'](.*?)["\']', m.group(0), re.I | re.S)
+    import html as _html
+    return _html.unescape(cm.group(1)).strip() if cm else ""
+
+
+@app.post("/api/page_meta")
+async def page_meta(req: MetaReq):
+    """상세페이지가 '공개한' 공유용 메타(OG)만 읽는다 — 크롤링 아님.
+    스마트스토어/네이버 쇼핑 주소만 허용(SSRF 방지). 제목·대표이미지·설명·가격.
+    어떤 경우에도 JSON 을 돌려준다(500 로 죽지 않게) → 프런트가 원인을 안내."""
+    from urllib.parse import urlparse
+    try:
+        url = (req.url or "").strip()
+        if not re.match(r"^https?://", url, re.I):
+            url = "https://" + url
+        host = (urlparse(url).hostname or "").lower()
+        if not any(host == h or host.endswith("." + h) for h in _META_ALLOW):
+            return {"ok": False,
+                    "error": "스마트스토어·네이버 쇼핑 주소만 확인할 수 있어요."}
+        try:
+            import httpx
+        except Exception:  # noqa: BLE001
+            return {"ok": False,
+                    "error": "서버에 httpx 가 없어요. requirements.txt 로 설치 후 재배포해주세요."}
+
+        # 실제 브라우저처럼 보이는 헤더 — 네이버가 봇 UA 에 빈 페이지를 주는 걸 줄인다.
+        headers = {
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+                           "Chrome/125.0 Safari/537.36"),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+        }
+        text = ""
+        final_url = url
+        try:
+            async with httpx.AsyncClient(follow_redirects=True, timeout=9.0,
+                                         headers=headers) as c:
+                r = await c.get(url)
+                final_url = str(r.url)
+                final_host = (urlparse(final_url).hostname or "").lower()
+                if not (final_host.endswith("naver.com")
+                        or final_host.endswith("naver.me")):
+                    return {"ok": False, "error": "네이버 페이지가 아니에요."}
+                text = r.text[:300000]
+        except Exception:  # noqa: BLE001
+            return {"ok": False,
+                    "error": "페이지를 불러오지 못했어요 — 네이버가 서버 접근을 막았거나 "
+                             "주소가 상세페이지가 아닐 수 있어요."}
+
+        title = _og(text, "og:title")
+        image = _og(text, "og:image")
+        desc = _og(text, "og:description")
+        price = (_og(text, "product:price:amount") or _og(text, "og:price:amount")
+                 or _og(text, "product:sale_price:amount"))
+        title = re.sub(r"\s*[:\-|]\s*(네이버\s*쇼핑|스마트스토어|스토어|브랜드스토어).*$",
+                       "", title).strip()
+        if not (title or image):
+            return {"ok": False,
+                    "error": "이 페이지에서 공유용 정보를 못 찾았어요 — 네이버가 서버엔 "
+                             "빈 페이지를 준 것 같아요. (로그인 전용·봇차단 페이지일 수 있음)"}
+        return {"ok": True, "title": title, "image": image, "desc": desc,
+                "price": price, "final_url": final_url}
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "확인 중 문제가 생겼어요. 잠시 후 다시 시도해주세요."}
 
 
 class TitleReq(BaseModel):
