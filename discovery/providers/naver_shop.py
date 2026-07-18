@@ -20,6 +20,8 @@ from discovery.providers.naver_client import NaverClient
 
 logger = logging.getLogger(__name__)
 
+from collections import Counter
+
 _TAG_RE = re.compile(r"<[^>]+>")
 
 # 네이버 검색 API productType (문서 기준)
@@ -71,21 +73,24 @@ class NaverShopProvider:
 
         lprices: list[int] = []
         titles: list[str] = []
-        category_path: list[str] = []
         mall_names: list[str] = []
         product_types: list[int] = []
         links: list[str] = []
         keep: list[dict] = []
+        cat_paths: list[tuple] = []   # F6: 아이템별 카테고리 경로 (다수결용)
         for it in items:
+            pt = _to_int(it.get("productType"))
             lp = _to_int(it.get("lprice"))
-            if lp:
+            # F7: 가격 분포(변동계수)에는 '판매 가능한 신품'만.
+            #   중고(4~6)·단종(7~9)·판매예정(10~12) 가격이 섞이면 '가격 여지'가
+            #   통째로 왜곡된다. ptype 불명(None)은 보수적으로 포함한다.
+            if lp and (pt is None or pt in _NEW_TYPES):
                 lprices.append(lp)
             titles.append(_clean(it.get("title", "")))
             # 경쟁 구조 분석용 (이미 응답에 있는 데이터, 추가 호출 0)
             mall = it.get("mallName")
             if mall:
                 mall_names.append(str(mall))
-            pt = _to_int(it.get("productType"))
             if pt is not None:
                 product_types.append(pt)
             lk = it.get("link")
@@ -97,10 +102,16 @@ class NaverShopProvider:
                          "brand": str(it.get("brand") or ""),
                          "maker": str(it.get("maker") or ""),
                          "link": str(lk or "")})
-            # 첫 유효 item 의 카테고리를 시장 대표 경로로
-            if not category_path:
-                path = [it.get(f"category{i}") for i in range(1, 5)]
-                category_path = [c for c in path if c]
+            # F6: 아이템별 카테고리 경로 수집 → 나중에 다수결
+            path = tuple(c for c in (it.get(f"category{i}") for i in range(1, 5)) if c)
+            if path:
+                cat_paths.append(path)
+
+        # F6: 첫 아이템 하나가 아니라 '가장 흔한 카테고리 경로'를 시장 대표로.
+        #   상위 결과에 이상치/광고가 하나 끼어도 리스크게이트가 흔들리지 않는다.
+        category_path: list[str] = []
+        if cat_paths:
+            category_path = list(Counter(cat_paths).most_common(1)[0][0])
 
         return ShopMarket(
             keyword=keyword,

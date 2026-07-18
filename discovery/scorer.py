@@ -45,6 +45,12 @@ class ScorerConfig:
     w_demand: float = 1.0
     w_competition: float = 1.0
     w_price: float = 0.6          # 가격여지는 보조 신호라 영향 약하게
+    # --- 가격 성분 바닥값 (곱셈 붕괴 방지) ---
+    # 곱셈 결합에서 price_room 이 0(=가격표본 부족/전부 동일가)이면 base 전체가
+    # ~50배 붕괴돼 '보조 신호' 취지가 무너진다. 성분에 바닥을 깔아 게이트가 아닌
+    # 변조기로 작동하게 한다. price_room 0→floor, 1→1.0 사이로 매핑.
+    price_floor: float = 0.45        # 0~1, 가격 성분의 최소 기여
+    price_missing_neutral: float = 0.5  # 가격표본 없을 때 중립값(모름=중간)
     # --- 경쟁 구조 정밀 보정 (1순위 고도화) ---
     # 셀러 독점/묶음 신호로 기존 경쟁희소성을 보정하는 강도. 0이면 보정 없음(기존과 동일).
     competition_refine_weight: float = 0.4  # 0~1, 보정 신호의 영향력
@@ -107,8 +113,13 @@ def score_keyword(market: ShopMarket, demand: DemandTrend,
         competition_refined = _clamp01(competition * adj)
 
     # --- 가격 여지: 변동계수 클수록 1 ---
+    # price_cv 가 None(가격 표본 2개 미만) 이면 '없음'으로 구분한다.
+    # 없음을 0 으로 두면 곱셈에서 점수가 붕괴하므로, 중립값으로 취급한다.
+    has_price = market.price_cv is not None
     cv = market.price_cv or 0.0
-    price_room = _norm(cv, 0.0, cfg.price_cv_cap)
+    price_room = _norm(cv, 0.0, cfg.price_cv_cap)   # 표시·보고용(없으면 0)
+    # 곱셈에 실제로 들어가는 '유효' 가격여지: 없으면 중립, 있으면 raw
+    price_eff_raw = price_room if has_price else cfg.price_missing_neutral
 
     # --- 수요 두 성분 ---
     level_n = _norm(demand.level, 0.0, cfg.level_cap) if demand.has_data else 0.0
@@ -127,7 +138,9 @@ def score_keyword(market: ShopMarket, demand: DemandTrend,
         # 0 방지용 epsilon 후 가중 곱. 경쟁은 보정된 값 사용.
         d = max(demand_comp, 1e-6) ** cfg.w_demand
         c = max(competition_refined, 1e-6) ** cfg.w_competition
-        p = max(price_room, 1e-6) ** cfg.w_price
+        # 가격은 바닥값을 깐 유효값으로: floor + (1-floor)*price_eff → 게이트 방지
+        p_eff = cfg.price_floor + (1.0 - cfg.price_floor) * price_eff_raw
+        p = _clamp01(p_eff) ** cfg.w_price
         base = _clamp01(d * c * p) * rf
 
         # 불균형 보너스: 수요와 경쟁희소성이 '둘 다' 기준 이상일 때만.
@@ -163,7 +176,8 @@ def score_keyword(market: ShopMarket, demand: DemandTrend,
         comp_detail += f" → 경쟁보정 {competition:.2f}→{competition_refined:.2f}"
     rationale = (
         f"경쟁 total={market.total:,}(희소성 {competition:.2f}), "
-        f"가격여지 {price_room:.2f}, {demand_note}, "
+        f"가격여지 {price_room:.2f}{'(표본부족·중립처리)' if not has_price else ''}, "
+        f"{demand_note}, "
         f"리스크게이트 {rf:.2f}{comp_detail}"
     )
 

@@ -63,6 +63,7 @@ class BlueOceanScore:
     is_blue: bool = False
     competition_openness: float = 0.0   # 0~1, 등록 적을수록 높음
     demand_ok: bool = False             # 검색 수요 있음
+    demand_verified: bool = False       # 데이터랩으로 수요를 실제 확인했는가
     healthy_competition: bool = False   # 셀러 적당(죽은 시장 아님)
     price_holding: bool = True          # 가격 안 무너짐
     est_margin_pct: float | None = None # 추정 마진율(%)
@@ -143,6 +144,7 @@ def evaluate_blue_ocean(market: ShopMarket, demand=None,
     # 3) 검색 수요 (데이터랩 절대 수준)
     if demand is not None and demand.has_data:
         out.demand_ok = demand.level >= cfg.demand_floor
+        out.demand_verified = True   # 데이터랩으로 실제 확인함
         if not out.demand_ok:
             out.note = (f"수요 약함 (검색수준 {demand.level:.0f} < {cfg.demand_floor:.0f}) "
                         f"— 등록 적지만 찾는 사람 적음")
@@ -169,7 +171,9 @@ def evaluate_blue_ocean(market: ShopMarket, demand=None,
 
     out.is_blue = out.healthy_competition and out.price_holding and (
         out.margin_ok or out.est_margin_pct is None)
-    demand_txt = "수요✓" if out.demand_ok else "수요미확인"
+    demand_txt = ("수요✓" if out.demand_verified and out.demand_ok
+                  else ("수요미확인(데이터랩 미조회)" if not out.demand_verified
+                        else "수요미확인"))
     margin_txt = (f"마진~{out.est_margin_pct:.0f}%" if out.est_margin_pct is not None
                   else "마진미상")
     out.note = (f"블루오션 ({demand_txt}, 등록 {total:,}건, 가격유지✓, {margin_txt})")

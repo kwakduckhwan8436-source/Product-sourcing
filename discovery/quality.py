@@ -249,6 +249,10 @@ def deep_quality(q: Quality, market, mode: str = "consign") -> Quality:
             q.score -= 8
             q.risks.append(pr["note"])
 
+    # 기본 판정에서 '위험 없음'을 붙였는데 정밀 단계에서 위험이 생겼으면 그 문구 제거
+    if q.risks:
+        q.good = [g for g in q.good if "눈에 띄는 위험이 없어요" not in g]
+
     q.score = max(0, min(100, q.score))
     if not q.blocked:
         q.grade = ("안전" if q.score >= 80 else

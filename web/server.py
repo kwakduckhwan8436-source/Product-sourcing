@@ -42,7 +42,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v37"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v39"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -887,90 +887,6 @@ async def watch_moves_api(owner: str = "local"):
     return {"ok": True, "items": out, "count": len(out),
             "golden": golden, "chicken": chicken, "crowding": crowding,
             "ready": ready}
-
-
-class MetaReq(BaseModel):
-    url: str
-
-
-_META_ALLOW = ("smartstore.naver.com", "m.smartstore.naver.com",
-               "brand.naver.com", "shopping.naver.com",
-               "search.shopping.naver.com", "msearch.shopping.naver.com",
-               "naver.me")
-
-
-def _og(html_text: str, prop: str) -> str:
-    """OG/메타 태그 하나의 content 를 뽑는다 (속성 순서 무관)."""
-    m = re.search(
-        r'<meta\b[^>]*\b(?:property|name)\s*=\s*["\']' + re.escape(prop)
-        + r'["\'][^>]*>', html_text, re.I)
-    if not m:
-        return ""
-    cm = re.search(r'\bcontent\s*=\s*["\'](.*?)["\']', m.group(0), re.I | re.S)
-    import html as _html
-    return _html.unescape(cm.group(1)).strip() if cm else ""
-
-
-@app.post("/api/page_meta")
-async def page_meta(req: MetaReq):
-    """상세페이지가 '공개한' 공유용 메타(OG)만 읽는다 — 크롤링 아님.
-    스마트스토어/네이버 쇼핑 주소만 허용(SSRF 방지). 제목·대표이미지·설명·가격.
-    어떤 경우에도 JSON 을 돌려준다(500 로 죽지 않게) → 프런트가 원인을 안내."""
-    from urllib.parse import urlparse
-    try:
-        url = (req.url or "").strip()
-        if not re.match(r"^https?://", url, re.I):
-            url = "https://" + url
-        host = (urlparse(url).hostname or "").lower()
-        if not any(host == h or host.endswith("." + h) for h in _META_ALLOW):
-            return {"ok": False,
-                    "error": "스마트스토어·네이버 쇼핑 주소만 확인할 수 있어요."}
-        try:
-            import httpx
-        except Exception:  # noqa: BLE001
-            return {"ok": False,
-                    "error": "서버에 httpx 가 없어요. requirements.txt 로 설치 후 재배포해주세요."}
-
-        # 실제 브라우저처럼 보이는 헤더 — 네이버가 봇 UA 에 빈 페이지를 주는 걸 줄인다.
-        headers = {
-            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                           "AppleWebKit/537.36 (KHTML, like Gecko) "
-                           "Chrome/125.0 Safari/537.36"),
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
-        }
-        text = ""
-        final_url = url
-        try:
-            async with httpx.AsyncClient(follow_redirects=True, timeout=9.0,
-                                         headers=headers) as c:
-                r = await c.get(url)
-                final_url = str(r.url)
-                final_host = (urlparse(final_url).hostname or "").lower()
-                if not (final_host.endswith("naver.com")
-                        or final_host.endswith("naver.me")):
-                    return {"ok": False, "error": "네이버 페이지가 아니에요."}
-                text = r.text[:300000]
-        except Exception:  # noqa: BLE001
-            return {"ok": False,
-                    "error": "페이지를 불러오지 못했어요 — 네이버가 서버 접근을 막았거나 "
-                             "주소가 상세페이지가 아닐 수 있어요."}
-
-        title = _og(text, "og:title")
-        image = _og(text, "og:image")
-        desc = _og(text, "og:description")
-        price = (_og(text, "product:price:amount") or _og(text, "og:price:amount")
-                 or _og(text, "product:sale_price:amount"))
-        title = re.sub(r"\s*[:\-|]\s*(네이버\s*쇼핑|스마트스토어|스토어|브랜드스토어).*$",
-                       "", title).strip()
-        if not (title or image):
-            return {"ok": False,
-                    "error": "이 페이지에서 공유용 정보를 못 찾았어요 — 네이버가 서버엔 "
-                             "빈 페이지를 준 것 같아요. (로그인 전용·봇차단 페이지일 수 있음)"}
-        return {"ok": True, "title": title, "image": image, "desc": desc,
-                "price": price, "final_url": final_url}
-    except Exception:  # noqa: BLE001
-        return {"ok": False, "error": "확인 중 문제가 생겼어요. 잠시 후 다시 시도해주세요."}
 
 
 class TitleReq(BaseModel):

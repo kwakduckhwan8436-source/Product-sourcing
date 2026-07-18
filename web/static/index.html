@@ -131,15 +131,16 @@
   }
 
   .hero{text-align:center;padding:38px 16px 26px}
-  .hero .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;
+  .hero .eyebrow{display:flex;width:fit-content;margin:0 auto 18px;
+    align-items:center;gap:7px;font-size:11.5px;
     letter-spacing:.16em;color:var(--brand-soft);text-transform:uppercase;
     border:1px solid rgba(212,175,55,.28);border-radius:999px;padding:6px 14px;
-    background:rgba(212,175,55,.06);margin-bottom:16px}
+    background:rgba(212,175,55,.06)}
   .hero .eyebrow i{width:6px;height:6px;border-radius:50%;
     background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));
     box-shadow:0 0 10px rgba(212,175,55,.7)}
   .hero h1{
-    position:relative;display:inline-block;
+    position:relative;display:block;text-align:center;
     font-family:var(--serif);font-size:46px;font-weight:400;letter-spacing:-.02em;
     background:linear-gradient(100deg,#f6eecb 0%,#f0dfa0 26%,#d4af37 52%,#f4e7b0 74%,#c9a227 100%);
     background-size:220% auto;
@@ -482,51 +483,28 @@
   .aact{margin-top:8px;font-size:12.5px;color:var(--brand-soft);
     border-left:2px solid var(--brand);padding:3px 0 3px 11px}
 
-  /* ===== 상세페이지 자가진단 체크리스트 ===== */
-  .ckbarwrap{margin:2px 0 14px}
-  .ckbarhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-  .ckbarhead .pct{font-family:var(--serif);font-size:22px}
-  .ckbarhead .pct.lo{color:var(--stop)} .ckbarhead .pct.mid{color:var(--wait)} .ckbarhead .pct.hi{color:var(--go)}
-  .ckbar{height:9px;border-radius:6px;background:var(--panel2);overflow:hidden;
-    border:1px solid var(--line)}
-  .ckbar i{display:block;height:100%;border-radius:6px;transition:width .25s ease;
-    background:linear-gradient(90deg,var(--gold-mid),var(--gold-hi))}
-  .ckgroup{margin-bottom:14px}
-  .ckgroup h4{font-family:var(--serif);font-size:14px;color:var(--brand-soft);
-    margin:0 0 8px;font-weight:400;display:flex;align-items:center;gap:7px}
-  .ckitem{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;margin-bottom:7px;
-    background:var(--panel2);border:1px solid var(--line);border-radius:11px;cursor:pointer;
-    transition:border-color .15s, background .15s}
-  .ckitem:hover{border-color:var(--line2)}
-  .ckitem.on{border-color:rgba(61,220,132,.4);background:var(--go-bg)}
-  .ckbox{flex:0 0 auto;width:22px;height:22px;border-radius:7px;border:2px solid var(--line2);
-    display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;
-    transition:all .15s;margin-top:1px}
-  .ckitem.on .ckbox{background:linear-gradient(135deg,#7ff0b0,var(--go));border-color:transparent;
-    color:#0d1a12}
-  .cktext{font-size:13px;line-height:1.55;color:#c8d2df}
-  .cktext .t{font-weight:700;color:var(--ink)}
-  .cktext .d{font-size:11.5px;color:var(--sub);display:block;margin-top:2px}
-  .ckwrap-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-  .ckwrap-actions button{font-size:12px;padding:9px 13px}
-  /* URL 자동 점검 */
-  .ckurl{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px}
-  .ckurl input{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
-    border-radius:10px;padding:12px 13px;font-size:14px;font-family:var(--sans);outline:none;width:100%}
-  .ckurl input:focus{border-color:var(--brand)}
-  .ckmeta{margin-bottom:14px}
-  .ckmeta .mcard2{display:flex;gap:13px;align-items:flex-start;
-    background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px}
-  .ckmeta .thumb{flex:0 0 auto;width:84px;height:84px;border-radius:11px;object-fit:cover;
-    background:#0c111a;border:1px solid var(--line)}
-  .ckmeta .minfo{min-width:0;flex:1}
-  .ckmeta .mt{font-size:14px;font-weight:700;line-height:1.4;margin-bottom:5px;word-break:break-all}
-  .ckmeta .mp{font-family:var(--serif);color:var(--brand-soft);font-size:15px;margin-bottom:6px}
-  .ckmeta .mauto{display:flex;flex-direction:column;gap:5px;margin-top:6px;font-size:12px}
-  .ckmeta .mauto .ok{color:var(--go)} .ckmeta .mauto .no{color:var(--wait)}
-  .ckmeta .mfail{background:var(--stop-bg);border:1px solid rgba(242,97,107,.3);
-    color:#fbc4c8;border-radius:11px;padding:12px 14px;font-size:12.5px;line-height:1.6}
-  @media(max-width:640px){ .ckurl{grid-template-columns:1fr} }
+  /* ===== 황금존 지도 (경쟁 × 마진 산점도) ===== */
+  .gmhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 6px}
+  .gmhead .gt{font-family:var(--serif);font-size:16px}
+  .gmwrap{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.3);margin-bottom:14px}
+  .gmchart{width:100%;height:auto;display:block}
+  .gmaxis{stroke:var(--line2);stroke-width:1}
+  .gmgrid{stroke:rgba(255,255,255,.05);stroke-width:1}
+  .gmtxt{fill:var(--sub);font-size:10px;font-family:var(--sans)}
+  .gmaxlab{fill:var(--brand-soft);font-size:11px;font-weight:700;font-family:var(--sans)}
+  .gmdot{cursor:pointer;transition:r .1s}
+  .gmlabel{fill:#dfe6f0;font-size:9.5px;font-family:var(--sans);pointer-events:none}
+  .gmlegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px}
+  .gmlegend span{display:inline-flex;align-items:center;gap:6px;color:#c3cdda}
+  .gmlegend i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .gmzone-list{margin-top:12px}
+  .gmzone-list .z{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--brand-bg);border:1px solid rgba(212,175,55,.3);border-radius:11px;
+    padding:10px 13px;margin-bottom:8px}
+  .gmzone-list .z .zk{font-weight:800;color:var(--brand-soft)}
+  .gmzone-list .z .zm{font-size:12px;color:#c3cdda}
+
   @media(max-width:640px){
     .toolgrid{grid-template-columns:1fr 1fr}
     .fld input{font-size:16px}   /* iOS 확대 방지 */
@@ -669,6 +647,7 @@
       <button id="more" class="ghost">🔁 더 찾기 — 방금 본 건 빼고</button>
       <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
       <button id="alerts" class="ghost">🔔 변동 알림 <span id="acnt"></span></button>
+      <button id="goldmap" class="ghost">🗺️ 황금존 지도</button>
       <button id="cafe" class="ghost">📋 카페에 올릴 글로 복사</button>
       <button id="chk" class="ghost">📋 시작 전 준비물</button>
     </div>
@@ -827,36 +806,6 @@
       <p class="toolnote">위탁은 재고가 없어 <b>초기비용 0</b>이지만 개당 원가가 비싸고,
         도매는 싸게 떼는 대신 <b>사입·보관비가 먼저</b> 나갑니다. 슬라이더를 올려보면
         <b>몇 개부터 도매가 위탁을 이기는지</b>(초록 세로선)가 보여요.</p>
-    </div>
-  </details>
-
-  <details class="tool" id="ckTool">
-    <summary>
-      <span class="tico">📸</span> 상세페이지 자가진단
-      <span class="free">로그인 없이 무료</span>
-      <span class="arw">▾</span>
-    </summary>
-    <div class="toolbody">
-      <div class="ckurl">
-        <input id="ckUrl" type="url" inputmode="url"
-          placeholder="스마트스토어 상품 주소 붙여넣기 (https://smartstore.naver.com/…)">
-        <button id="ckScan" type="button">자동 점검</button>
-      </div>
-      <div id="ckMeta"></div>
-      <div class="ckbarwrap">
-        <div class="ckbarhead">
-          <span>등록 준비도</span>
-          <span class="pct" id="ckPct">0%</span>
-        </div>
-        <div class="ckbar"><i id="ckFill" style="width:0%"></i></div>
-      </div>
-      <div id="ckList"></div>
-      <p class="mtip" id="ckMsg"></p>
-      <div class="ckwrap-actions">
-        <button class="ghost" id="ckReset">전부 지우기</button>
-      </div>
-      <p class="toolnote">등록 <b>전에</b> 한 번 훑는 체크리스트예요. 체크는 <b>이 브라우저에 저장</b>돼서
-        다음에 와도 남아 있어요. 제목은 위 <b>제목 체커</b>, 인증 필요 여부는 결과 카드의 위험 표시와 함께 보면 좋아요.</p>
     </div>
   </details>
 
@@ -2044,150 +1993,104 @@ async function showAlerts() {
   run();
 })();
 
-/* ---------- 📸 상세페이지 자가진단 ---------- */
-(function(){
-  if(!document.getElementById('ckList')) return;
-  const GROUPS = [
-    {icon:'🖼️', name:'대표이미지 (썸네일)', items:[
-      ['흰 배경·정사각형', '상품이 화면의 70~80%를 채우고 배경이 깔끔한가'],
-      ['글자·워터마크 없음', '썸네일에 텍스트/도장/과장 문구가 없어야 감점을 피해요'],
-      ['실물과 같은 색·구성', '받았을 때 다르면 반품·불만으로 이어져요'],
-    ]},
-    {icon:'📝', name:'상세 내용', items:[
-      ['첫 화면 3줄 요약', '무엇을 · 누구에게 · 왜 좋은지를 맨 위에서 바로'],
-      ['실사용·크기 비교컷', '손·주변 물건과 함께 찍어 크기를 짐작하게'],
-      ['옵션·구성·사이즈 표', '고를 것과 들어있는 것을 표로 명확히'],
-    ]},
-    {icon:'🔤', name:'제목·키워드', items:[
-      ['제목 25~40자·중복 없음', '위 제목 체커로 길이와 중복 단어를 확인'],
-      ['핵심 키워드 앞배치·특수문자 없음', '검색될 말을 앞에, ★[]% 같은 문자는 빼기'],
-    ]},
-    {icon:'🚚', name:'배송·교환/AS', items:[
-      ['배송비·발송일 명시', '무료/유료·언제 보내는지 숨기지 않기'],
-      ['교환/반품 조건 명시', '단순변심·불량 시 처리 기준을 적어두기'],
-      ['문의·A/S 경로 안내', '연락 방법이 있으면 신뢰가 올라가요'],
-    ]},
-    {icon:'🛡️', name:'신뢰·안전', items:[
-      ['원산지·제조사 표기', '국내산이면 특히 신뢰 요소로'],
-      ['인증·신고번호 (해당 시)', '전기/식품/화장품 등은 인증번호가 없으면 판매 불가'],
-      ['과장·허위 문구 없음', '‘최저가·1위·효능’ 단정은 제재 위험'],
-    ]},
-  ];
-  const KEY = 'aitech_detail_check';
-  let state = {};
-  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ state = {}; }
-  const list = document.getElementById('ckList');
-  let total = 0;
-  const idOf = (g,i)=>`g${g}i${i}`;
-  GROUPS.forEach((grp,gi)=>{
-    const box = document.createElement('div'); box.className='ckgroup';
-    box.innerHTML = `<h4>${grp.icon} ${grp.name}</h4>`;
-    grp.items.forEach((it,ii)=>{
-      total++;
-      const id = idOf(gi,ii);
-      const on = !!state[id];
-      const el = document.createElement('div');
-      el.className = 'ckitem' + (on?' on':'');
-      el.dataset.id = id;
-      el.innerHTML = `<span class="ckbox">✓</span>
-        <span class="cktext"><span class="t">${it[0]}</span><span class="d">${it[1]}</span></span>`;
-      el.addEventListener('click', ()=>{
-        state[id] = !state[id];
-        el.classList.toggle('on', state[id]);
-        try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
-        paint();
-      });
-      box.appendChild(el);
-    });
-    list.appendChild(box);
-  });
-  function paint(){
-    const done = Object.values(state).filter(Boolean).length;
-    const pct = total ? Math.round(done/total*100) : 0;
-    const p = document.getElementById('ckPct');
-    p.textContent = pct + '%';
-    p.className = 'pct ' + (pct>=80?'hi':pct>=50?'mid':'lo');
-    document.getElementById('ckFill').style.width = pct + '%';
-    const msg = document.getElementById('ckMsg');
-    msg.innerHTML = pct===100 ? '<b>완벽해요 — 이대로 올리면 됩니다.</b> 마지막으로 미리보기에서 오탈자만 훑어보세요.'
-      : pct>=80 ? `거의 다 됐어요 (${done}/${total}). 남은 항목만 채우면 등록 준비 끝.`
-      : pct>=50 ? `절반 넘겼어요 (${done}/${total}). 빠진 부분이 반품·문의로 이어지기 쉬워요.`
-      : `아직 준비 초반이에요 (${done}/${total}). 위에서부터 하나씩 채워보세요.`;
-  }
-  document.getElementById('ckReset').addEventListener('click', ()=>{
-    state = {}; try{ localStorage.removeItem(KEY); }catch(e){}
-    list.querySelectorAll('.ckitem').forEach(el=>el.classList.remove('on'));
-    paint();
-  });
-
-  /* URL 자동 점검 (OG 메타 기반 — 크롤링 아님) */
-  function setItem(id, val){
-    state[id] = val;
-    const el = list.querySelector('.ckitem[data-id="'+id+'"]');
-    if(el) el.classList.toggle('on', val);
-    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
-  }
-  const meta = document.getElementById('ckMeta');
-  const scanBtn = document.getElementById('ckScan');
-  const urlIn = document.getElementById('ckUrl');
-  async function scan(){
-    const url = (urlIn.value||'').trim();
-    if(!url) return;
-    scanBtn.disabled = true; const old = scanBtn.textContent; scanBtn.textContent = '점검 중…';
-    meta.innerHTML = '<div class="card"><span class="spin"></span>페이지 정보를 읽는 중…</div>';
-    let d;
-    try{
-      const r = await fetch('/api/page_meta', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url})});
-      if(!r.ok){
-        d = {ok:false, error:(r.status===404||r.status===405)
-          ? '서버가 아직 이 기능을 몰라요 — server.py를 재배포해야 해요. (상단 버전 배지가 최신인지 확인하세요)'
-          : '서버 오류('+r.status+')예요. 잠시 후 다시 시도해주세요.'};
-      } else {
-        d = await r.json();
-      }
-    }catch(e){
-      d = {ok:false, error:'서버에 닿지 못했어요. 무료 서버가 잠들어 있으면 첫 요청이 느려요 — 30초쯤 뒤 다시 눌러보세요.'};
-    }
-    scanBtn.disabled = false; scanBtn.textContent = old;
-    if(!d.ok){
-      meta.innerHTML = '<div class="ckmeta"><div class="mfail">⚠️ '+(d.error||'읽지 못했어요.')+'<br>주소는 <b>상품 상세 페이지</b>여야 하고, 스마트스토어·네이버 쇼핑 주소만 됩니다.</div></div>';
-      return;
-    }
-    const title = d.title || '';
-    const len = [...title.trim()].length;
-    const words = title.trim().split(/\s+/).filter(Boolean);
-    const norm = words.map(w=>w.toLowerCase().replace(/[^\w가-힣]/g,'')).filter(w=>w.length>=2);
-    const cnt = {}; norm.forEach(w=>cnt[w]=(cnt[w]||0)+1);
-    const dups = Object.keys(cnt).filter(w=>cnt[w]>=2);
-    const sp = title.match(/[\[\]{}()<>★☆♥♡~!@#$%^&*_=|\\";:]/g);
-    const lenOK = len>=25 && len<=40 && dups.length===0;
-    const spOK = !sp;
-    // 제목 체커에도 흘려보내 상세 경고까지 뜨게
-    const tbox = document.getElementById('tTitle');
-    if(tbox){ tbox.value = title; tbox.dispatchEvent(new Event('input')); }
-    // 정직하게: 제목으로 확인 가능한 두 항목만 자동 체크
-    setItem('g2i0', lenOK);
-    setItem('g2i1', spOK);
-    paint();
-    const lines = [];
-    lines.push(lenOK ? '<span class="ok">✓ 제목 길이·중복 통과 → 자동 체크</span>'
-      : '<span class="no">· 제목 '+len+'자'+(dups.length?' · 중복: '+dups.join(', '):'')+' — 25~40자·중복없음 권장</span>');
-    lines.push(spOK ? '<span class="ok">✓ 특수문자 없음 → 자동 체크</span>'
-      : '<span class="no">· 특수문자('+[...new Set(sp)].join(' ')+') 있음 — 빼는 게 좋아요</span>');
-    lines.push('<span class="no">· 이미지 배경·상세내용·배송/AS는 눈으로 확인해주세요 (자동 불가)</span>');
-    const img = d.image ? '<img class="thumb" src="'+d.image+'" alt="대표이미지" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' : '';
-    const price = d.price ? '<div class="mp">'+Number(d.price).toLocaleString('ko-KR')+'원</div>' : '';
-    meta.innerHTML = '<div class="ckmeta"><div class="mcard2">'+img+
-      '<div class="minfo"><div class="mt">'+(title||'(제목 없음)')+'</div>'+price+
-      '<div class="mauto">'+lines.join('')+'</div></div></div></div>';
-  }
-  scanBtn.addEventListener('click', scan);
-  urlIn.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); scan(); }});
-
-  paint();
-})();
-
 if ($('#alerts')) $('#alerts').addEventListener('click', showAlerts);
+
+/* ---------- 🗺️ 관심목록 황금존 지도 (경쟁 × 마진 산점도) ---------- */
+async function showGoldmap(){
+  out.innerHTML = '<div class="card"><p class="hint">황금존 지도를 그리는 중…</p></div>';
+  let d;
+  try { d = await (await fetch('/api/watch?owner=' + ME)).json(); }
+  catch(e){ out.innerHTML = '<div class="err">불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>'; return; }
+
+  const items = (d.items || []).map(x => {
+    const total = x.total || 0;
+    const price = x.price_min || 0;
+    const margin = (x.target_margin && x.target_margin > 0) ? x.target_margin : Math.round(price * 0.25);
+    return { k:x.keyword, cat:x.category || '', total, price, margin, grade:x.grade || '' };
+  }).filter(x => x.total > 0 && x.margin > 0);
+
+  if(!items.length){
+    out.innerHTML = '<div class="card"><p class="hint">관심 목록이 비어 있어요. 결과 카드에서 <b>📌 관심 담기</b>로 키워드를 담으면, 경쟁×마진 지도에 점으로 뿌려 <b>황금존</b>(경쟁 적고 마진 큰 구역)을 한눈에 볼 수 있어요.</p></div>';
+    return;
+  }
+
+  const W=640,H=320,PL=54,PR=18,PT=22,PB=44;
+  const clampT = t => Math.max(20, Math.min(50000, t));
+  const lx = t => Math.log10(clampT(t));
+  const xmin = lx(Math.min(...items.map(i=>i.total)));
+  let xmax = lx(Math.max(...items.map(i=>i.total)));
+  if (xmax <= xmin) xmax = xmin + 1;
+  const ymax = (Math.max(...items.map(i=>i.margin)) * 1.12) || 1;
+  const X = t => PL + ((lx(t)-xmin)/(xmax-xmin))*(W-PL-PR);
+  const Y = v => PT + (1-(v/ymax))*(H-PT-PB);
+  const won = n => Math.round(n).toLocaleString('ko-KR');
+
+  const OPEN = 1500;                       // 이하 = 진짜 빈자리
+  const margins = items.map(i=>i.margin).sort((a,b)=>a-b);
+  const medM = margins[Math.floor(margins.length/2)];
+  const isGold = i => i.total <= OPEN && i.margin >= medM;
+
+  let svg = `<svg class="gmchart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="경쟁 대 마진 산점도">`;
+  // 황금존 음영 (왼쪽 위: 경쟁 적음 + 마진 높음)
+  const gx = Math.max(PL, Math.min(W-PR, X(OPEN)));
+  const gy = Math.max(PT, Math.min(H-PB, Y(medM)));
+  if (gx > PL+4 && gy < H-PB-4){
+    svg += `<rect x="${PL}" y="${PT}" width="${gx-PL}" height="${gy-PT}" fill="rgba(212,175,55,.12)" stroke="rgba(212,175,55,.4)" stroke-dasharray="4 3" rx="6"/>`;
+    svg += `<text class="gmaxlab" x="${PL+8}" y="${PT+16}">✨ 황금존</text>`;
+  }
+  // 그리드 + y 라벨
+  [ymax, ymax/2, 0].forEach(v=>{
+    const y=Y(v);
+    svg += `<line class="gmgrid" x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}"/>`;
+    svg += `<text class="gmtxt" x="${PL-6}" y="${y+3}" text-anchor="end">${won(v/10000)}만</text>`;
+  });
+  // x 라벨 (경쟁 등록수, 로그)
+  [Math.round(Math.pow(10,xmin)), OPEN, Math.round(Math.pow(10,xmax))].forEach(t=>{
+    const x=X(t);
+    if (x>=PL-1 && x<=W-PR+1)
+      svg += `<text class="gmtxt" x="${x}" y="${H-16}" text-anchor="middle">${t.toLocaleString('ko-KR')}</text>`;
+  });
+  // 축 화살표 라벨
+  svg += `<text class="gmtxt" x="${PL}" y="${H-4}" text-anchor="start">← 경쟁 적음</text>`;
+  svg += `<text class="gmtxt" x="${W-PR}" y="${H-4}" text-anchor="end">경쟁 많음 →</text>`;
+  svg += `<text class="gmaxlab" x="${PL-46}" y="${PT+4}" transform="rotate(-90 ${PL-46} ${PT+4})" text-anchor="middle" style="fill:var(--sub)">마진 큼 ↑</text>`;
+  // 점
+  items.forEach(i=>{
+    const cx=X(i.total), cy=Y(i.margin), gold=isGold(i);
+    const r = gold ? 7 : 5;
+    const fill = gold ? 'url(#gmgold)' : (i.total<=OPEN ? 'var(--go)' : (i.total<=8000 ? 'var(--wait)' : 'var(--stop)'));
+    svg += `<g class="gmdot"><title>${i.k} — 경쟁 ${i.total.toLocaleString('ko-KR')}개 · 마진 ~${won(i.margin)}원${gold?' (황금존)':''}</title>`;
+    if(gold) svg += `<circle cx="${cx}" cy="${cy}" r="12" fill="rgba(212,175,55,.25)"/>`;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="rgba(0,0,0,.35)" stroke-width="1"/></g>`;
+    if(items.length<=14 || gold)
+      svg += `<text class="gmlabel" x="${cx+9}" y="${cy+3}">${i.k.length>7?i.k.slice(0,7)+'…':i.k}</text>`;
+  });
+  svg += `<defs><radialGradient id="gmgold" cx="35%" cy="30%"><stop offset="0%" stop-color="#fbefb8"/><stop offset="60%" stop-color="#d8b23c"/><stop offset="100%" stop-color="#a9821f"/></radialGradient></defs>`;
+  svg += `</svg>`;
+
+  const goldItems = items.filter(isGold).sort((a,b)=>b.margin-a.margin);
+  const zoneList = goldItems.length
+    ? `<div class="gmzone-list">` + goldItems.map(i=>
+        `<div class="z"><span class="zk">${i.k}</span><span class="zm">경쟁 ${i.total.toLocaleString('ko-KR')}개 · 마진 ~${won(i.margin)}원${i.grade?' · '+i.grade:''}</span></div>`).join('') + `</div>`
+    : `<p class="note">아직 황금존(경쟁 1,500개 이하 + 마진 중간 이상)에 든 키워드가 없어요. 더 빈 자리를 담아보세요.</p>`;
+
+  out.innerHTML = `
+    <div class="gmhead">
+      <span class="gt">🗺️ 황금존 지도 <b>${items.length}개</b></span>
+    </div>
+    <div class="gmwrap">${svg}
+      <div class="gmlegend">
+        <span><i style="background:var(--go)"></i> 빈자리(경쟁 적음)</span>
+        <span><i style="background:var(--wait)"></i> 보통</span>
+        <span><i style="background:var(--stop)"></i> 붐빔</span>
+        <span><i style="background:linear-gradient(135deg,#fbefb8,#d8b23c)"></i> 황금존</span>
+      </div>
+    </div>
+    ${goldItems.length ? '<p class="note">✨ <b>황금존</b> = 경쟁이 적으면서 마진도 큰 왼쪽 위 구역이에요. 여기 든 키워드부터 올리는 걸 추천해요.</p>' : ''}
+    ${zoneList}`;
+  out.scrollIntoView({behavior:'smooth', block:'start'});
+}
+if ($('#goldmap')) $('#goldmap').addEventListener('click', showGoldmap);
 </script>
 </body>
 </html>
