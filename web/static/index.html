@@ -72,19 +72,46 @@
     color:var(--ink);white-space:nowrap}
   .logo-sub{font-size:11.5px;color:var(--sub);border-left:1px solid var(--line2);
     padding-left:9px;white-space:nowrap}
-  .topright{display:flex;align-items:center;gap:10px}
+  .topright{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+  .sitenav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .sitelink{display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    font-size:12.5px;font-weight:700;white-space:nowrap;min-height:38px;
+    border-radius:10px;padding:8px 13px;transition:transform .12s, box-shadow .12s}
+  .sitelink .ico{font-size:14px;line-height:1}
+  .sitelink:hover{transform:translateY(-1px)}
+  .sitelink.gold{color:#231a06;
+    background:linear-gradient(135deg,var(--gold-hi),var(--gold-mid) 55%,var(--gold-deep));
+    box-shadow:0 4px 16px rgba(212,175,55,.28), inset 0 1px 0 rgba(255,255,255,.45)}
+  .sitelink.blue{color:#eaf1ff;
+    background:linear-gradient(135deg,#4f8bf0,#2f63d6);
+    box-shadow:0 4px 16px rgba(63,123,224,.30), inset 0 1px 0 rgba(255,255,255,.18)}
+  .botrow{display:flex;align-items:center;gap:10px}
   .keystate{font-size:12px;color:var(--sub);white-space:nowrap}
   .cafe-btn{
-    display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    display:inline-flex;align-items:center;gap:7px;text-decoration:none;min-height:38px;
     font-size:12.5px;font-weight:700;color:#0d1a12;white-space:nowrap;
     background:linear-gradient(135deg,#4ade80,#22c55e);
-    border-radius:10px;padding:9px 14px;
+    border-radius:10px;padding:8px 14px;
     box-shadow:0 4px 16px rgba(34,197,94,.25);transition:transform .12s}
   .cafe-btn:hover{transform:translateY(-1px)}
   .cafe-dot{width:7px;height:7px;border-radius:50%;background:#0d1a12;opacity:.75}
+  /* 글자 크게 — 어르신·휴대폰용 */
+  .fontbtn{display:inline-flex;align-items:center;gap:5px;cursor:pointer;
+    background:var(--panel2);border:1px solid var(--line2);color:var(--sub);
+    border-radius:10px;min-height:38px;padding:8px 11px;font-size:12px;font-weight:700;
+    font-family:var(--sans)}
+  .fontbtn:hover{color:var(--brand-soft);border-color:var(--brand)}
+  html.big .wrap{zoom:1.15}
   @media(max-width:640px){
     .logo-sub{display:none}
     .top{flex-wrap:wrap}
+    .topright{width:100%;align-items:stretch}
+    .sitenav{justify-content:stretch;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      padding-bottom:2px}
+    .sitelink{flex:1 0 auto;justify-content:center;min-height:44px}
+    .botrow{justify-content:space-between}
+    .cafe-btn{min-height:44px}
+    .fontbtn{min-height:44px}
   }
 
   .hero{text-align:center;padding:38px 16px 26px}
@@ -322,6 +349,66 @@
   @keyframes sp{to{transform:rotate(360deg)}}
   .note{margin-top:24px;font-size:12px;color:var(--sub);line-height:1.85;
     border-left:2px solid var(--line);padding:4px 0 4px 14px}
+  /* ===== 부가기능: 판매 마진 계산기 (로그인 없이 누구나) ===== */
+  .tool{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    margin-bottom:14px;box-shadow:0 18px 44px rgba(0,0,0,.32);overflow:hidden}
+  .tool>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;
+    padding:16px 18px;font-family:var(--serif);font-size:16px}
+  .tool>summary::-webkit-details-marker{display:none}
+  .tool>summary .tico{font-size:19px}
+  .tool>summary .free{margin-left:auto;font-family:var(--sans);font-size:11px;font-weight:700;
+    color:#231a06;background:linear-gradient(135deg,var(--gold-hi),var(--gold-mid));
+    border-radius:999px;padding:4px 10px}
+  .tool>summary .arw{color:var(--sub);font-family:var(--sans);font-size:13px}
+  .tool[open]>summary .arw{transform:rotate(180deg)}
+  .toolbody{padding:0 18px 18px}
+  .toolgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld label{font-size:12px;color:var(--sub)}
+  .fld input{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+    border-radius:10px;padding:12px 13px;font-size:15px;font-family:var(--sans);
+    outline:none;width:100%;text-align:right}
+  .fld input:focus{border-color:var(--brand)}
+  .mresult{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mcard{border-radius:13px;padding:15px 16px;border:1px solid var(--line);
+    background:var(--panel2)}
+  .mcard .ml{font-size:12px;color:var(--sub);margin-bottom:6px}
+  .mcard .mv{font-family:var(--serif);font-size:26px;letter-spacing:-.01em}
+  .mcard .mv small{font-family:var(--sans);font-size:13px;color:var(--sub)}
+  .mcard.net .mv{color:var(--brand-soft)}
+  .mcard.rate.good{border-color:rgba(61,220,132,.4);background:var(--go-bg)}
+  .mcard.rate.good .mv{color:var(--go)}
+  .mcard.rate.mid{border-color:rgba(240,182,56,.4);background:var(--wait-bg)}
+  .mcard.rate.mid .mv{color:var(--wait)}
+  .mcard.rate.bad{border-color:rgba(242,97,107,.4);background:var(--stop-bg)}
+  .mcard.rate.bad .mv{color:var(--stop)}
+  .mtip{margin-top:12px;font-size:12.5px;color:var(--sub);line-height:1.7}
+  .mtip b{color:var(--brand-soft)}
+  .fld.full{grid-column:1/-1}
+  .fld textarea{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+    border-radius:10px;padding:12px 13px;font-size:15px;font-family:var(--sans);
+    outline:none;width:100%;resize:vertical;min-height:64px;line-height:1.5}
+  .fld textarea:focus{border-color:var(--brand)}
+  .countbar{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
+  .countbig{font-family:var(--serif);font-size:26px;letter-spacing:-.01em}
+  .countbig.ok{color:var(--go)} .countbig.mid{color:var(--wait)} .countbig.bad{color:var(--stop)}
+  .countsub{font-size:12px;color:var(--sub)}
+  .warnlist{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+  .warn{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;
+    font-size:12.5px;line-height:1.55;border-radius:10px;padding:9px 11px;
+    background:var(--panel2);border:1px solid var(--line)}
+  .warn .wi{font-size:14px;line-height:1.3}
+  .warn.ok{border-color:rgba(61,220,132,.32);background:var(--go-bg);color:#bff3d5}
+  .warn.tip{border-color:rgba(240,182,56,.32);background:var(--wait-bg);color:#f4dea0}
+  .warn.no{border-color:rgba(242,97,107,.32);background:var(--stop-bg);color:#fbc4c8}
+  .warn b{color:#fff}
+  .mresult.one{grid-template-columns:1fr}
+  .toolnote{margin-top:11px;font-size:11.5px;color:var(--sub);line-height:1.65;
+    border-left:2px solid var(--line2);padding:2px 0 2px 11px}
+  @media(max-width:640px){
+    .toolgrid{grid-template-columns:1fr 1fr}
+    .fld input{font-size:16px}   /* iOS 확대 방지 */
+  }
   @media(max-width:720px){
     .jsteps{grid-template-columns:1fr}
     .jstep:not(:last-child)::after{top:auto;bottom:-9px;right:auto;left:41px;
@@ -341,10 +428,19 @@
       <span class="logo-sub">소싱 작업대</span>
     </div>
     <div class="topright">
-      <span class="keystate"><span id="ver"></span> <span id="keystate"></span></span>
-      <a class="cafe-btn" href="https://cafe.naver.com/aiprogram1" target="_blank">
-        <span class="cafe-dot"></span> 네이버 카페
-      </a>
+      <div class="sitenav">
+        <a class="sitelink gold" href="https://ai-app-tech.onrender.com/" target="_blank" rel="noopener">
+          <span class="ico">🧭</span> 부의 로드맵 · 재테크</a>
+        <a class="sitelink blue" href="https://shared-research-monitor.onrender.com/" target="_blank" rel="noopener">
+          <span class="ico">📊</span> 모두의 리서치</a>
+      </div>
+      <div class="botrow">
+        <span class="keystate"><span id="ver"></span> <span id="keystate"></span></span>
+        <button class="fontbtn" id="fontToggle" type="button" title="글자 크기 바꾸기">가<span style="font-size:15px">＋</span></button>
+        <a class="cafe-btn" href="https://cafe.naver.com/aiprogram1" target="_blank" rel="noopener">
+          <span class="cafe-dot"></span> 네이버 카페
+        </a>
+      </div>
     </div>
   </div>
 
@@ -455,6 +551,118 @@
   </div>
 
   <div id="out"></div>
+
+  <details class="tool" id="marginTool">
+    <summary>
+      <span class="tico">🧮</span> 판매 마진 계산기
+      <span class="free">로그인 없이 무료</span>
+      <span class="arw">▾</span>
+    </summary>
+    <div class="toolbody">
+      <div class="toolgrid">
+        <div class="fld"><label>판매가 (원)</label>
+          <input id="mSell" type="number" inputmode="numeric" value="19900"></div>
+        <div class="fld"><label>매입가·원가 (원)</label>
+          <input id="mCost" type="number" inputmode="numeric" value="8000"></div>
+        <div class="fld"><label>판매 수수료 (%)</label>
+          <input id="mFee" type="number" inputmode="decimal" value="6"></div>
+        <div class="fld"><label>택배·배송비 (원)</label>
+          <input id="mShip" type="number" inputmode="numeric" value="3000"></div>
+        <div class="fld"><label>기타비용 (원)</label>
+          <input id="mEtc" type="number" inputmode="numeric" value="0"></div>
+        <div class="fld"><label>부가세 10% 반영</label>
+          <select id="mVat" style="background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:10px;padding:12px 13px;font-size:15px">
+            <option value="0">뺄게요 (간이·면세)</option>
+            <option value="1">포함해서 볼게요</option>
+          </select></div>
+      </div>
+      <div class="mresult">
+        <div class="mcard net"><div class="ml">한 개 팔면 남는 돈</div>
+          <div class="mv" id="mNet">–</div></div>
+        <div class="mcard rate" id="mRateCard"><div class="ml">마진율</div>
+          <div class="mv" id="mRate">–</div></div>
+      </div>
+      <p class="mtip" id="mTip"></p>
+    </div>
+  </details>
+
+  <details class="tool" id="titleTool">
+    <summary>
+      <span class="tico">📝</span> 스마트스토어 제목 체커
+      <span class="free">로그인 없이 무료</span>
+      <span class="arw">▾</span>
+    </summary>
+    <div class="toolbody">
+      <div class="toolgrid">
+        <div class="fld full"><label>상품 제목을 붙여넣으세요</label>
+          <textarea id="tTitle" placeholder="예) 무선 미니 가습기 usb 사무실 차량용 저소음 소형 탁상용 선물"></textarea></div>
+      </div>
+      <div class="countbar">
+        <span class="countbig" id="tCount">0<small style="font-size:13px"> 자</small></span>
+        <span class="countsub" id="tCountSub">공백 제외 0자 · 단어 0개</span>
+      </div>
+      <div class="warnlist" id="tWarn"></div>
+      <p class="toolnote">네이버는 제목이 <b>간결하고 중복 없는</b> 쪽을 좋아합니다. 권장 <b>25~40자</b>,
+        같은 단어 반복·특수문자·과한 키워드 나열은 오히려 노출에 마이너스예요.</p>
+    </div>
+  </details>
+
+  <details class="tool" id="beTool">
+    <summary>
+      <span class="tico">📦</span> 택배비·광고비 손익분기 계산기
+      <span class="free">로그인 없이 무료</span>
+      <span class="arw">▾</span>
+    </summary>
+    <div class="toolbody">
+      <div class="toolgrid">
+        <div class="fld"><label>개당 남는 돈 (순마진, 원)</label>
+          <input id="bNet" type="number" inputmode="numeric" value="4000"></div>
+        <div class="fld"><label>이번 달 광고·고정비 (원)</label>
+          <input id="bAd" type="number" inputmode="numeric" value="200000"></div>
+        <div class="fld"><label>목표 순이익 (원, 선택)</label>
+          <input id="bGoal" type="number" inputmode="numeric" value="0"></div>
+      </div>
+      <div class="mresult">
+        <div class="mcard net"><div class="ml">본전 되는 판매량</div>
+          <div class="mv" id="bBE">–</div></div>
+        <div class="mcard rate good"><div class="ml">목표까지 팔 양</div>
+          <div class="mv" id="bTarget">–</div></div>
+      </div>
+      <p class="mtip" id="bTip"></p>
+      <p class="toolnote">개당 순마진은 위 <b>마진 계산기</b>의 ‘한 개 팔면 남는 돈’을 그대로 넣으면 돼요.
+        이 수량을 넘겨 팔아야 광고비를 뽑고 이익이 남습니다.</p>
+    </div>
+  </details>
+
+  <details class="tool" id="taxTool">
+    <summary>
+      <span class="tico">🧾</span> 간이 부가세·종소세 예상기
+      <span class="free">감 잡기용</span>
+      <span class="arw">▾</span>
+    </summary>
+    <div class="toolbody">
+      <div class="toolgrid">
+        <div class="fld"><label>월 매출 (원)</label>
+          <input id="xSales" type="number" inputmode="numeric" value="5000000"></div>
+        <div class="fld"><label>월 매입·비용 (원)</label>
+          <input id="xCost" type="number" inputmode="numeric" value="2500000"></div>
+        <div class="fld"><label>사업자 유형</label>
+          <select id="xType" style="background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:10px;padding:12px 13px;font-size:15px">
+            <option value="simple">간이과세 (소매)</option>
+            <option value="general">일반과세</option>
+          </select></div>
+      </div>
+      <div class="mresult">
+        <div class="mcard rate mid"><div class="ml">부가세 (분기·대략)</div>
+          <div class="mv" id="xVat">–</div></div>
+        <div class="mcard net"><div class="ml">종합소득세 (연·대략)</div>
+          <div class="mv" id="xInc">–</div></div>
+      </div>
+      <p class="mtip" id="xTip"></p>
+      <p class="toolnote">⚠️ <b>감 잡기용 어림수치예요.</b> 각종 공제·경비 처리를 뺀 단순 계산이라
+        실제 신고액과 다릅니다. 정확한 금액은 <b>홈택스</b>나 세무사로 확인하세요. (지방소득세 10% 별도)</p>
+    </div>
+  </details>
 
   <p class="note">
     이 도구는 상위노출을 보장하지 않습니다. 노출은 판매량·리뷰·클릭률·광고가
@@ -1252,6 +1460,183 @@ $('#more').addEventListener('click', findMore);
 $('#wlist').addEventListener('click', showWatch);
 $('#cafe').addEventListener('click', copyForCafe);
 $('#chk').addEventListener('click', showChecklist);
+
+/* ---------- 글자 크게 (휴대폰·어르신용) ---------- */
+(function(){
+  const btn = $('#fontToggle');
+  if (!btn) return;
+  const KEY = 'aitech_big_font';
+  const apply = on => {
+    document.documentElement.classList.toggle('big', on);
+    btn.innerHTML = on ? '가<span style="font-size:15px">－</span>' : '가<span style="font-size:15px">＋</span>';
+    btn.title = on ? '글자 작게' : '글자 크게';
+  };
+  let on = false;
+  try { on = localStorage.getItem(KEY) === '1'; } catch(e){}
+  apply(on);
+  btn.addEventListener('click', () => {
+    on = !on; apply(on);
+    try { localStorage.setItem(KEY, on ? '1' : '0'); } catch(e){}
+  });
+})();
+
+/* ---------- 판매 마진 계산기 (로그인 없이 누구나) ---------- */
+(function(){
+  const ids = ['mSell','mCost','mFee','mShip','mEtc','mVat'];
+  if (!document.getElementById('mSell')) return;
+  const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+  const num = id => {
+    const v = parseFloat(($('#'+id).value || '').toString().replace(/[^\d.-]/g,''));
+    return isNaN(v) ? 0 : v;
+  };
+  function calc(){
+    const sell = num('mSell'), cost = num('mCost'), fee = num('mFee');
+    const ship = num('mShip'), etc = num('mEtc'), vatOn = $('#mVat').value === '1';
+    const feeAmt = sell * (fee/100);
+    const vatAmt = vatOn ? sell * (10/110) : 0;   // 판매가에 부가세가 포함됐다고 보고 매출세액만 차감
+    const net = sell - cost - feeAmt - ship - etc - vatAmt;
+    const rate = sell > 0 ? (net / sell) * 100 : 0;
+
+    $('#mNet').innerHTML = (net < 0 ? '−' : '') + won(Math.abs(net));
+    $('#mRate').innerHTML = rate.toFixed(1) + '<small> %</small>';
+
+    const card = $('#mRateCard');
+    card.classList.remove('good','mid','bad');
+    let tip;
+    if (net < 0){
+      card.classList.add('bad');
+      tip = '<b>지금은 팔수록 손해예요.</b> 판매가를 올리거나 더 싸게 떼올 곳을 찾아야 합니다.';
+    } else if (rate >= 25){
+      card.classList.add('good');
+      tip = '<b>아주 좋은 자리예요.</b> 광고비를 조금 써도 남습니다. 이 조건이면 밀어붙일 만해요.';
+    } else if (rate >= 15){
+      card.classList.add('good');
+      tip = '<b>괜찮은 마진이에요.</b> 리뷰가 쌓이면 안정적으로 굴릴 수 있는 구간입니다.';
+    } else if (rate >= 8){
+      card.classList.add('mid');
+      tip = '<b>박한 편이에요.</b> 택배비를 묶음배송으로 줄이거나 원가를 더 깎아야 남습니다.';
+    } else {
+      card.classList.add('bad');
+      tip = '<b>남는 게 거의 없어요.</b> 반품 한 번이면 마이너스입니다. 다른 상품을 보는 게 나아요.';
+    }
+    $('#mTip').innerHTML = tip;
+  }
+  ids.forEach(id => {
+    const el = $('#'+id);
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  calc();
+})();
+
+/* ---------- 공용 도구 함수 ---------- */
+const _won = n => (n<0?'−':'') + Math.round(Math.abs(n)).toLocaleString('ko-KR') + '원';
+const _num = id => {
+  const el = document.getElementById(id); if(!el) return 0;
+  const v = parseFloat((el.value||'').toString().replace(/[^\d.-]/g,''));
+  return isNaN(v) ? 0 : v;
+};
+const _bind = (idList, fn) => idList.forEach(id => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('input', fn); el.addEventListener('change', fn);
+});
+
+/* ---------- 스마트스토어 제목 체커 ---------- */
+(function(){
+  if(!document.getElementById('tTitle')) return;
+  const box = $('#tTitle');
+  function run(){
+    const raw = box.value || '';
+    const len = [...raw.trim()].length;
+    const noSpace = [...raw.replace(/\s+/g,'')].length;
+    const words = raw.trim().split(/\s+/).filter(Boolean);
+    const big = $('#tCount'); big.className = 'countbig';
+    big.classList.add(len===0?'':len<=40?'ok':len<=50?'mid':'bad');
+    big.innerHTML = len + '<small style="font-size:13px"> 자</small>';
+    $('#tCountSub').textContent = `공백 제외 ${noSpace}자 · 단어 ${words.length}개`;
+
+    const out = [];
+    if(len===0){
+      out.push(['tip','✍️','<b>제목을 붙여넣어 보세요.</b> 길이·중복·특수문자를 바로 짚어드려요.']);
+    } else {
+      if(len>=25 && len<=40) out.push(['ok','✅','<b>길이가 딱 좋아요.</b> 검색에서 잘리지 않고 잘 보입니다.']);
+      else if(len<25) out.push(['tip','📏','<b>조금 짧아요.</b> 핵심 키워드 1~2개(용도·크기·대상)를 더 넣어도 좋아요.']);
+      else if(len<=50) out.push(['tip','📏','<b>조금 길어요.</b> 덜 중요한 단어를 하나 빼면 더 깔끔합니다.']);
+      else out.push(['no','✂️','<b>너무 길어요.</b> 목록에서 뒤가 잘립니다. 40자 안쪽으로 줄이세요.']);
+
+      const norm = words.map(w=>w.toLowerCase().replace(/[^\w가-힣]/g,'')).filter(w=>w.length>=2);
+      const cnt = {}; norm.forEach(w=>cnt[w]=(cnt[w]||0)+1);
+      const dups = Object.keys(cnt).filter(w=>cnt[w]>=2);
+      if(dups.length) out.push(['no','🔁',`<b>같은 단어가 반복돼요:</b> ${dups.join(', ')} — 하나만 남기세요. 반복은 노출에 마이너스예요.`]);
+
+      const sp = raw.match(/[\[\]{}()<>★☆♥♡~!@#$%^&*_=|\\";:]/g);
+      if(sp){ const u=[...new Set(sp)].join(' '); out.push(['tip','🚫',`<b>특수문자(${u})</b>는 빼는 게 좋아요. 네이버가 권장하지 않습니다.`]); }
+
+      if(words.length>=13) out.push(['tip','🧹','<b>키워드가 많아요.</b> 정말 검색될 말만 남기고 나열은 줄이는 게 유리해요.']);
+      if(dups.length===0 && !sp && len>=25 && len<=40 && words.length<13)
+        out.push(['ok','👍','<b>중복·특수문자 없이 깔끔해요.</b> 이대로 올려도 좋습니다.']);
+    }
+    $('#tWarn').innerHTML = out.map(([c,i,t])=>
+      `<div class="warn ${c}"><span class="wi">${i}</span><span>${t}</span></div>`).join('');
+  }
+  box.addEventListener('input', run); run();
+})();
+
+/* ---------- 택배비·광고비 손익분기 ---------- */
+(function(){
+  if(!document.getElementById('bNet')) return;
+  function run(){
+    const net=_num('bNet'), ad=_num('bAd'), goal=_num('bGoal');
+    if(net<=0){
+      $('#bBE').textContent='—'; $('#bTarget').textContent='—';
+      $('#bTip').innerHTML='<b>개당 남는 돈이 0 이하예요.</b> 이대로는 아무리 팔아도 손해라 손익분기가 없습니다. 마진부터 확보하세요.';
+      return;
+    }
+    const be = Math.ceil(ad/net);
+    const tg = Math.ceil((ad+goal)/net);
+    $('#bBE').innerHTML = be.toLocaleString('ko-KR') + '<small> 개</small>';
+    $('#bTarget').innerHTML = tg.toLocaleString('ko-KR') + '<small> 개</small>';
+    let tip = `광고·고정비 <b>${_won(ad)}</b>를 뽑으려면 <b>${be.toLocaleString('ko-KR')}개</b>를 팔아야 본전이에요. `;
+    tip += goal>0
+      ? `순이익 <b>${_won(goal)}</b>까지 남기려면 <b>${tg.toLocaleString('ko-KR')}개</b>.`
+      : `그 다음 한 개부터 온전한 이익이 됩니다.`;
+    $('#bTip').innerHTML = tip;
+  }
+  _bind(['bNet','bAd','bGoal'], run); run();
+})();
+
+/* ---------- 간이 부가세·종소세 예상기 ---------- */
+(function(){
+  if(!document.getElementById('xSales')) return;
+  function incomeTax(y){                 // 2024 종합소득세 누진세율
+    const b=[[14000000,.06,0],[50000000,.15,1260000],[88000000,.24,5760000],
+      [150000000,.35,15440000],[300000000,.38,19940000],[500000000,.40,25940000],
+      [1000000000,.42,35940000],[Infinity,.45,65940000]];
+    for(const [cap,r,d] of b){ if(y<=cap) return Math.max(0, y*r-d); }
+    return 0;
+  }
+  function run(){
+    const sales=_num('xSales'), cost=_num('xCost'), type=$('#xType').value;
+    const yearSales = sales*12;
+    let vatQ;
+    if(type==='general') vatQ = Math.max(0,(sales-cost))*3*0.10;
+    else                 vatQ = sales*3*0.10*0.15;   // 간이 소매 부가가치율 15%
+    const profit = Math.max(0,(sales-cost))*12;
+    const inc = incomeTax(profit);
+
+    $('#xVat').innerHTML = _won(vatQ).replace('원','') + '<small> 원</small>';
+    $('#xInc').innerHTML = _won(inc).replace('원','') + '<small> 원</small>';
+
+    let tip='';
+    if(type==='simple' && yearSales < 48000000)
+      tip += '<b>연매출 4,800만원 미만이면 간이과세자는 부가세 납부가 면제</b>돼요 (신고는 필요). ';
+    tip += `연 매출 약 <b>${_won(yearSales)}</b>, 연 순이익 약 <b>${_won(profit)}</b> 기준 어림치예요. `;
+    tip += '실제 신고 땐 각종 경비·공제로 이보다 줄어드는 경우가 많습니다.';
+    $('#xTip').innerHTML = tip;
+  }
+  _bind(['xSales','xCost','xType'], run); run();
+})();
 </script>
 </body>
 </html>
