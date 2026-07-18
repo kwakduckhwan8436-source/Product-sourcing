@@ -1,0 +1,25 @@
+# Render 배포 설정
+#
+# [무료 플랜에서 반드시 알아야 할 것]
+#  1) 디스크가 날아갑니다. 재배포·재시작 때마다 market_history.sqlite 가
+#     초기화되어 관심목록·적중률·키워드풀이 사라집니다.
+#     → 계속 쌓으려면 유료 Disk 를 붙이세요 (아래 disk 주석 해제).
+#  2) 15분 접속이 없으면 잠듭니다. 다음 접속이 30초쯤 느립니다.
+#  3) 네이버 열쇠는 서버에 저장하지 않습니다. 각자 브라우저에 저장돼요.
+services:
+  - type: web
+    name: sourcing-workbench
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn web.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      - key: SOURCING_DB
+        value: /var/data/market_history.sqlite
+    # 자료를 계속 쌓으려면 아래 주석을 풀고 유료 플랜으로 바꾸세요.
+    # disk:
+    #   name: data
+    #   mountPath: /var/data
+    #   sizeGB: 1

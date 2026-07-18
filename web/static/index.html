@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AI 재테크 연구소 — 소싱 작업대</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#131820; --panel2:#0e131a;
+    --ink:#eef1f6; --sub:#8b96a5; --line:#232c38; --line2:#2e3a48;
+    --brand:#c9a227; --brand-soft:#e8d9a4; --brand-bg:rgba(201,162,39,.08);
+    --go:#3ddc84; --go-bg:rgba(61,220,132,.09);
+    --wait:#e8b339; --wait-bg:rgba(232,179,57,.09);
+    --stop:#f2616b; --stop-bg:rgba(242,97,107,.09);
+    --serif:"Nanum Myeongjo",Georgia,serif;
+    --sans:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 640px at 15% -12%, rgba(201,162,39,.10) 0%, transparent 55%),
+      radial-gradient(1000px 560px at 88% 6%, rgba(61,120,220,.10) 0%, transparent 52%),
+      linear-gradient(180deg,#10151d 0%,#0b0e13 46%,#080a0e 100%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+    min-height:100vh}
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(900px 500px at 50% 0%, #000 0%, transparent 75%);
+    -webkit-mask-image:radial-gradient(900px 500px at 50% 0%, #000 0%, transparent 75%);
+  }
+  .wrap{position:relative;z-index:1}
+  .wrap{max-width:1060px;margin:0 auto;padding:28px 20px 90px}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;
+    background:linear-gradient(180deg,rgba(24,31,41,.92),rgba(17,23,31,.92));
+    border:1px solid var(--line);border-radius:16px;margin-bottom:14px;
+    backdrop-filter:blur(8px);
+    box-shadow:0 12px 34px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03)}
+  .brand{display:flex;align-items:baseline;gap:9px;min-width:0}
+  .logo-mark{
+    font-family:var(--serif);font-size:14px;font-weight:700;color:#191307;
+    background:linear-gradient(135deg,#e8d59a,#c9a227);
+    border-radius:8px;padding:4px 8px;letter-spacing:.02em;
+    box-shadow:0 3px 12px rgba(201,162,39,.28)}
+  .logo-txt{font-family:var(--serif);font-size:18px;letter-spacing:.01em;
+    color:var(--ink);white-space:nowrap}
+  .logo-sub{font-size:11.5px;color:var(--sub);border-left:1px solid var(--line2);
+    padding-left:9px;white-space:nowrap}
+  .topright{display:flex;align-items:center;gap:10px}
+  .keystate{font-size:12px;color:var(--sub);white-space:nowrap}
+  .cafe-btn{
+    display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    font-size:12.5px;font-weight:700;color:#0d1a12;white-space:nowrap;
+    background:linear-gradient(135deg,#4ade80,#22c55e);
+    border-radius:10px;padding:9px 14px;
+    box-shadow:0 4px 16px rgba(34,197,94,.25);transition:transform .12s}
+  .cafe-btn:hover{transform:translateY(-1px)}
+  .cafe-dot{width:7px;height:7px;border-radius:50%;background:#0d1a12;opacity:.75}
+  @media(max-width:640px){
+    .logo-sub{display:none}
+    .top{flex-wrap:wrap}
+  }
+
+  .hero{text-align:center;padding:34px 16px 30px}
+  .hero h1{
+    font-family:var(--serif);font-size:40px;font-weight:400;letter-spacing:-.02em;
+    background:linear-gradient(135deg,#f4ecd2 0%,#e8d59a 40%,#c9a227 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    line-height:1.2}
+  .hero p{margin-top:12px;font-size:13.5px;color:var(--sub);letter-spacing:.01em}
+  .hero::after{
+    content:"";display:block;width:64px;height:1px;margin:20px auto 0;
+    background:linear-gradient(90deg,transparent,var(--brand),transparent)}
+  @media(max-width:640px){ .hero h1{font-size:29px} .hero{padding:24px 12px 20px} }
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .step b{display:block;font-family:var(--serif);font-size:13px;color:var(--brand);
+    letter-spacing:.06em;margin-bottom:5px}
+  .step p{font-size:12.5px;color:var(--sub);line-height:1.6}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:20px;margin-bottom:14px;box-shadow:0 18px 44px rgba(0,0,0,.32)}
+  .panel h2{font-family:var(--serif);font-size:17px;font-weight:400;margin-bottom:14px}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .mbtn{background:transparent;color:var(--sub);border:1px solid var(--line2);
+    font-weight:600;padding:12px;display:flex;flex-direction:column;gap:2px}
+  .mbtn small{font-size:11px;opacity:.8;font-weight:400}
+  .mbtn.on{background:var(--brand);color:#191307;border-color:var(--brand)}
+  .autorow{display:grid;grid-template-columns:190px 1fr auto;gap:8px}
+  select,input{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+    border-radius:10px;padding:12px 13px;font-size:14px;font-family:var(--sans);
+    outline:none;width:100%}
+  input::placeholder{color:#5d6875}
+  select:focus,input:focus{border-color:var(--brand)}
+  button{background:var(--brand);color:#191307;border:0;border-radius:10px;
+    padding:12px 18px;font-size:13.5px;font-weight:800;cursor:pointer;
+    font-family:var(--sans);white-space:nowrap;transition:transform .12s}
+  button:hover{transform:translateY(-1px)}
+  button:disabled{opacity:.45;cursor:default;transform:none}
+  .ghost{background:transparent;color:var(--brand-soft);border:1px solid var(--line2);
+    font-weight:600}
+  .hint{color:var(--sub);font-size:12.5px;line-height:1.7;margin-top:11px}
+
+  details.keys summary{cursor:pointer;font-size:13px;list-style:none;
+    display:flex;justify-content:space-between;color:var(--ink)}
+  details.keys summary::-webkit-details-marker{display:none}
+  .keyrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .guide{margin-top:10px;font-size:12px;color:var(--sub);line-height:1.8;
+    background:var(--brand-bg);border-radius:10px;padding:11px 13px}
+  .guide b{color:var(--brand-soft)}
+
+  .found{font-size:13px;color:var(--sub);margin:18px 0 10px}
+  .found b{color:var(--brand-soft);font-family:var(--serif);font-size:16px}
+  .cards{display:grid;gap:12px}
+  .card{background:linear-gradient(180deg,#151b24 0%,#111721 100%);
+    border:1px solid var(--line);border-radius:16px;padding:20px;
+    animation:rise .3s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  .fhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .rank{font-family:var(--serif);background:var(--brand);color:#191307;width:23px;
+    height:23px;border-radius:7px;display:inline-flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto}
+  .fhead .t{font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .tag{font-size:11px;border:1px solid var(--line2);border-radius:20px;
+    padding:3px 9px;color:var(--sub)}
+  .tag.go{background:var(--go-bg);color:var(--go);border-color:transparent}
+  .tag.wait{background:var(--wait-bg);color:var(--wait);border-color:transparent}
+  .tag.stop{background:var(--stop-bg);color:var(--stop);border-color:transparent}
+
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    padding:12px 13px}
+  .kpi .l{font-size:11px;color:var(--sub);margin-bottom:4px}
+  .kpi .v{font-family:var(--serif);font-size:19px;letter-spacing:-.01em}
+  .kpi .s{font-size:11px;color:var(--sub);margin-top:3px}
+
+  .fact{display:grid;grid-template-columns:86px 1fr;gap:11px;padding:10px 0;
+    border-top:1px solid var(--line);font-size:13.5px}
+  .fact .k{color:var(--sub);font-size:12px}
+  .fact .v{line-height:1.6}
+  .bars{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .bars span{font-size:11px;color:var(--sub);border:1px solid var(--line);
+    border-radius:7px;padding:3px 8px}
+  .act{margin-top:8px;font-size:12.5px;color:var(--brand-soft);
+    border-left:2px solid var(--brand);padding:2px 0 2px 10px}
+  .buy{margin-top:13px;background:var(--go-bg);border:1px solid rgba(61,220,132,.22);
+    border-radius:11px;padding:13px 15px;font-size:13.5px}
+  .buyhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .buylab{font-size:11.5px;color:var(--sub)}
+  .buy b{font-family:var(--serif);font-size:19px;color:var(--go)}
+  .buytail{font-size:13px}
+  details.why{margin-top:9px;border-top:1px solid rgba(61,220,132,.18);padding-top:9px}
+  details.why summary{cursor:pointer;font-size:12px;color:var(--sub);list-style:none}
+  details.why summary::-webkit-details-marker{display:none}
+  details.why summary:hover{color:var(--go)}
+  .wtab{width:100%;border-collapse:collapse;margin-top:9px;font-size:12.5px}
+  .wtab th{text-align:left;width:88px;color:var(--sub);font-weight:400;
+    padding:6px 8px 6px 0;vertical-align:top;white-space:nowrap}
+  .wtab td{padding:6px 0;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.04)}
+  .wnote{margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--ink)}
+  .wnote p{margin-bottom:7px}
+  .g{font-size:11.5px;color:var(--sub)}
+
+  .links{display:flex;gap:6px;margin-top:13px;flex-wrap:wrap}
+  .links a{text-decoration:none;color:var(--brand-soft);font-size:12.5px;
+    border:1px solid var(--line2);border-radius:9px;padding:9px 13px}
+  .links a:hover{border-color:var(--brand)}
+  .links button{font-size:12.5px;padding:9px 13px}
+
+  .calc{display:flex;gap:8px;align-items:center;margin-top:12px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;flex-wrap:wrap}
+  .calc input{width:130px;padding:8px 10px;font-size:13px}
+  .acts{margin-top:13px;display:flex;flex-direction:column;gap:8px}
+  .actrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    padding:8px 10px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px}
+  .actlab{font-size:11px;color:var(--sub);min-width:52px;
+    border-right:1px solid var(--line2);padding-right:8px;margin-right:2px}
+  .actrow button,.actrow a{font-size:12.5px;padding:8px 12px}
+  .actrow a{text-decoration:none;color:var(--brand-soft);
+    border:1px solid var(--line2);border-radius:9px}
+  .acthint{font-size:11.5px;color:var(--sub);flex:1 1 100%;margin-top:2px}
+  @media(max-width:640px){ .actlab{flex:1 1 100%;border:0;padding:0} }
+  .stepcard{display:grid;grid-template-columns:26px 1fr;gap:11px;padding:11px 0;
+    border-top:1px solid var(--line)}
+  .stepno{font-family:var(--serif);background:var(--brand);color:#191307;
+    width:24px;height:24px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700}
+  .stept{font-size:14px;font-weight:700;margin-bottom:5px;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .supbox{margin-top:10px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:11px;padding:12px 13px}
+  .write{margin-top:15px;border-top:1px solid var(--line);padding-top:15px}
+  .wh{font-family:var(--serif);font-size:15px;color:var(--brand-soft);margin-bottom:6px}
+  .wh2{font-size:11.5px;color:var(--sub);margin-bottom:8px}
+  .titlebox{display:flex;gap:8px;align-items:center;justify-content:space-between;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;margin-top:7px}
+  .titlebox span{font-size:13.5px}
+  .titlebox small{color:var(--sub);margin-left:6px}
+  .dt{margin-top:13px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:11px;padding:13px}
+  .dl{font-size:13px;line-height:1.8}
+
+  .entry{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 0;
+    border-top:1px solid var(--line);font-size:13px;align-items:center}
+  .badge{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--line2);
+    color:var(--sub)}
+  .badge.open{background:var(--go-bg);color:var(--go);border-color:transparent}
+  details.more summary,details.manual summary{cursor:pointer;color:var(--sub);
+    font-size:12.5px;list-style:none}
+  details.more summary::-webkit-details-marker,
+  details.manual summary::-webkit-details-marker{display:none}
+  details.manual summary:hover{color:var(--brand-soft)}
+  details.manual{margin-top:15px;border-top:1px solid var(--line);padding-top:13px}
+  .searchrow{display:grid;grid-template-columns:1fr 150px auto;gap:8px;margin-top:11px}
+  .err{background:var(--stop-bg);border:1px solid rgba(242,97,107,.25);color:#fca5a5;
+    border-radius:11px;padding:15px;font-size:13px;line-height:1.7;
+    white-space:pre-line;margin-top:14px}
+  .spin{width:13px;height:13px;border:2px solid var(--line2);border-top-color:var(--brand);
+    border-radius:50%;animation:sp .7s linear infinite;display:inline-block;
+    vertical-align:-2px;margin-right:7px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .note{margin-top:24px;font-size:12px;color:var(--sub);line-height:1.85;
+    border-left:2px solid var(--line);padding:4px 0 4px 14px}
+  @media(max-width:720px){
+    .steps{grid-template-columns:1fr}
+    .autorow,.searchrow,.kpis,.keyrow{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <span class="logo-mark">AI</span>
+      <span class="logo-txt">재테크 연구소</span>
+      <span class="logo-sub">소싱 작업대</span>
+    </div>
+    <div class="topright">
+      <span class="keystate"><span id="ver"></span> <span id="keystate"></span></span>
+      <a class="cafe-btn" href="https://cafe.naver.com/aiprogram1" target="_blank">
+        <span class="cafe-dot"></span> 네이버 카페
+      </a>
+    </div>
+  </div>
+
+  <header class="hero">
+    <h1>상품 소싱 작업대</h1>
+    <p>어디서 떼서 어디에 팔지 — 숫자로 정합니다</p>
+  </header>
+
+  <div class="steps">
+    <div class="step"><b>1단계 · 찾기</b>
+      <p>위탁인지 도매인지 고르고 분야만 누르면, 팔 자리를 찾아옵니다.
+        키워드를 몰라도 됩니다.</p></div>
+    <div class="step"><b>2단계 · 올리기</b>
+      <p>카드의 <b>✍ 이대로 올리기</b> 를 누르면 제목·상세를 만들어 줍니다.</p></div>
+    <div class="step"><b>3단계 · 지키기</b>
+      <p>주말마다 한 번씩 누르면 골든타임과 치킨게임을 알려줍니다.</p></div>
+  </div>
+
+  <div class="panel">
+    <details class="keys" id="keybox">
+      <summary><span>네이버 열쇠</span><span style="color:var(--sub)">설정 ▾</span></summary>
+      <div class="keyrow">
+        <input id="cid" placeholder="Client ID" autocomplete="off"/>
+        <input id="csec" placeholder="Client Secret" type="password" autocomplete="off"/>
+      </div>
+      <div class="guide">
+        <b>처음이신가요?</b> developers.naver.com → 로그인 → 애플리케이션 등록 →
+        <b>검색</b> 과 <b>데이터랩(쇼핑인사이트)</b> 선택 → 저장하면 Client ID / Secret 이 나옵니다.
+        이 열쇠는 <b>내 브라우저에만</b> 저장되고 서버에 보관되지 않습니다.
+      </div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h2>어떻게 떼오실 건가요?</h2>
+    <div class="modes">
+      <button class="mbtn on" data-mode="consign" onclick="setMode('consign')">
+        위탁 <small>재고 없이</small></button>
+      <button class="mbtn" data-mode="wholesale" onclick="setMode('wholesale')">
+        도매 <small>대량 사입</small></button>
+    </div>
+    <p class="hint" id="modeNote"></p>
+
+    <h2 style="margin-top:16px">어느 분야를 볼까요?</h2>
+    <div class="autorow">
+      <select id="cat"><option value="">전체 분야</option></select>
+      <button id="auto">팔 만한 자리 찾기</button>
+      <button id="cal" class="ghost">1년 장사 달력</button>
+    </div>
+    <div class="links" style="margin-top:8px">
+      <button id="more" class="ghost">🔁 더 찾기 — 방금 본 건 빼고</button>
+      <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
+      <button id="cafe" class="ghost">📋 카페에 올릴 글로 복사</button>
+      <button id="chk" class="ghost">📋 시작 전 준비물</button>
+    </div>
+    <p class="hint">
+      네이버를 <b>300번 넘게 동시에</b> 훑어 최대 <b>60개</b>를 찾아옵니다 (40초쯤). 자리가 없으면 <b>왜 없는지</b> 알려드립니다.
+    </p>
+  </div>
+
+  <div id="out"></div>
+
+  <p class="note">
+    이 도구는 상위노출을 보장하지 않습니다. 노출은 판매량·리뷰·클릭률·광고가
+    함께 정합니다. 여기서 하는 일은 <b>상위노출이 가능한 작은 시장</b>을 찾아주는
+    것까지입니다. 쿠팡은 공개 검색 API가 없어 링크로 직접 확인합니다.
+  </p>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const cid = $('#cid'), csec = $('#csec');
+const out = $('#out');
+const catSel = $('#cat');
+let LAST_FINDS = [];
+// 브라우저마다 다른 ID — 카페 회원 여럿이 써도 관심목록이 안 섞이게.
+// (서버에 한 덩어리로 두면 A가 담은 걸 B가 보고, B가 지우면 A 것도 사라진다)
+let ME = localStorage.getItem('me');
+if (!ME) {
+  ME = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  localStorage.setItem('me', ME);
+}
+
+const won = n => (n || 0).toLocaleString('ko-KR');
+const esc = s => String(s).replace(/'/g, "\\'");
+
+/* ---------- 열쇠 (브라우저에만 저장) ---------- */
+cid.value = localStorage.getItem('nid') || '';
+csec.value = localStorage.getItem('nsec') || '';
+function syncKey() {
+  const ok = cid.value.trim() && csec.value.trim();
+  $('#keystate').innerHTML = ok
+    ? '<span style="color:var(--go)">열쇠 저장됨</span>'
+    : '<span style="color:var(--wait)">열쇠를 넣어주세요 →</span>';
+  if (!ok) $('#keybox').open = true;
+}
+[cid, csec].forEach(el => el.addEventListener('input', () => {
+  localStorage.setItem('nid', cid.value.trim());
+  localStorage.setItem('nsec', csec.value.trim());
+  syncKey();
+}));
+syncKey();
+
+function needKey() {
+  if (cid.value.trim() && csec.value.trim()) return false;
+  out.innerHTML = '<div class="err">네이버 열쇠를 먼저 넣어주세요. 위쪽 \'네이버 열쇠\' 를 열면 받는 방법이 있습니다.</div>';
+  $('#keybox').open = true;
+  return true;
+}
+function loading(msg) {
+  out.innerHTML = '<div class="card"><span class="spin"></span>' + msg + '</div>';
+}
+async function post(url, body, ms) {
+  // 오래 걸리면 브라우저가 조용히 끊고 'Failed to fetch' 만 남긴다.
+  // 우리가 먼저 끊고 사람이 읽을 말로 알려준다.
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms || 90000);
+  try {
+    const r = await fetch(url, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(Object.assign({
+        client_id: cid.value.trim(), client_secret: csec.value.trim()
+      }, body)),
+      signal: ac.signal
+    });
+    return await r.json();
+  } finally { clearTimeout(timer); }
+}
+
+/* ---------- 버전 (예전 서버가 도는지 확인) ---------- */
+fetch('/api/version').then(r => r.json()).then(d => {
+  $('#ver').textContent = d.version || '';
+}).catch(() => { $('#ver').textContent = '구버전'; });
+
+/* ---------- 위탁 / 도매 ---------- */
+let MODE = localStorage.getItem('mode') || 'consign';
+let MODES = {};
+fetch('/api/modes').then(r => r.json()).then(d => {
+  (d.modes || []).forEach(m => { MODES[m.key] = m; });
+  setMode(MODE);
+}).catch(() => {});
+
+function setMode(k) {
+  MODE = k;
+  localStorage.setItem('mode', k);
+  document.querySelectorAll('.mbtn').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === k));
+  const m = MODES[k];
+  if (m) {
+    $('#modeNote').innerHTML = `${m.note}
+      <br/><b>조심할 것</b> — ${m.watch.join(' · ')}`;
+  }
+}
+
+/* ---------- 분야 목록 ---------- */
+fetch('/api/categories').then(r => r.json()).then(d => {
+  (d.categories || []).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c; catSel.appendChild(o);
+  });
+}).catch(() => {});
+
+/* ---------- 1단계 · 자동 발굴 ---------- */
+async function autoScan(exclude) {
+  if (needKey()) return;
+  $('#auto').disabled = true;
+  loading('여러 분야를 한꺼번에 훑는 중이에요… 40초쯤 걸려요');
+  try {
+    const d = await post('/api/auto', {
+      category: catSel.value, budget: 320, exclude: exclude || [], mode: MODE,
+      fee_pct: 25, target_margin: 0
+    });
+    if (!d.ok) { out.innerHTML = `<div class="err">${d.error}</div>`; return; }
+    renderAuto(d);
+  } catch (e) {
+    const msg = (e.name === 'AbortError')
+      ? '네이버가 오늘 느려요. 잠시 뒤 다시 누르거나, 분야를 하나만 골라보세요.'
+      : '서버가 멈춘 것 같아요. 검은 창이 닫히지 않았는지 확인하고 다시 켜주세요.';
+    out.innerHTML = `<div class="err">${msg}<br/><span class="g">(${e.message})</span></div>`;
+  } finally { $('#auto').disabled = false; }
+}
+
+function renderAuto(d) {
+  LAST_FINDS = d.finds || [];
+  if (!LAST_FINDS.length) {
+    const r = d.report || {};
+    out.innerHTML = `<div class="card">
+      <div class="fhead"><span class="t">이 분야엔 자리가 없어요</span></div>
+      <p class="hint">${d.note || ''}</p>
+      <div class="bars" style="margin-top:10px">
+        <span>훑음 ${r.looked || 0}</span>
+        <span>너무 붐빔 ${r.red || 0}</span>
+        <span>찾는 사람 없음 ${r.ghost || 0}</span>
+        <span>엉뚱한 상품 ${r.off || 0}</span>
+        <span>가격 못 찾음 ${r.nolow || 0}</span>
+        <span>마진 불가 ${r.cheap || 0}</span>
+        <span>장악 ${r.blocked || 0}</span>
+      </div>
+      <p class="hint">위에서 <b>분야를 바꿔</b> 다시 눌러보세요.</p>
+    </div>`;
+    return;
+  }
+  const gCls = g => g === '빈자리' ? 'go' : (g === '좁음' ? 'wait' : '');
+  const mCls = st => ({골든타임:'go', 몰리는중:'wait', 치킨게임:'stop', 식는중:'wait'}[st] || '');
+
+  const cards = LAST_FINDS.map((f, i) => {
+    const c = f.comp || {};
+    const mv = f.movement;
+    return `
+    <div class="card">
+      <div class="fhead">
+        <span class="rank">${i + 1}</span>
+        <span class="t">${f.keyword}</span>
+        <span class="tag ${gCls(f.grade)}">${f.grade}</span>
+        <span class="tag">${f.category}</span>
+        ${mv ? `<span class="tag ${mCls(mv.stage)}">${mv.stage}</span>` : ''}
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">경쟁 (이미 올라온 수)</div>
+          <div class="v">${won(f.total)}개</div><div class="s">${c.grade || ''}</div></div>
+        <div class="kpi"><div class="l">네이버 최저가 (낮은가격순 1등)</div>
+          <div class="v">${won(f.naver_low)}원</div>
+          <div class="s" title="${f.naver_low_title || ''}">${
+            (f.naver_low_title || '').slice(0, 16) || '—'}${
+            f.naver_low_skipped ? ` · 중고 ${f.naver_low_skipped}` : ''}${f.naver_low_other ? ` · 딴상품 ${f.naver_low_other}` : ''}</div></div>
+        <div class="kpi"><div class="l">대표가 (마진 계산 기준)</div>
+          <div class="v">${won(f.price_min)}원</div>
+          <div class="s" title="${f.price_note || ''}">${
+            f.price_basis === 'catalog'
+              ? '<span style="color:var(--go)">가격비교 기준</span>'
+              : '<span style="color:var(--wait)">개별 매물 추정</span>'}</div></div>
+        <div class="kpi"><div class="l">${(MODES[MODE] || {}).cost_label || '떼오는 값 상한'}</div>
+          <div class="v" style="color:var(--go)">${won(f.need_cost)}원</div>
+          <div class="s">이하면 ${won(f.target_margin || 0)}원 남아요</div></div>
+      </div>
+      <div class="fact"><div class="k">누가 파나</div>
+        <div class="v">${c.note || ''}
+          <div class="bars">
+            <span>독립 ${c.indie_pct}%</span>
+            <span>가격비교 ${c.catalog_pct}%</span>
+            <span>대형몰 ${c.bigmall_pct}%</span>
+            <span title="상품 링크로 직접 확인한 값입니다">근거: ${c.basis === 'link' ? '상품 링크(사실)' : '상품유형(추정)'}</span>
+            ${c.agree_pct >= 0 ? `<span>유형 매핑 일치율 ${c.agree_pct}%</span>` : ''}
+          </div></div></div>
+      ${mv ? `<div class="fact"><div class="k">어디로 가나</div>
+        <div class="v">${mv.note}<div class="act">${mv.action}</div></div></div>` : ''}
+      ${f.spread ? `<div class="fact"><div class="k">파는 곳마다</div>
+        <div class="v">${f.spread.note}
+          ${f.spread.found ? `<div class="bars">
+            <span>최저 ${won(f.spread.low)}원</span>
+            <span>최고 ${won(f.spread.high)}원</span>
+            <span>차이 ${f.spread.spread_pct}%</span>
+            <span>가격비교 상품 ${f.spread.sellers}개</span>
+          </div>` : ''}
+          <div class="act">${f.spread.hint}</div></div></div>` : ''}
+      ${(f.mode_note || []).length ? `<div class="fact"><div class="k">${MODE === 'wholesale' ? '도매로 하면' : '위탁으로 하면'}</div>
+        <div class="v">${f.mode_note.join('<br/>')}</div></div>` : ''}
+      ${f.quality ? `<div class="fact"><div class="k">떼도 되나</div>
+        <div class="v">
+          <b style="color:${f.quality.grade === '안전' ? 'var(--go)'
+            : (f.quality.grade === '보통' ? 'var(--wait)' : 'var(--stop)')}">
+            ${f.quality.grade} ${f.quality.score}점</b>
+          ${(f.quality.good || []).map(x => `<div style="color:var(--go)">✓ ${x}</div>`).join('')}
+          ${(f.quality.risks || []).map(x => `<div style="color:var(--wait)">⚠ ${x}</div>`).join('')}
+        </div></div>` : ''}
+      ${(f.reasons || []).length ? `<div class="fact"><div class="k">왜 뽑았나</div>
+        <div class="v">${f.reasons.map(x => `✅ ${x}`).join('<br/>')}</div></div>` : ''}
+      ${(f.doubts || []).length ? `<div class="fact"><div class="k">조심할 점</div>
+        <div class="v" style="color:var(--wait)">${f.doubts.map(x => `⚠ ${x}`).join('<br/>')}</div></div>` : ''}
+      <div class="buy">
+        <div class="buyhead">
+          <span class="buylab">${(MODES[MODE] || {}).cost_label || '떼오는 값 상한'}</span>
+          <b>${won(f.need_cost)}원 이하</b>
+          <span class="buytail">로 떼올 수 있으면 하세요</span>
+        </div>
+        <details class="why">
+          <summary>이 값이 어떻게 나왔나요?</summary>
+          <table class="wtab">
+            <tr><th>시장 최저가</th><td><b>${won(f.price_min)}원</b>
+              <div class="g">${f.naver_low_title || ''}</div></td></tr>
+            <tr><th>빼는 것</th><td>
+              수수료·광고·세금 약 ${Math.round(((MODES[MODE] || {}).fee_pct || 0.25) * 100)}%
+              <span class="g">(≈ ${won(Math.round(f.price_min * (((MODES[MODE] || {}).fee_pct) || 0.25)))}원)</span></td></tr>
+            <tr><th>남길 돈</th><td>${won(f.target_margin || 0)}원
+              <span class="g">· 상품값의 ${MODE === 'wholesale' ? '30' : '15'}%
+              ${MODE === 'wholesale' ? '(도매는 돈이 묶이니 비율이 커야 해요)' : '(고정 금액이 아니라 값에 비례합니다)'}</span></td></tr>
+            <tr><th>그래서</th><td><b style="color:var(--go)">${won(f.need_cost)}원 이하</b>로 떼야 남습니다</td></tr>
+          </table>
+          <div class="wnote">
+            <p><b>이 값은 내 물건과 똑같은 제품의 값이 아닙니다.</b>
+              이 키워드로 검색했을 때 <b>가장 싸게 걸리는 물건</b>의 값이에요.
+              사양·크기는 다를 수 있습니다.</p>
+            <p>그래도 이 값을 쓰는 이유는 — <b>소비자가 그걸 보고 비교</b>하기 때문이에요.
+              내 물건이 더 좋아도, 검색 결과에서 옆에 그게 떠 있으면
+              <b>내가 맞서야 할 가격선</b>이 됩니다.</p>
+            <p>${f.same_product
+              ? '이 건은 <b style="color:var(--go)">네이버가 같은 제품으로 묶은 것</b>이라 사양이 거의 같습니다. 믿을 만해요.'
+              : '<b style="color:var(--wait)">다른 제품일 수 있어요.</b> 아래 <b>[이 가격 상품 보기]</b>를 눌러 무슨 물건인지 꼭 확인하세요.'}</p>
+            <p class="g">중고·단종·부속품(커버·고리·리필)은 이미 빼고 계산했어요.</p>
+          </div>
+        </details>
+      </div>
+        </details>
+      </div>
+      <div class="calc">
+        <span class="g">떼오는 값을 넣어보세요</span>
+        <input type="number" placeholder="예: ${f.need_cost}" 
+               oninput="calcMargin(${i}, this.value, 'mg${i}')"/>
+        <span id="mg${i}" class="g">→ 마진이 여기 나옵니다</span>
+      </div>
+      <div class="acts">
+        <div class="actrow">
+          <span class="actlab">올릴 준비</span>
+          <button onclick="showWrite(${i})" title="제목 3벌 + 상세 8줄 + 사진 목록을 만들어 줍니다">
+            ✍ 이대로 올리기</button>
+          <button class="ghost" onclick="titleAB(${i},'w${i}')"
+            title="제목 후보마다 네이버에 몇 개가 걸리는지 세어 가장 비어 있는 걸 골라줍니다">
+            🏷️ 어느 제목이 빈가</button>
+          <span class="acthint">제목·상세·사진을 만들고, 가장 비어 있는 제목을 고릅니다</span>
+        </div>
+        <div class="actrow">
+          <span class="actlab">돈 계산</span>
+          <button class="ghost" onclick="openCalc(${i})"
+            title="떼오는 값을 넣으면 남는 돈과 손익분기 수량이 나옵니다">
+            💰 내 마진</button>
+          <button class="ghost" onclick="openShip(${i})"
+            title="1688·타오바오는 배송대행비가 마진을 먹습니다. 무게를 넣으면 진짜 원가가 나옵니다">
+            🧮 배송대행비</button>
+          <span class="acthint">떼오는 값·무게를 넣으면 <b>진짜 남는 돈</b>이 나옵니다</span>
+        </div>
+        <div class="actrow">
+          <span class="actlab">확인·저장</span>
+          <button class="ghost" onclick="segScan('${esc(f.keyword)}','w${i}')"
+            title="성별·기기별로 언제 많이 찾는지 봅니다">
+            👥 누가 언제 찾나</button>
+          ${f.naver_low_link
+            ? `<a href="${f.naver_low_link}" target="_blank"
+                 title="이 최저가가 나온 바로 그 상품으로 갑니다">이 가격 상품 ↗</a>` : ''}
+          <button class="ghost" onclick="watchAdd(${i},this)"
+            title="새로고침해도 안 날아갑니다">📌 관심 담기</button>
+          <span class="acthint">값이 맞는지 눈으로 보고, 마음에 들면 담아두세요</span>
+        </div>
+      </div>
+      <div class="links" style="margin-top:6px">
+        <span class="g" style="align-self:center;margin-right:4px">다른 곳 값 보기</span>
+        ${(f.links || []).map(l => `<a href="${l.url}" target="_blank">${l.name} ↗</a>`).join('')}
+      </div>
+      ${(f.suppliers || []).length ? `<div class="supbox">
+        <div class="wh2">🏭 여기서 떼올 수 있어요 — ${MODE === 'wholesale' ? '도매(대량 사입)' : '위탁(재고 없이)'}</div>
+        <div class="links">
+          ${f.suppliers.map(sp => `<a href="${sp.url}" target="_blank" title="${sp.desc}">
+            ${sp.name} ${sp.kind === 'direct' ? '🔎' : '↗'}</a>`).join('')}
+        </div>
+        <div class="g" style="margin-top:6px">
+          🔎 는 이 이름으로 바로 검색됩니다 · ↗ 는 사이트만 열려요 (안에서 검색하세요)
+        </div>
+      </div>` : ''}
+      <div id="w${i}"></div>
+    </div>`;
+  }).join('');
+
+  const pl = d.pool;
+  const plTxt = !pl ? '' :
+    ` · 키워드 풀 <b>${pl.total}개</b>(안 본 것 ${pl.unseen})`;
+  const hr = d.hitrate;
+  const hrTxt = !hr ? '' : (hr.graded > 0
+    ? ` · <b style="color:var(--brand-soft)">이 도구 적중률 ${hr.pct}%</b> (${hr.hits}/${hr.graded})`
+    : ` · 적중률 —  (${hr.pending}개 추적 중, 5일 뒤 채점)`);
+  out.innerHTML = `
+    <div class="found">
+      <b>${LAST_FINDS.length}개</b> 찾았어요 · ${d.note || ''} · 네이버 ${d.calls}번${hrTxt}${plTxt}
+      <button class="ghost" style="float:right;padding:6px 11px;font-size:12px"
+        onclick="saveCsv()">엑셀로 저장</button>
+    </div>
+    <div class="cards">${cards}</div>`;
+}
+
+/* ---------- 결과 저장 (새로고침해도 안 날아가게) ---------- */
+function saveCsv() {
+  if (!LAST_FINDS.length) return;
+  const head = ['키워드','등급','분야','경쟁수','시장최저가','떼오는값상한',
+                '독립%','가격비교%','대형몰%','추천제목','네이버링크'];
+  const rows = LAST_FINDS.map(f => {
+    const c = f.comp || {}, L = f.listing || {};
+    return [f.keyword, f.grade, f.category, f.total, f.price_min, f.need_cost,
+            c.indie_pct, c.catalog_pct, c.bigmall_pct,
+            (L.titles && L.titles[0]) || f.title || '', f.naver]
+      .map(x => `"${String(x == null ? '' : x).replace(/"/g, '""')}"`).join(',');
+  });
+  const csv = '\ufeff' + [head.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+  a.download = '소싱후보_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+}
+
+/* ---------- ② 내 마진 계산기 (실시간) ---------- */
+const FEE = 0.25;   // 수수료+광고+세금
+function calcMargin(i, cost, boxId) {
+  const f = LAST_FINDS[i];
+  const el = document.getElementById(boxId);
+  if (!f || !el) return;
+  const c = parseInt(String(cost || '').replace(/[^0-9]/g, '')) || 0;
+  if (!c) { el.innerHTML = '→ 마진이 여기 나옵니다'; return; }
+  const price = f.price_min || 0;
+  const margin = Math.round(price - c - price * FEE);
+  const pct = price ? (margin / price * 100) : 0;
+  const color = margin > 0 ? 'var(--go)' : 'var(--stop)';
+  const need100 = margin > 0 ? Math.ceil(100000 / margin) : 0;
+  el.innerHTML = `→ <b style="color:${color}">한 개당 ${won(margin)}원 ` +
+    `(${pct.toFixed(0)}%)</b>` +
+    (margin > 0
+      ? ` · 10만원 벌려면 <b>${need100}개</b>`
+      : ` · <b style="color:var(--stop)">팔수록 손해예요</b>`);
+}
+
+/* ---------- ④ 제목 어느 게 나을까 ---------- */
+async function titleAB(i, boxId) {
+  if (needKey()) return;
+  const f = LAST_FINDS[i];
+  const box = document.getElementById(boxId);
+  if (!f || !box) return;
+  const titles = (f.listing && f.listing.titles) ? f.listing.titles : [f.title];
+  box.innerHTML = '<div class="act"><span class="spin"></span>제목마다 실제로 검색해 보는 중…</div>';
+  try {
+    const d = await post('/api/title_ab', {titles: titles});
+    if (!d.ok) { box.innerHTML = `<div class="err">${d.error}</div>`; return; }
+    const rows = d.rows.map(r => `
+      <div class="entry">
+        <div>${r.best ? '<b style="color:var(--go)">★ ' + r.title + '</b>' : r.title}
+          <div class="g">${r.ok ? '' : '검색 실패'}</div></div>
+        <div class="g">${r.total ? won(r.total) + '개' : '—'}</div>
+        <span class="badge ${r.best ? 'open' : ''}">${r.best ? '이걸로' : ''}</span>
+      </div>`).join('');
+    box.innerHTML = `<div class="write">
+      <div class="wh">어느 제목이 나을까</div>
+      <div class="act">${d.note}</div>${rows}
+      <div class="g" style="margin-top:8px">경쟁이 적은 제목일수록 내 물건이 위에 보일 가능성이 큽니다.</div>
+    </div>`;
+  } catch (e) { box.innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+/* ---------- 💰 내 마진 계산기 (②) ---------- */
+function openCalc(i) {
+  const f = LAST_FINDS[i];
+  const box = document.getElementById('w' + i);
+  if (!f || !box) return;
+  box.innerHTML = `
+    <div class="write">
+      <div class="wh">내 마진 계산</div>
+      <div class="wh2">떼오는 값과 내 수수료를 넣으면 한 개 팔 때 남는 돈이 나옵니다</div>
+      <div class="searchrow" style="grid-template-columns:1fr 1fr 1fr">
+        <div><div class="g">떼오는 값 (원)</div>
+          <input id="c_cost${i}" inputmode="numeric" placeholder="예: 9000"/></div>
+        <div><div class="g">내 수수료+광고+세금 (%)</div>
+          <input id="c_fee${i}" inputmode="decimal" value="25"/></div>
+        <div><div class="g">파는 값 (원)</div>
+          <input id="c_sell${i}" inputmode="numeric" value="${f.price_min}"/></div>
+      </div>
+      <div id="c_out${i}" class="act" style="margin-top:10px">숫자를 넣으면 계산됩니다</div>
+    </div>`;
+  const calc = () => {
+    const cost = parseInt(($('#c_cost' + i).value || '0').replace(/[^0-9]/g, '')) || 0;
+    const fee = parseFloat($('#c_fee' + i).value) || 0;
+    const sell = parseInt(($('#c_sell' + i).value || '0').replace(/[^0-9]/g, '')) || 0;
+    const o = $('#c_out' + i);
+    if (!cost || !sell) { o.textContent = '떼오는 값과 파는 값을 넣어주세요'; return; }
+    const m = Math.round(sell - cost - sell * fee / 100);
+    const rate = sell ? (m / sell * 100) : 0;
+    const color = m > 0 ? 'var(--go)' : 'var(--stop)';
+    const need100 = m > 0 ? Math.ceil(100000 / m) : 0;
+    o.innerHTML = `
+      <b style="color:${color};font-size:15px">한 개 팔면 ${won(m)}원 ${m > 0 ? '남아요' : '손해예요'}</b>
+      (마진율 ${rate.toFixed(0)}%)
+      ${m > 0 ? `<div class="g" style="margin-top:5px">
+        10만원 벌려면 <b>${need100}개</b> 팔아야 해요 ·
+        시장 최저가(${won(f.price_min)}원)에 맞추면 ${won(Math.round(f.price_min - cost - f.price_min * fee / 100))}원</div>`
+        : '<div class="g" style="margin-top:5px">이 값에 떼오면 팔수록 손해입니다</div>'}`;
+  };
+  ['c_cost', 'c_fee', 'c_sell'].forEach(id =>
+    $('#' + id + i).addEventListener('input', calc));
+  $('#c_cost' + i).focus();
+}
+
+/* ---------- 🧮 배송대행비 계산기 ---------- */
+// [왜 필요한가] 1688 에서 3,000원에 떼도 배송대행비가 2,000원이면 실제 원가는
+// 5,000원이다. 그걸 모르고 계산한 마진은 거짓이고, 그대로 떼오면 손해가 난다.
+// ※ 아래 단가는 업체마다 다릅니다 — 본인 대행사 값을 넣으세요.
+const SHIP_PRESET = {
+  '1688 / 타오바오 (중국)': {perKg: 6000, base: 3000, note: '해상은 더 싸고 느려요'},
+  '알리익스프레스': {perKg: 0, base: 0, note: '보통 무료배송 — 대신 값에 포함돼 있어요'},
+  '국내 도매 (도매꾹 등)': {perKg: 0, base: 3000, note: '택배비만'},
+};
+function openShip(i) {
+  const f = LAST_FINDS[i];
+  const box = document.getElementById('w' + i);
+  if (!f || !box) return;
+  const opts = Object.keys(SHIP_PRESET).map(k =>
+    `<option value="${k}">${k}</option>`).join('');
+  box.innerHTML = `
+    <div class="write">
+      <div class="wh">🧮 배송대행비까지 넣은 진짜 원가</div>
+      <div class="wh2">1688·타오바오는 배송대행비가 마진을 먹습니다.
+        단가만 보고 떼오면 손해가 나요.</div>
+      <div class="searchrow" style="grid-template-columns:1fr 1fr 1fr">
+        <div><div class="g">어디서 떼나</div>
+          <select id="s_src${i}">${opts}</select></div>
+        <div><div class="g">현지 단가 (원)</div>
+          <input id="s_cost${i}" inputmode="numeric" placeholder="예: 3000"/></div>
+        <div><div class="g">개당 무게 (g)</div>
+          <input id="s_wt${i}" inputmode="numeric" placeholder="예: 400"/></div>
+      </div>
+      <div class="searchrow" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">
+        <div><div class="g">몇 개 떼나</div>
+          <input id="s_qty${i}" inputmode="numeric" value="${MODE === 'wholesale' ? 30 : 1}"/></div>
+        <div><div class="g">kg당 대행비 (원)</div>
+          <input id="s_perkg${i}" inputmode="numeric" value="6000"/></div>
+        <div><div class="g">기본비 (원)</div>
+          <input id="s_base${i}" inputmode="numeric" value="3000"/></div>
+      </div>
+      <div id="s_out${i}" class="act" style="margin-top:10px">숫자를 넣으면 계산됩니다</div>
+      <button id="s_tax${i}" class="ghost" style="margin-top:8px">
+        🧾 관세·부가세까지 넣기 (수입이면 필수)</button>
+      <div id="s_tax_out${i}"></div>
+      <div class="g" style="margin-top:6px">
+        ※ 대행비는 업체·시기마다 다릅니다. <b>본인 대행사 값</b>을 넣으세요.
+        관세·부가세는 뺀 값이에요 (15만원 넘으면 따로 붙습니다).
+      </div>
+    </div>`;
+  const num = id => parseInt(($('#' + id + i).value || '0').replace(/[^0-9]/g, '')) || 0;
+  const calc = () => {
+    const cost = num('s_cost'), wt = num('s_wt'), qty = Math.max(1, num('s_qty'));
+    const perkg = num('s_perkg'), base = num('s_base');
+    const o = $('#s_out' + i);
+    if (!cost || !wt) { o.textContent = '현지 단가와 무게를 넣어주세요'; return; }
+    const shipTotal = base + Math.ceil(wt * qty / 1000 * perkg);
+    const perUnitShip = Math.round(shipTotal / qty);
+    const realCost = cost + perUnitShip;
+    const sell = f.price_min || 0;
+    const fee = Math.round(sell * (((MODES[MODE] || {}).fee_pct) || 0.25));
+    const margin = sell - realCost - fee;
+    const color = margin > 0 ? 'var(--go)' : 'var(--stop)';
+    o.innerHTML = `
+      <table class="wtab">
+        <tr><th>현지 단가</th><td>${won(cost)}원</td></tr>
+        <tr><th>배송대행비</th><td>${won(perUnitShip)}원 <span class="g">
+          (총 ${won(shipTotal)}원 ÷ ${qty}개)</span></td></tr>
+        <tr><th>진짜 원가</th><td><b>${won(realCost)}원</b>
+          <span class="g">← 이게 실제로 나가는 돈</span></td></tr>
+        <tr><th>파는 값</th><td>${won(sell)}원 <span class="g">(시장 최저가)</span></td></tr>
+        <tr><th>수수료·광고</th><td>-${won(fee)}원</td></tr>
+        <tr><th>남는 돈</th><td><b style="color:${color};font-size:15px">
+          ${won(margin)}원 ${margin > 0 ? '' : '(손해)'}</b></td></tr>
+      </table>
+      ${margin > 0
+        ? `<div class="g" style="margin-top:6px">단가만 봤을 때 마진
+            ${won(sell - cost - fee)}원 → 대행비 넣으면 <b>${won(margin)}원</b>.
+            ${Math.round((1 - margin / Math.max(1, sell - cost - fee)) * 100)}% 가 배송비로 날아갑니다</div>`
+        : '<div class="g" style="margin-top:6px">대행비까지 넣으면 손해예요. 무게를 줄이거나 더 싸게 떼야 합니다</div>'}`;
+  };
+  ['s_cost', 's_wt', 's_qty', 's_perkg', 's_base'].forEach(id =>
+    $('#' + id + i).addEventListener('input', calc));
+  $('#s_tax' + i).addEventListener('click', () => taxCalc(i, f));
+  $('#s_src' + i).addEventListener('change', () => {
+    const p = SHIP_PRESET[$('#s_src' + i).value];
+    if (p) { $('#s_perkg' + i).value = p.perKg; $('#s_base' + i).value = p.base; calc(); }
+  });
+  $('#s_cost' + i).focus();
+}
+
+/* ---------- 🧾 관세·부가세 (①) ---------- */
+async function taxCalc(i, f) {
+  const num = id => parseInt(($('#' + id + i).value || '0').replace(/[^0-9]/g, '')) || 0;
+  const cost = num('s_cost'), wt = num('s_wt'), qty = Math.max(1, num('s_qty'));
+  const perkg = num('s_perkg'), base = num('s_base');
+  const box = $('#s_tax_out' + i);
+  if (!cost || !wt) { box.innerHTML = '<div class="act">현지 단가와 무게를 먼저 넣어주세요</div>'; return; }
+  const shipTotal = base + Math.ceil(wt * qty / 1000 * perkg);
+  box.innerHTML = '<div class="act"><span class="spin"></span>세금 계산 중…</div>';
+  try {
+    const r = await fetch('/api/customs', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({item_price: cost, qty: qty, shipping: shipTotal,
+        category: f.category || '', keyword: f.core || f.keyword,
+        sell_price: f.price_min || 0,
+        fee_pct: Math.round(((MODES[MODE] || {}).fee_pct || 0.25) * 100)})
+    });
+    const d = await r.json();
+    if (!d.ok) { box.innerHTML = `<div class="err">${d.error || '실패'}</div>`; return; }
+    const m = d.margin || {};
+    box.innerHTML = `
+      <div class="dt" style="margin-top:8px">
+        <div class="wh2">🧾 관세·부가세까지 넣은 진짜 원가</div>
+        <table class="wtab">
+          <tr><th>물품가</th><td>${won(d.item_total)}원 <span class="g">(${qty}개)</span></td></tr>
+          <tr><th>국제운임</th><td>${won(d.shipping)}원</td></tr>
+          <tr><th>과세가격</th><td>${won(d.cif)}원 <span class="g">= 물품가 + 운임</span></td></tr>
+          <tr><th>관세</th><td>${won(d.duty)}원 <span class="g">(${d.duty_rate}% — 통념)</span></td></tr>
+          <tr><th>부가세</th><td>${won(d.vat)}원 <span class="g">(과세가격+관세의 10%)</span></td></tr>
+          <tr><th>세금 합계</th><td><b style="color:var(--stop)">${won(d.tax_total)}원</b></td></tr>
+          <tr><th>총 원가</th><td><b>${won(d.grand_total)}원</b>
+            → 개당 <b style="color:var(--brand-soft)">${won(d.per_unit)}원</b></td></tr>
+          ${m.margin !== undefined ? `<tr><th>남는 돈</th><td>
+            <b style="color:${m.ok ? 'var(--go)' : 'var(--stop)'};font-size:15px">
+            ${won(m.margin)}원 (${m.rate}%)</b>
+            <span class="g">${won(f.price_min)}원에 팔 때</span></td></tr>` : ''}
+        </table>
+        ${(d.warns || []).map(w => `<div class="g" style="color:var(--wait);margin-top:5px">⚠ ${w}</div>`).join('')}
+      </div>`;
+  } catch (e) { box.innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+/* ---------- 📋 시작 전 준비물 (④) ---------- */
+async function showChecklist() {
+  loading('준비물을 정리하는 중…');
+  try {
+    const d = await (await fetch(
+      `/api/checklist?mode=${MODE}&category=${encodeURIComponent(catSel.value)}`)).json();
+    const rows = (d.steps || []).map((x, i) => `
+      <div class="stepcard">
+        <div class="stepno">${i + 1}</div>
+        <div>
+          <div class="stept">${x.title}
+            ${x.when ? `<span class="tag">${x.when}</span>` : ''}
+            ${x.cost ? `<span class="tag">${x.cost}</span>` : ''}</div>
+          <div class="dl" style="color:var(--wait)">왜 — ${x.why}</div>
+          <div class="dl">어떻게 — ${x.how}</div>
+          ${x.where ? `<div class="g">어디서 — ${x.where}</div>` : ''}
+        </div>
+      </div>`).join('');
+    out.innerHTML = `<div class="cards"><div class="card">
+      <div class="fhead"><span class="t">시작 전 준비물 —
+        ${MODE === 'wholesale' ? '도매 (대량 사입)' : '위탁 (재고 없이)'}</span></div>
+      <p class="hint">없으면 물건이 안 나오거나 불법이 됩니다. 순서대로 하세요.</p>
+      ${rows}
+      <div class="g" style="margin-top:12px">
+        법과 절차는 바뀝니다. 여기 적힌 건 <b>참고</b>이고,
+        실제로는 해당 기관에서 최신 내용을 확인하세요. 법률 자문이 아닙니다.
+      </div>
+    </div></div>`;
+  } catch (e) { out.innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+/* ---------- 📌 관심 담기 ---------- */
+let SEEN = [];
+async function refreshWatchCount() {
+  try {
+    const d = await (await fetch('/api/watch?owner=' + ME)).json();
+    $('#wcnt').textContent = d.count ? `(${d.count})` : '';
+  } catch (e) {}
+}
+refreshWatchCount();
+
+async function watchAdd(i, btn) {
+  const f = LAST_FINDS[i];
+  if (!f) return;
+  try {
+    const r = await fetch('/api/watch/add', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({keyword: f.keyword, payload: f, owner: ME})
+    });
+    const d = await r.json();
+    if (d.ok) { btn.textContent = '📌 담김'; refreshWatchCount(); }
+  } catch (e) {}
+}
+
+async function showWatch() {
+  const d = await (await fetch('/api/watch?owner=' + ME)).json();
+  if (!d.ok || !d.items.length) {
+    out.innerHTML = '<div class="card"><p class="hint">아직 담은 게 없어요. 카드에서 <b>📌 관심 담기</b>를 눌러보세요.</p></div>';
+    return;
+  }
+  LAST_FINDS = d.items;
+  const cards = d.items.map((f, i) => `
+    <div class="card">
+      <div class="fhead"><span class="rank">${i + 1}</span>
+        <span class="t">${f.keyword}</span>
+        <span class="tag">${f.category || ''}</span>
+        <span class="tag ${f.grade === '이 중 가장 빈 곳' ? 'go' : ''}">${f.grade || ''}</span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">경쟁</div><div class="v">${won(f.total)}개</div></div>
+        <div class="kpi"><div class="l">시장 최저가</div><div class="v">${won(f.price_min)}원</div>
+          <div class="s">${(f.naver_low_title || '').slice(0, 16)}</div></div>
+        <div class="kpi"><div class="l">떼오는 값 상한</div>
+          <div class="v" style="color:var(--go)">${won(f.need_cost)}원</div></div>
+      </div>
+      <div class="links">
+        <button onclick="showWrite(${i})">✍ 이대로 올리기</button>
+        ${f.naver_low_link ? `<a href="${f.naver_low_link}" target="_blank">이 가격 상품 보기 ↗</a>` : ''}
+        <button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button>
+      </div>
+      <div id="w${i}"></div>
+    </div>`).join('');
+  out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b></div>
+    <div class="cards">${cards}</div>`;
+}
+
+async function watchDel(kw, btn) {
+  await fetch('/api/watch/remove', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({keyword: kw, owner: ME})
+  });
+  btn.closest('.card').style.opacity = .35;
+  refreshWatchCount();
+}
+
+/* ---------- 🔁 더 찾기 ---------- */
+async function findMore() {
+  SEEN = Array.from(new Set(SEEN.concat(LAST_FINDS.map(f => f.keyword))));
+  await autoScan(SEEN);
+}
+
+/* ---------- 📋 카페에 올릴 글로 복사 ---------- */
+function copyForCafe() {
+  if (!LAST_FINDS.length) { alert('먼저 찾기를 눌러주세요.'); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const lines = [`[${today}] 위탁 소싱 후보 ${LAST_FINDS.length}개`, ''];
+  LAST_FINDS.slice(0, 10).forEach((f, i) => {
+    const c = f.comp || {};
+    lines.push(`${i + 1}. ${f.keyword}  [${f.grade || ''}]`);
+    lines.push(`   경쟁 ${won(f.total)}개 · 시장 최저가 ${won(f.price_min)}원`);
+    lines.push(`   ${won(f.need_cost)}원 이하로 떼오면 남습니다`);
+    if (c.note) lines.push(`   누가 파나: ${c.note}`);
+    if ((f.reasons || []).length) lines.push(`   근거: ${f.reasons[0]}`);
+    if ((f.doubts || []).length) lines.push(`   주의: ${f.doubts[0]}`);
+    if (f.naver_low_link) lines.push(`   확인: ${f.naver_low_link}`);
+    lines.push('');
+  });
+  lines.push('※ 최저가는 네이버 검색 API 기준입니다. 웹 화면과 다를 수 있어요.');
+  navigator.clipboard.writeText(lines.join('\n'));
+  $('#cafe').textContent = '📋 복사됨 — 카페에 붙여넣으세요';
+  setTimeout(() => { $('#cafe').textContent = '📋 카페에 올릴 글로 복사'; }, 2500);
+}
+
+/* ---------- 2단계 · 이대로 올리기 ---------- */
+function showWrite(i) {
+  const f = LAST_FINDS[i];
+  const box = document.getElementById('w' + i);
+  if (!f || !box) return;
+  const L = f.listing || {};
+  const pol = L.polished || [];
+  const plan = L.plan || [];
+  const photos = L.photos || [];
+  if (!pol.length && !(L.titles || []).length) {
+    box.innerHTML = '<div class="act">이 키워드는 상위 제목에서 건질 게 없었어요</div>';
+    return;
+  }
+  const titleRows = (pol.length ? pol : (L.titles || []).map(t => ({
+    text: t, kind: '', length: t.length, warns: []
+  }))).map(t => `
+    <div class="titlebox">
+      <span>${t.text}<small>${t.kind ? t.kind + ' · ' : ''}${t.length}자</small>
+        ${(t.warns || []).length ? `<div class="g" style="color:var(--wait)">⚠ ${t.warns.join(' · ')}</div>` : ''}
+      </span>
+      <button class="ghost" onclick="navigator.clipboard.writeText(${JSON.stringify(t.text)});this.textContent='복사됨'">복사</button>
+    </div>`).join('');
+  const planRows = plan.map(x => `
+    <div style="margin-bottom:9px">
+      <div class="g" style="color:var(--brand-soft)">${x.head}</div>
+      <div class="dl">${x.body}</div>
+    </div>`).join('');
+  const photoRows = photos.map(x => `<div class="dl">📸 ${x}</div>`).join('');
+  const planText = plan.map(x => `[${x.head}]\n${x.body}`).join('\n\n');
+
+  box.innerHTML = `
+    <div class="write">
+      <div class="wh">🏷️ 상품명 — 3벌 중 고르세요</div>
+      <div class="g" style="margin-bottom:8px">${L.why || ''}</div>
+      <div class="bars" style="margin-bottom:8px">
+        ${(L.must || []).map(w => `<span style="color:var(--brand-soft)">필수 ${w}</span>`).join('')}
+        ${(L.gaps || []).map(w => `<span style="color:var(--go)">빈틈 ${w}</span>`).join('')}
+      </div>
+      ${titleRows}
+      <div class="g" style="margin-top:8px">
+        네이버 상품명 가이드 기준으로 다듬었어요 — 홍보문구·특수문자·중복 제외, 50자 안쪽.
+        <b>단, 상위노출을 보장하진 않습니다</b> (노출은 판매·리뷰·광고가 함께 정해요).
+      </div>
+
+      <div class="dt">
+        <div class="wh2">📄 상세페이지 뼈대 (8줄)</div>
+        ${planRows}
+        <button class="ghost" style="margin-top:6px"
+          onclick="navigator.clipboard.writeText(${JSON.stringify(planText)});this.textContent='복사됨'">상세 8줄 복사</button>
+      </div>
+
+      <div class="dt">
+        <div class="wh2">📸 찍어야 할 사진</div>
+        ${photoRows}
+      </div>
+
+      ${(L.bundles || []).length ? `<div class="dt">
+        <div class="wh2">📦 묶음 아이디어 — 최저가 비교를 탈출하는 길</div>
+        ${L.bundles.map(x => `<div class="dl">${x}</div>`).join('')}
+      </div>` : ''}
+      <div class="g" style="margin-top:8px">${L.plan_note || ''}</div>
+    </div>`;
+}
+
+/* ---------- 누가 언제 찾나 ---------- */
+async function segScan(keyword, boxId) {
+  if (needKey()) return;
+  const box = document.getElementById(boxId || 'out');
+  if (!box) return;
+  box.innerHTML = '<div class="act"><span class="spin"></span>성별·기기별로 나눠 보는 중… (데이터랩이 느려요, 10초쯤)</div>';
+  try {
+    const d = await post('/api/segments', {keyword: keyword, category: catSel.value});
+    if (!d.ok) { box.innerHTML = `<div class="err">${d.error}</div>`; return; }
+    const rows = (d.segments || []).map(x => `
+      <div class="entry">
+        <div>${x.label}<div class="g">${x.note}</div></div>
+        <div class="g">${x.peak_month ? x.peak_month + '월' : '—'}</div>
+        <span class="badge">${x.found ? '확인' : '없음'}</span>
+      </div>`).join('');
+    box.innerHTML = `<div class="write">
+      <div class="act">${d.insight}</div>${rows}
+      <div class="g" style="margin-top:8px">${d.limit_note}</div></div>`;
+  } catch (e) { box.innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+/* ---------- 1년 장사 달력 ---------- */
+async function showCalendar() {
+  if (needKey()) return;
+  const cat = catSel.value || '생활/건강';
+  loading(cat + ' 1년치를 훑는 중… 데이터랩이 느려 30초쯤 걸려요');
+  try {
+    const d = await post('/api/calendar', {category: cat});
+    if (!d.ok) { out.innerHTML = `<div class="err">${d.error}</div>`; return; }
+    const rows = Object.entries(d.months || {}).map(([m, items]) => `
+      <div class="entry">
+        <div><b>${m}월</b><div class="g">${items.map(i => i.keyword + ' (' + i.ratio + '배)').join(' · ')}</div></div>
+        <div class="g">준비 ${items[0].rise_month}월~</div>
+        <span class="badge">${items.length}개</span>
+      </div>`).join('');
+    out.innerHTML = `<div class="cards"><div class="card">
+      <div class="fhead"><span class="t">${d.category} 1년 장사 달력</span></div>
+      <div class="act">${d.note}</div>
+      ${(d.now_prep || []).length ? `<div class="buy" style="margin-top:12px">
+        지금 준비할 것: <b>${d.now_prep.map(i => i.keyword).join(', ')}</b>
+        <div class="g" style="margin-top:4px">재고가 없는 위탁이라 미리 올려둬도 손해가 없어요</div>
+      </div>` : ''}
+      <div style="margin-top:12px">${rows || '<p class="hint">시즌 타는 게 없어요</p>'}</div>
+      ${(d.flat || []).length ? `<div class="g" style="margin-top:10px">연중 고름: ${d.flat.join(', ')}</div>` : ''}
+      <div class="g" style="margin-top:8px">데이터랩 ${d.calls}회 · 1년치만 본 결과예요</div>
+    </div></div>`;
+  } catch (e) { out.innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+/* ---------- 직접 확인 ---------- */
+/* ---------- 가격 진단 (삽질을 끝내는 도구) ---------- */
+/* ---------- 판정 근거 검사 ---------- */
+/* ---------- 버튼 연결 ---------- */
+$('#auto').addEventListener('click', () => autoScan());  // 이벤트가 인자로 안 가게
+$('#cal').addEventListener('click', showCalendar);
+$('#more').addEventListener('click', findMore);
+$('#wlist').addEventListener('click', showWatch);
+$('#cafe').addEventListener('click', copyForCafe);
+$('#chk').addEventListener('click', showChecklist);
+</script>
+</body>
+</html>
