@@ -6,21 +6,24 @@
 <title>AI 재테크 연구소 — 소싱 작업대</title>
 <style>
   :root{
-    --bg:#0b0e13; --panel:#131820; --panel2:#0e131a;
-    --ink:#eef1f6; --sub:#8b96a5; --line:#232c38; --line2:#2e3a48;
-    --brand:#c9a227; --brand-soft:#e8d9a4; --brand-bg:rgba(201,162,39,.08);
-    --go:#3ddc84; --go-bg:rgba(61,220,132,.09);
-    --wait:#e8b339; --wait-bg:rgba(232,179,57,.09);
-    --stop:#f2616b; --stop-bg:rgba(242,97,107,.09);
+    --bg:#090c16; --panel:#141a28; --panel2:#0e1320;
+    --ink:#f1f2f8; --sub:#93a0b6; --line:#26303f; --line2:#33405480;
+    --brand:#d4af37; --brand-soft:#f0dfa0; --brand-bg:rgba(212,175,55,.08);
+    --gold-hi:#fbefb8; --gold-mid:#d8b23c; --gold-deep:#a9821f;
+    --go:#3ddc84; --go-bg:rgba(61,220,132,.10);
+    --wait:#f0b638; --wait-bg:rgba(240,182,56,.10);
+    --stop:#f2616b; --stop-bg:rgba(242,97,107,.10);
+    --sapphire:#3f7be0; --indigo:#6d5cf0;
     --serif:"Nanum Myeongjo",Georgia,serif;
     --sans:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
     background:
-      radial-gradient(1200px 640px at 15% -12%, rgba(201,162,39,.10) 0%, transparent 55%),
-      radial-gradient(1000px 560px at 88% 6%, rgba(61,120,220,.10) 0%, transparent 52%),
-      linear-gradient(180deg,#10151d 0%,#0b0e13 46%,#080a0e 100%),
+      radial-gradient(1100px 620px at 12% -14%, rgba(212,175,55,.14) 0%, transparent 54%),
+      radial-gradient(980px 560px at 90% 4%, rgba(63,123,224,.13) 0%, transparent 52%),
+      radial-gradient(1200px 700px at 50% 118%, rgba(109,92,240,.12) 0%, transparent 60%),
+      linear-gradient(180deg,#0f1626 0%,#0b1120 46%,#080b14 100%),
       var(--bg);
     background-attachment:fixed;
     color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
@@ -28,12 +31,28 @@
   body::before{
     content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     background-image:
-      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-    background-size:44px 44px;
-    mask-image:radial-gradient(900px 500px at 50% 0%, #000 0%, transparent 75%);
-    -webkit-mask-image:radial-gradient(900px 500px at 50% 0%, #000 0%, transparent 75%);
+      linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(920px 520px at 50% 0%, #000 0%, transparent 76%);
+    -webkit-mask-image:radial-gradient(920px 520px at 50% 0%, #000 0%, transparent 76%);
   }
+  /* 화려한 오로라 — 아주 느리게 흐르는 금빛/사파이어 광채 */
+  body::after{
+    content:"";position:fixed;inset:-25%;pointer-events:none;z-index:0;opacity:.5;
+    background:
+      radial-gradient(42% 46% at 20% 22%, rgba(212,175,55,.20), transparent 62%),
+      radial-gradient(38% 42% at 82% 32%, rgba(63,123,224,.18), transparent 62%),
+      radial-gradient(46% 48% at 60% 88%, rgba(109,92,240,.16), transparent 64%);
+    filter:blur(20px);
+    animation:aurora 26s ease-in-out infinite alternate;
+  }
+  @keyframes aurora{
+    0%  {transform:translate3d(0,0,0) scale(1)}
+    50% {transform:translate3d(2%,-2%,0) scale(1.06)}
+    100%{transform:translate3d(-2%,1.5%,0) scale(1.02)}
+  }
+  @media(prefers-reduced-motion:reduce){ body::after{animation:none} }
   .wrap{position:relative;z-index:1}
   .wrap{max-width:1060px;margin:0 auto;padding:28px 20px 90px}
 
@@ -68,22 +87,94 @@
     .top{flex-wrap:wrap}
   }
 
-  .hero{text-align:center;padding:34px 16px 30px}
+  .hero{text-align:center;padding:38px 16px 26px}
+  .hero .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;
+    letter-spacing:.16em;color:var(--brand-soft);text-transform:uppercase;
+    border:1px solid rgba(212,175,55,.28);border-radius:999px;padding:6px 14px;
+    background:rgba(212,175,55,.06);margin-bottom:16px}
+  .hero .eyebrow i{width:6px;height:6px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));
+    box-shadow:0 0 10px rgba(212,175,55,.7)}
   .hero h1{
-    font-family:var(--serif);font-size:40px;font-weight:400;letter-spacing:-.02em;
-    background:linear-gradient(135deg,#f4ecd2 0%,#e8d59a 40%,#c9a227 100%);
+    position:relative;display:inline-block;
+    font-family:var(--serif);font-size:46px;font-weight:400;letter-spacing:-.02em;
+    background:linear-gradient(100deg,#f6eecb 0%,#f0dfa0 26%,#d4af37 52%,#f4e7b0 74%,#c9a227 100%);
+    background-size:220% auto;
     -webkit-background-clip:text;background-clip:text;color:transparent;
-    line-height:1.2}
-  .hero p{margin-top:12px;font-size:13.5px;color:var(--sub);letter-spacing:.01em}
+    line-height:1.18;
+    animation:foil 6s linear infinite}
+  @keyframes foil{to{background-position:220% center}}
+  @media(prefers-reduced-motion:reduce){ .hero h1{animation:none} }
+  .hero p{margin-top:14px;font-size:14px;color:var(--sub);letter-spacing:.01em}
+  .hero p .accent{color:var(--brand-soft)}
   .hero::after{
-    content:"";display:block;width:64px;height:1px;margin:20px auto 0;
-    background:linear-gradient(90deg,transparent,var(--brand),transparent)}
-  @media(max-width:640px){ .hero h1{font-size:29px} .hero{padding:24px 12px 20px} }
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-  .step b{display:block;font-family:var(--serif);font-size:13px;color:var(--brand);
-    letter-spacing:.06em;margin-bottom:5px}
-  .step p{font-size:12.5px;color:var(--sub);line-height:1.6}
+    content:"";display:block;width:74px;height:2px;margin:22px auto 0;border-radius:2px;
+    background:linear-gradient(90deg,transparent,var(--brand),var(--gold-hi),var(--brand),transparent);
+    box-shadow:0 0 16px rgba(212,175,55,.4)}
+  @media(max-width:640px){ .hero h1{font-size:32px} .hero{padding:26px 12px 18px} }
+  /* ===== 황금 경로 — 1·2·3 초보자 안내 ===== */
+  .journey{margin:6px 0 16px}
+  .journey-head{display:flex;align-items:center;gap:12px;margin:0 2px 14px}
+  .journey-head .jline{flex:1;height:1px;
+    background:linear-gradient(90deg,transparent,var(--line2),transparent)}
+  .journey-head b{font-family:var(--serif);font-size:14px;color:var(--brand-soft);
+    letter-spacing:.05em;white-space:nowrap}
+  .journey-head b span{color:var(--sub);font-family:var(--sans);font-size:12px;margin-left:8px}
+  .jsteps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .jstep{position:relative;padding:22px 18px 18px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(23,30,45,.92),rgba(15,20,32,.92));
+    border:1px solid var(--line);
+    box-shadow:0 16px 40px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.04);
+    animation:jrise .5s cubic-bezier(.2,.7,.3,1) both;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease}
+  .jstep:nth-child(1){animation-delay:.05s;--accent:var(--brand);--accent-hi:var(--gold-hi)}
+  .jstep:nth-child(2){animation-delay:.16s;--accent:var(--sapphire);--accent-hi:#a9c6ff}
+  .jstep:nth-child(3){animation-delay:.27s;--accent:var(--go);--accent-hi:#9ff0c2}
+  @keyframes jrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){ .jstep{animation:none} }
+  .jstep:hover{transform:translateY(-4px);
+    border-color:color-mix(in srgb, var(--accent) 55%, var(--line));
+    box-shadow:0 22px 52px rgba(0,0,0,.42),
+      0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent),
+      inset 0 1px 0 rgba(255,255,255,.05)}
+  .jstep::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;
+    border-radius:18px 18px 0 0;
+    background:linear-gradient(90deg,transparent,var(--accent),var(--accent-hi),transparent);
+    opacity:.85}
+  /* 카드 사이를 잇는 금빛 실선 (데스크톱) */
+  .jstep:not(:last-child)::after{content:"";position:absolute;top:41px;right:-9px;
+    width:18px;height:2px;z-index:2;
+    background:linear-gradient(90deg,var(--brand),var(--gold-hi));
+    box-shadow:0 0 8px rgba(212,175,55,.6)}
+  .jseal{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+  .jno{position:relative;width:38px;height:38px;flex:0 0 auto;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-size:17px;font-weight:700;color:#191307;
+    background:linear-gradient(140deg,var(--gold-hi) 0%,var(--gold-mid) 48%,var(--gold-deep) 100%);
+    box-shadow:0 6px 16px rgba(212,175,55,.32), inset 0 1px 0 rgba(255,255,255,.5),
+      inset 0 -2px 4px rgba(120,90,10,.4)}
+  .jicon{font-size:20px;line-height:1}
+  .jtitle{font-family:var(--serif);font-size:17px;color:var(--ink);letter-spacing:.01em}
+  .jtitle small{display:block;font-family:var(--sans);font-size:11px;
+    letter-spacing:.14em;color:var(--accent-hi);text-transform:uppercase;margin-bottom:3px}
+  .jbody{font-size:13px;color:#c3cdda;line-height:1.72}
+  .jbody .hi{color:var(--brand-soft);font-weight:600}
+  .jpress{display:inline-flex;align-items:center;gap:6px;margin-top:12px;
+    font-size:12px;color:var(--accent-hi);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);
+    border-radius:9px;padding:7px 11px;line-height:1.4}
+  .jpress b{color:#fff;font-weight:700}
+  /* 용어 풀이 칩 (골든타임·치킨게임) */
+  .jgloss{margin-top:11px;display:flex;flex-direction:column;gap:7px}
+  .chip{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;
+    font-size:11.5px;line-height:1.55;color:#aeb9c8;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .chip .tag2{font-size:10.5px;font-weight:700;color:#191307;white-space:nowrap;
+    border-radius:6px;padding:3px 7px;align-self:center}
+  .chip.good .tag2{background:linear-gradient(135deg,#7ff0b0,var(--go))}
+  .chip.bad  .tag2{background:linear-gradient(135deg,#ff9aa2,var(--stop))}
+  .chip b{color:#e6ebf2}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
     padding:20px;margin-bottom:14px;box-shadow:0 18px 44px rgba(0,0,0,.32)}
@@ -232,7 +323,10 @@
   .note{margin-top:24px;font-size:12px;color:var(--sub);line-height:1.85;
     border-left:2px solid var(--line);padding:4px 0 4px 14px}
   @media(max-width:720px){
-    .steps{grid-template-columns:1fr}
+    .jsteps{grid-template-columns:1fr}
+    .jstep:not(:last-child)::after{top:auto;bottom:-9px;right:auto;left:41px;
+      width:2px;height:18px;
+      background:linear-gradient(180deg,var(--brand),var(--gold-hi))}
     .autorow,.searchrow,.kpis,.keyrow{grid-template-columns:1fr}
   }
 </style>
@@ -255,19 +349,68 @@
   </div>
 
   <header class="hero">
+    <span class="eyebrow"><i></i> AI 재테크 연구소 · 소싱 작업대</span>
     <h1>상품 소싱 작업대</h1>
-    <p>어디서 떼서 어디에 팔지 — 숫자로 정합니다</p>
+    <p>어디서 떼서 어디에 팔지 — <span class="accent">감이 아니라 숫자로</span> 정합니다</p>
   </header>
 
-  <div class="steps">
-    <div class="step"><b>1단계 · 찾기</b>
-      <p>위탁인지 도매인지 고르고 분야만 누르면, 팔 자리를 찾아옵니다.
-        키워드를 몰라도 됩니다.</p></div>
-    <div class="step"><b>2단계 · 올리기</b>
-      <p>카드의 <b>✍ 이대로 올리기</b> 를 누르면 제목·상세를 만들어 줍니다.</p></div>
-    <div class="step"><b>3단계 · 지키기</b>
-      <p>주말마다 한 번씩 누르면 골든타임과 치킨게임을 알려줍니다.</p></div>
-  </div>
+  <section class="journey">
+    <div class="journey-head">
+      <span class="jline"></span>
+      <b>딱 세 번이면 됩니다<span>· 순서대로 따라오세요</span></b>
+      <span class="jline"></span>
+    </div>
+
+    <div class="jsteps">
+      <!-- 1 -->
+      <div class="jstep">
+        <div class="jseal">
+          <div class="jno">1</div>
+          <div class="jtitle"><small>Find</small>찾기 <span class="jicon">🔎</span></div>
+        </div>
+        <p class="jbody">
+          먼저 <span class="hi">재고 없이 파는 ‘위탁’</span>인지,
+          <span class="hi">싸게 많이 떼는 ‘도매’</span>인지 고르고, 관심 있는 분야만 누르세요.
+          <b>무슨 키워드로 팔지 몰라도 됩니다.</b> 네이버 쇼핑을 수백 번 훑어서,
+          경쟁이 적으면서 지금 잘 팔리는 <b>‘빈자리’</b>를 카드로 찾아 줍니다.
+        </p>
+        <div class="jpress">👉 아래 <b>「팔 만한 자리 찾기」</b> 버튼</div>
+      </div>
+
+      <!-- 2 -->
+      <div class="jstep">
+        <div class="jseal">
+          <div class="jno">2</div>
+          <div class="jtitle"><small>List</small>올리기 <span class="jicon">✍️</span></div>
+        </div>
+        <p class="jbody">
+          마음에 드는 카드에서 <span class="hi">「✍ 이대로 올리기」</span>를 누르면,
+          스마트스토어에 <b>그대로 붙여넣을 제목과 상세설명</b>을 만들어 줍니다.
+          <b>글솜씨가 없어도 됩니다.</b> 복사해서 붙이기만 하면 첫 상품이 올라갑니다.
+        </p>
+        <div class="jpress">👉 카드 안의 <b>「✍ 이대로 올리기」</b></div>
+      </div>
+
+      <!-- 3 -->
+      <div class="jstep">
+        <div class="jseal">
+          <div class="jno">3</div>
+          <div class="jtitle"><small>Keep</small>지키기 <span class="jicon">🛡️</span></div>
+        </div>
+        <p class="jbody">
+          올린 뒤가 진짜 시작입니다. <b>주말마다 딱 한 번</b>만 눌러 확인하세요.
+          지금이 <span class="hi">잘 팔릴 때인지</span>, 아니면 <span class="hi">빠질 때인지</span>를 알려줍니다.
+        </p>
+        <div class="jgloss">
+          <div class="chip good"><span class="tag2">골든타임</span>
+            <span><b>잘 팔리는 대목.</b> 사람이 몰려서 물건이 잘 나가는 시기 — 놓치지 말라고 알려줍니다.</span></div>
+          <div class="chip bad"><span class="tag2">치킨게임</span>
+            <span><b>피 튀기는 가격 싸움.</b> 경쟁자들이 값을 계속 내려 남는 게 없어지는 자리 — 들어가지 말라고 알려줍니다.</span></div>
+        </div>
+        <div class="jpress">👉 <b>「1년 장사 달력」</b> 으로 주말마다 점검</div>
+      </div>
+    </div>
+  </section>
 
   <div class="panel">
     <details class="keys" id="keybox">
