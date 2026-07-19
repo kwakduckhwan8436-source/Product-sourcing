@@ -27,6 +27,29 @@ _SEARCH_SHOP = "https://openapi.naver.com/v1/search/shop.json"
 _DATALAB_KEYWORDS = "https://openapi.naver.com/v1/datalab/shopping/category/keywords"
 
 
+# ── 프로세스 전역 방어 (여러 사용자 → 하나의 서버 IP) ────────────────
+# 사용자마다 NaverClient 를 새로 만들어도, 서버 IP 하나로 나가는 '총량' 은
+# 아래 전역 락/세마포어로 묶는다. 인스턴스별 throttle 만으로는 여러 명이
+# 동시에 몰릴 때 IP 가 폭주해 네이버에 차단당한다 — 그걸 막는 핵심 장치.
+_GLOBAL_MIN_INTERVAL = 0.10       # 서버 전체 아웃바운드 최소 간격(초)
+_GLOBAL_MAX_CONCURRENT = 6        # 동시 아웃바운드 요청 상한
+_global_lock = asyncio.Lock()
+_global_last = 0.0
+_global_sem = asyncio.Semaphore(_GLOBAL_MAX_CONCURRENT)
+
+
+async def _global_throttle() -> None:
+    """서버 전체에서 호출 사이 최소 간격을 보장 (인스턴스 수와 무관)."""
+    global _global_last
+    loop = asyncio.get_event_loop()
+    async with _global_lock:
+        now = loop.time()
+        wait = _GLOBAL_MIN_INTERVAL - (now - _global_last)
+        if wait > 0:
+            await asyncio.sleep(wait)
+        _global_last = loop.time()
+
+
 class NaverAuthError(Exception):
     """401 — 키 문제 또는 검색 API 미설정. 발굴 전체를 중단시키는 치명 오류."""
 
@@ -111,10 +134,12 @@ class NaverClient:
 
         attempt = 0
         while True:
-            await self._throttle(interval)
+            await self._throttle(interval)      # 이 사용자 호출 간격
+            await _global_throttle()            # 서버 전체 속도 (여러 명 합산)
             self.call_count += 1
-            resp = await self._client.request(method, url, params=params,
-                                              json=json, headers=headers)
+            async with _global_sem:             # 서버 전체 동시 요청 상한
+                resp = await self._client.request(method, url, params=params,
+                                                  json=json, headers=headers)
             if resp.status_code == 401:
                 # 키/권한 문제 — 재시도 무의미, 즉시 치명 오류로 중단
                 raise NaverAuthError(self._explain_401(resp))

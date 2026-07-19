@@ -255,6 +255,8 @@
   .guide b{color:var(--brand-soft)}
 
   .found{font-size:13px;color:var(--sub);margin:18px 0 10px}
+  .linktip{font-size:12.5px;line-height:1.6;color:#f4dea0;background:var(--wait-bg);
+    border:1px solid rgba(240,182,56,.3);border-radius:11px;padding:10px 13px;margin:0 0 12px}
   .found b{color:var(--brand-soft);font-family:var(--serif);font-size:16px}
   .cards{display:grid;gap:12px}
   .card{background:linear-gradient(180deg,#151b24 0%,#111721 100%);
@@ -1174,12 +1176,14 @@ function renderAuto(d) {
   const hrTxt = !hr ? '' : (hr.graded > 0
     ? ` · <b style="color:var(--brand-soft)">이 도구 적중률 ${hr.pct}%</b> (${hr.hits}/${hr.graded})`
     : ` · 적중률 —  (${hr.pending}개 추적 중, 5일 뒤 채점)`);
+  const cachedTxt = d.cached ? ' · <span style="color:var(--sub)">캐시된 결과(빠름)</span>' : '';
   out.innerHTML = `
     <div class="found">
-      <b>${LAST_FINDS.length}개</b> 찾았어요 · ${d.note || ''} · 네이버 ${d.calls}번${hrTxt}${plTxt}
+      <b>${LAST_FINDS.length}개</b> 찾았어요 · ${d.note || ''} · 네이버 ${d.calls}번${hrTxt}${plTxt}${cachedTxt}
       <button class="ghost" style="float:right;padding:6px 11px;font-size:12px"
         onclick="saveCsv()">엑셀로 저장</button>
     </div>
+    <div class="linktip">💡 아래 <b>네이버 쇼핑 링크</b>는 <b>천천히</b> 눌러주세요. 짧은 시간에 여러 번 열면 네이버가 잠시 접속을 막을 수 있어요 (네이버 정책, 조금 기다리면 풀려요).</div>
     <div class="cards">${cards}</div>`;
 }
 
