@@ -553,7 +553,7 @@
   <div id="gate" class="gate" style="display:none">
     <div class="gatebox">
       <div class="gtitle">🔒 열심멤버 이상 전용</div>
-      <p class="gdesc" id="gateNote"><b>AI 재테크 연구소</b> 카페의 <b>열심멤버 이상</b> 등급 게시판에 올라온 <b>이용코드</b>를 넣으면 열려요.</p>
+      <p class="gdesc" id="gateNote"><b>AI 재테크 연구소</b> 카페의 <b>열심멤버 이상</b> 등급 게시판에 올라온 <b>이용코드</b>를 넣으면 열려요. <span style="color:var(--sub)">(보안을 위해 접속할 때마다 입력해요)</span></p>
       <input id="gateCode" type="text" placeholder="이용코드 입력" autocomplete="off" autocapitalize="off" spellcheck="false">
       <div id="gateMsg" class="gmsg"></div>
       <button id="gateBtn" type="button">확인</button>
@@ -975,7 +975,7 @@ async function tryGate(){
   msg.className='gmsg'; msg.textContent='확인 중…';
   try{
     const v=await (await fetch('/api/gate/check?code='+encodeURIComponent(code))).json();
-    if(v.valid){ localStorage.setItem('gate_code',code); msg.className='gmsg ok'; msg.textContent='확인됐어요!'; setTimeout(()=>hideGate(),400); }
+    if(v.valid){ sessionStorage.setItem('gate_code',code); msg.className='gmsg ok'; msg.textContent='확인됐어요!'; setTimeout(()=>hideGate(),400); }
     else { msg.className='gmsg bad'; msg.textContent='코드가 올바르지 않아요. 카페 등급 게시판에서 확인해주세요.'; }
   }catch(e){ msg.className='gmsg bad'; msg.textContent='확인 중 오류가 났어요. 잠시 후 다시 시도해주세요.'; }
 }
@@ -983,8 +983,8 @@ async function initGate(){
   let s={enabled:false};
   try{ s=await (await fetch('/api/gate/status')).json(); }catch(e){ s={enabled:false}; }
   if(!s.enabled) return;                     // 게이트 꺼짐 → 누구나 사용
-  if(s.note){ const n=$('#gateNote'); if(n) n.innerHTML='<b>AI 재테크 연구소</b> 카페 — '+s.note+'<br>등급 게시판의 <b>이용코드</b>를 넣으면 열려요.'; }
-  const saved=localStorage.getItem('gate_code')||'';
+  if(s.note){ const n=$('#gateNote'); if(n) n.innerHTML='<b>AI 재테크 연구소</b> 카페 — '+s.note+'<br>등급 게시판의 <b>이용코드</b>를 넣으면 열려요. <span style="color:var(--sub)">(보안을 위해 접속할 때마다 입력해요)</span>'; }
+  const saved=sessionStorage.getItem('gate_code')||'';
   if(saved){
     try{ if((await (await fetch('/api/gate/check?code='+encodeURIComponent(saved))).json()).valid) return; }catch(e){}
   }
@@ -1031,7 +1031,7 @@ async function autoScan(exclude) {
     const d = await post('/api/auto', {
       category: catSel.value, budget: 320, exclude: exclude || [], mode: MODE,
       fee_pct: 25, target_margin: 0,
-      access_code: (localStorage.getItem('gate_code') || '')
+      access_code: (sessionStorage.getItem('gate_code') || '')
     });
     if (d && d.gated) { showGate(); return; }
     if (!d.ok) { out.innerHTML = `<div class="err">${d.error}</div>`; return; }

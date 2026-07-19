@@ -42,6 +42,17 @@ class MarketPrice:
         return self.basis == "catalog" and self.sample >= 2
 
 
+def _median(sorted_prices: list) -> int:
+    """짝수 표본이면 가운데 두 값의 평균 — 상단 편향을 없앤다."""
+    n = len(sorted_prices)
+    if n == 0:
+        return 0
+    mid = n // 2
+    if n % 2:
+        return sorted_prices[mid]
+    return (sorted_prices[mid - 1] + sorted_prices[mid]) // 2
+
+
 def _match(title: str, core: str) -> bool:
     if not core:
         return True
@@ -69,7 +80,7 @@ def market_price_of(market, core: str = "") -> MarketPrice:
     if cat:
         prices = sorted(it["lprice"] for it in cat)
         mp.lowest = prices[0]
-        mp.median = prices[len(prices) // 2]
+        mp.median = _median(prices)
         mp.basis = "catalog"
         mp.sample = len(prices)
         mp.prices = prices[:10]
@@ -86,7 +97,7 @@ def market_price_of(market, core: str = "") -> MarketPrice:
         return mp
 
     prices = sorted(it["lprice"] for it in lis)
-    mp.median = prices[len(prices) // 2]
+    mp.median = _median(prices)
     # 개별 매물은 품절·미끼가 섞인다. 혼자 뚝 떨어진 값은 안 믿는다.
     for i, p in enumerate(prices):
         near = sum(1 for q in prices[i:] if q <= p * 1.25)

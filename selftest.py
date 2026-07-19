@@ -42,6 +42,7 @@ def _mock_deps() -> None:
             def mount(self, *a, **k): pass
 
         fa.FastAPI = _App
+        fa.Request = type("Request", (), {})   # 실물 fastapi.Request 대체
         fr = types.ModuleType("fastapi.responses")
         fr.FileResponse = lambda p: p
         fr.Response = lambda **k: None

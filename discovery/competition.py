@@ -76,11 +76,17 @@ def analyze_competition(market) -> CompetitionProfile:
         return p
 
     # 1) 카탈로그 묶임 정도 — 링크(사실) 우선, 없으면 productType(추측)
+    #    개인셀러(indie)는 productType 으로만 정확히 구분된다(중고·단종을
+    #    '개인 스토어'로 오인하면 안 되므로). catalog 는 링크가 더 정확.
     if links:
         cat = sum(1 for l in links if _is_catalog_link(l))
         p.catalog_pct = round(cat / len(links) * 100, 1)
-        p.indie_pct = round(100 - p.catalog_pct, 1)
         p.basis = "link"
+        if types:   # indie 는 타입(신품 독립상품)으로 정확히
+            p.indie_pct = round(sum(1 for t in types if t in _INDIE_TYPES)
+                                / len(types) * 100, 1)
+        else:       # 타입이 없으면 차선 — 비카탈로그 전부(중고·단종 과다추정 가능)
+            p.indie_pct = round(100 - p.catalog_pct, 1)
         # 자가검증: productType 추측이 링크(사실)와 얼마나 맞는지
         if types and len(types) == len(links):
             same = sum(1 for t, l in zip(types, links)

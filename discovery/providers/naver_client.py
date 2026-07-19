@@ -39,12 +39,15 @@ _global_sem = asyncio.Semaphore(_GLOBAL_MAX_CONCURRENT)
 
 
 async def _global_throttle() -> None:
-    """서버 전체에서 호출 사이 최소 간격을 보장 (인스턴스 수와 무관)."""
+    """서버 전체에서 호출 사이 최소 간격을 보장 (인스턴스 수와 무관).
+    약간의 지터를 섞어 기계적인 등간격 요청으로 보이지 않게 한다."""
     global _global_last
+    import random as _rnd
     loop = asyncio.get_event_loop()
     async with _global_lock:
         now = loop.time()
-        wait = _GLOBAL_MIN_INTERVAL - (now - _global_last)
+        gap = _GLOBAL_MIN_INTERVAL + _rnd.uniform(0.0, 0.05)
+        wait = gap - (now - _global_last)
         if wait > 0:
             await asyncio.sleep(wait)
         _global_last = loop.time()
