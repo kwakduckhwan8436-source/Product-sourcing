@@ -88,6 +88,9 @@
   .sitelink.green{color:#0d1a12;
     background:linear-gradient(135deg,#4ade80,#22c55e);
     box-shadow:0 4px 16px rgba(34,197,94,.25), inset 0 1px 0 rgba(255,255,255,.25)}
+  .sitelink.purple{color:#f0ecff;
+    background:linear-gradient(135deg,#8b7cf0,#6d5cf0);
+    box-shadow:0 4px 16px rgba(109,92,240,.30), inset 0 1px 0 rgba(255,255,255,.2)}
   .botrow{display:flex;align-items:center;gap:10px}
   .keystate{font-size:12px;color:var(--sub);white-space:nowrap}
   /* 실시간 접속자 배지 */
@@ -376,7 +379,7 @@
   .tool>summary .free{margin-left:auto;font-family:var(--sans);font-size:11px;font-weight:700;
     color:#231a06;background:linear-gradient(135deg,var(--gold-hi),var(--gold-mid));
     border-radius:999px;padding:4px 10px}
-  .tool>summary .arw{color:var(--sub);font-family:var(--sans);font-size:13px}
+  .tool>summary .arw{margin-left:auto;color:var(--sub);font-family:var(--sans);font-size:13px}
   .tool[open]>summary .arw{transform:rotate(180deg)}
   .toolbody{padding:0 18px 18px}
   .toolgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
@@ -393,6 +396,16 @@
   .mcard .mv{font-family:var(--serif);font-size:26px;letter-spacing:-.01em}
   .mcard .mv small{font-family:var(--sans);font-size:13px;color:var(--sub)}
   .mcard.net .mv{color:var(--brand-soft)}
+  .mcard.real{border-color:rgba(212,175,55,.5);
+    background:linear-gradient(180deg,rgba(212,175,55,.10),rgba(212,175,55,.03))}
+  .mcard.real .mv{color:var(--gold-hi)}
+  .mcard.real.good{border-color:rgba(61,220,132,.5);background:var(--go-bg)}
+  .mcard.real.good .mv{color:var(--go)}
+  .mcard.real.mid{border-color:rgba(240,182,56,.5);background:var(--wait-bg)}
+  .mcard.real.mid .mv{color:var(--wait)}
+  .mcard.real.bad{border-color:rgba(242,97,107,.5);background:var(--stop-bg)}
+  .mcard.real.bad .mv{color:var(--stop)}
+  .mcard#mLossCard .mv{color:var(--stop);font-size:22px}
   .mcard.rate.good{border-color:rgba(61,220,132,.4);background:var(--go-bg)}
   .mcard.rate.good .mv{color:var(--go)}
   .mcard.rate.mid{border-color:rgba(240,182,56,.4);background:var(--wait-bg)}
@@ -533,6 +546,8 @@
           <span class="ico">🧭</span> 부의 로드맵 · 재테크</a>
         <a class="sitelink blue" href="https://shared-research-monitor.onrender.com/" target="_blank" rel="noopener">
           <span class="ico">📊</span> 모두의 리서치</a>
+        <a class="sitelink purple" href="https://calculator-9zyb.onrender.com/" target="_blank" rel="noopener">
+          <span class="ico">🧮</span> 모두의 계산기</a>
         <a class="sitelink green" href="https://cafe.naver.com/aiprogram1" target="_blank" rel="noopener">
           <span class="cafe-dot"></span> 네이버 카페</a>
       </div>
@@ -620,9 +635,15 @@
         <input id="csec" placeholder="Client Secret" type="password" autocomplete="off"/>
       </div>
       <div class="guide">
-        <b>처음이신가요?</b> developers.naver.com → 로그인 → 애플리케이션 등록 →
-        <b>검색</b> 과 <b>데이터랩(쇼핑인사이트)</b> 선택 → 저장하면 Client ID / Secret 이 나옵니다.
-        이 열쇠는 <b>내 브라우저에만</b> 저장되고 서버에 보관되지 않습니다.
+        <b>🔑 처음이신가요? 열쇠(무료) 3분이면 받아요:</b>
+        <ol style="margin:8px 0 0;padding-left:20px;line-height:1.85">
+          <li><a href="https://developers.naver.com/apps/#/register" target="_blank" rel="noopener" style="color:var(--brand-soft);font-weight:700">네이버 개발자센터 열기 ↗</a> → 네이버 로그인</li>
+          <li>애플리케이션 이름 아무거나 입력</li>
+          <li>사용 API에서 <b>검색</b> + <b>데이터랩(쇼핑인사이트)</b> 두 개 체크</li>
+          <li>환경은 <b>WEB 설정</b> → URL은 <code>http://localhost</code> 입력 후 등록</li>
+          <li>나온 <b>Client ID / Secret</b>을 위 칸에 붙여넣기</li>
+        </ol>
+        <div style="margin-top:8px;color:var(--sub)">🔒 열쇠는 <b>내 브라우저에만</b> 저장돼요 — 서버엔 보관하지 않습니다.</div>
       </div>
     </details>
   </div>
@@ -661,7 +682,6 @@
   <details class="tool" id="marginTool">
     <summary>
       <span class="tico">🧮</span> 판매 마진 계산기
-      <span class="free">로그인 없이 무료</span>
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
@@ -681,12 +701,22 @@
             <option value="0">뺄게요 (간이·면세)</option>
             <option value="1">포함해서 볼게요</option>
           </select></div>
+        <div class="fld"><label>반품률 (%)</label>
+          <input id="mReturn" type="number" inputmode="decimal" value="3"></div>
+        <div class="fld"><label>불량·분실률 (%)</label>
+          <input id="mDefect" type="number" inputmode="decimal" value="1"></div>
       </div>
       <div class="mresult">
-        <div class="mcard net"><div class="ml">한 개 팔면 남는 돈</div>
+        <div class="mcard net"><div class="ml">한 개 팔면 남는 돈 (이론)</div>
           <div class="mv" id="mNet">–</div></div>
         <div class="mcard rate" id="mRateCard"><div class="ml">마진율</div>
           <div class="mv" id="mRate">–</div></div>
+      </div>
+      <div class="mresult" style="margin-top:10px">
+        <div class="mcard real"><div class="ml">🎯 실질 마진 (반품·불량 반영)</div>
+          <div class="mv" id="mReal">–</div></div>
+        <div class="mcard" id="mLossCard"><div class="ml">반품·불량이 갉아먹은 돈</div>
+          <div class="mv" id="mLoss">–</div></div>
       </div>
       <p class="mtip" id="mTip"></p>
     </div>
@@ -695,7 +725,6 @@
   <details class="tool" id="titleTool">
     <summary>
       <span class="tico">📝</span> 스마트스토어 제목 체커
-      <span class="free">로그인 없이 무료</span>
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
@@ -716,7 +745,6 @@
   <details class="tool" id="beTool">
     <summary>
       <span class="tico">📦</span> 택배비·광고비 손익분기 계산기
-      <span class="free">로그인 없이 무료</span>
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
@@ -743,7 +771,6 @@
   <details class="tool" id="taxTool">
     <summary>
       <span class="tico">🧾</span> 간이 부가세·종소세 예상기
-      <span class="free">감 잡기용</span>
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
@@ -773,7 +800,6 @@
   <details class="tool" id="xoTool">
     <summary>
       <span class="tico">📈</span> 위탁 vs 도매 손익 갈림점
-      <span class="free">로그인 없이 무료</span>
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
@@ -980,7 +1006,7 @@ function renderAuto(d) {
     </div>`;
     return;
   }
-  const gCls = g => g === '빈자리' ? 'go' : (g === '좁음' ? 'wait' : '');
+  const gCls = g => g === '빈자리' ? 'go' : (g === '좁음' ? 'wait' : (g === '어려움' ? 'stop' : ''));
   const mCls = st => ({골든타임:'go', 몰리는중:'wait', 치킨게임:'stop', 식는중:'wait'}[st] || '');
 
   const cards = LAST_FINDS.map((f, i) => {
@@ -1464,7 +1490,7 @@ async function showWatch() {
       <div class="fhead"><span class="rank">${i + 1}</span>
         <span class="t">${f.keyword}</span>
         <span class="tag">${f.category || ''}</span>
-        <span class="tag ${f.grade === '이 중 가장 빈 곳' ? 'go' : ''}">${f.grade || ''}</span>
+        <span class="tag ${f.grade === '빈자리' ? 'go' : (f.grade === '좁음' ? 'wait' : '')}">${f.grade || ''}</span>
       </div>
       <div class="kpis">
         <div class="kpi"><div class="l">경쟁</div><div class="v">${won(f.total)}개</div></div>
@@ -1664,49 +1690,68 @@ $('#chk').addEventListener('click', showChecklist);
   });
 })();
 
-/* ---------- 판매 마진 계산기 (로그인 없이 누구나) ---------- */
+/* ---------- 판매 마진 계산기 (반품·불량 반영) ---------- */
 (function(){
-  const ids = ['mSell','mCost','mFee','mShip','mEtc','mVat'];
+  const ids = ['mSell','mCost','mFee','mShip','mEtc','mVat','mReturn','mDefect'];
   if (!document.getElementById('mSell')) return;
   const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
   const num = id => {
-    const v = parseFloat(($('#'+id).value || '').toString().replace(/[^\d.-]/g,''));
+    const el = document.getElementById(id); if(!el) return 0;
+    const v = parseFloat((el.value || '').toString().replace(/[^\d.-]/g,''));
     return isNaN(v) ? 0 : v;
   };
   function calc(){
     const sell = num('mSell'), cost = num('mCost'), fee = num('mFee');
     const ship = num('mShip'), etc = num('mEtc'), vatOn = $('#mVat').value === '1';
+    const ret = Math.max(0, num('mReturn')) / 100;
+    const def = Math.max(0, num('mDefect')) / 100;
     const feeAmt = sell * (fee/100);
-    const vatAmt = vatOn ? sell * (10/110) : 0;   // 판매가에 부가세가 포함됐다고 보고 매출세액만 차감
+    const vatAmt = vatOn ? sell * (10/110) : 0;
     const net = sell - cost - feeAmt - ship - etc - vatAmt;
     const rate = sell > 0 ? (net / sell) * 100 : 0;
 
+    // 반품: 왕복 택배비를 물고 그 판매의 마진은 0 (상품은 되팔이 가능하다고 가정)
+    //   → 정상 판매분(1-ret)만 net 을 벌고, 반품분(ret)은 -2×택배비
+    // 불량·분실: 원가+나간 택배비를 통째로 날림 (되팔이 불가)
+    const perReturnLoss = ret * (net + 2 * ship);   // net 을 못 벌고 왕복배송까지
+    const perDefectLoss = def * (cost + ship);       // 원가+배송 손실
+    const real = net - perReturnLoss - perDefectLoss;
+    const realRate = sell > 0 ? (real / sell) * 100 : 0;
+    const loss = net - real;
+
     $('#mNet').innerHTML = (net < 0 ? '−' : '') + won(Math.abs(net));
     $('#mRate').innerHTML = rate.toFixed(1) + '<small> %</small>';
+    $('#mReal').innerHTML = (real < 0 ? '−' : '') + won(Math.abs(real)) +
+      '<small style="font-size:13px"> · ' + realRate.toFixed(1) + '%</small>';
+    $('#mLoss').innerHTML = (loss > 0 ? '−' : '') + won(Math.abs(loss));
 
     const card = $('#mRateCard');
     card.classList.remove('good','mid','bad');
+    if (rate < 8) card.classList.add('bad');
+    else if (rate < 15) card.classList.add('mid');
+    else card.classList.add('good');
+
+    const rc = $('#mReal').closest('.mcard');
+    rc.classList.remove('good','mid','bad');
     let tip;
-    if (net < 0){
-      card.classList.add('bad');
-      tip = '<b>지금은 팔수록 손해예요.</b> 판매가를 올리거나 더 싸게 떼올 곳을 찾아야 합니다.';
-    } else if (rate >= 25){
-      card.classList.add('good');
-      tip = '<b>아주 좋은 자리예요.</b> 광고비를 조금 써도 남습니다. 이 조건이면 밀어붙일 만해요.';
-    } else if (rate >= 15){
-      card.classList.add('good');
-      tip = '<b>괜찮은 마진이에요.</b> 리뷰가 쌓이면 안정적으로 굴릴 수 있는 구간입니다.';
-    } else if (rate >= 8){
-      card.classList.add('mid');
-      tip = '<b>박한 편이에요.</b> 택배비를 묶음배송으로 줄이거나 원가를 더 깎아야 남습니다.';
+    if (real < 0){
+      rc.classList.add('bad');
+      tip = '<b>반품·불량까지 넣으면 손해예요.</b> 이론상 남아도(위쪽) 실제론 마이너스 — 반품률을 낮추거나(상세·이미지 정확히) 마진을 더 확보해야 해요.';
+    } else if (realRate >= 15){
+      rc.classList.add('good');
+      tip = '<b>반품·불량을 견디고도 잘 남아요.</b> 안정적으로 굴릴 수 있는 구간입니다.';
+    } else if (realRate >= 8){
+      rc.classList.add('mid');
+      tip = `이론 마진 ${rate.toFixed(0)}%가 실제론 <b>${realRate.toFixed(0)}%</b>로 줄었어요. 반품 한 건이 이익 여러 개를 지웁니다 — 반품률 관리가 핵심이에요.`;
     } else {
-      card.classList.add('bad');
-      tip = '<b>남는 게 거의 없어요.</b> 반품 한 번이면 마이너스입니다. 다른 상품을 보는 게 나아요.';
+      rc.classList.add('bad');
+      tip = `<b>실질 마진이 너무 얇아요(${realRate.toFixed(0)}%).</b> 반품 한 번이면 마이너스라 위험합니다. 마진이 더 두꺼운 상품이 나아요.`;
     }
     $('#mTip').innerHTML = tip;
   }
   ids.forEach(id => {
-    const el = $('#'+id);
+    const el = document.getElementById(id);
+    if(!el) return;
     el.addEventListener('input', calc);
     el.addEventListener('change', calc);
   });

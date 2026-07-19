@@ -132,6 +132,7 @@ class Find:
     need_cost: int = 0            # 이 값 이하로 떼오면 목표 마진 남음
     comp: CompetitionProfile | None = None
     score: float = 0.0
+    relevance: float = 1.0   # 이 시장이 '그 상품'일 확률 (0.5~1.0). 순위 보정용.
     grade: str = ""        # 빈자리 / 좁음 / 어려움
     title: str = ""
     listing: dict = field(default_factory=dict)   # 제목·상세·세트 (A/C)
@@ -253,13 +254,13 @@ def explain(f, rank: int, total_count: int) -> tuple:
     """
     r, d = [], []
     c = f.comp
-    if f.grade == "이 중 가장 빈 곳":
-        r.append(f"이번에 훑은 {total_count}개 중 경쟁이 적은 축이에요 "
-                 f"({f.total:,}개)")
-    elif f.grade == "보통":
-        r.append(f"경쟁은 중간이에요 ({f.total:,}개)")
+    if f.grade == "빈자리":
+        r.append(f"등록이 {f.total:,}개뿐이라 자리가 비어 있어요 "
+                 f"(이번에 훑은 {total_count}개 중에서도 적은 축)")
+    elif f.grade == "좁음":
+        r.append(f"등록 {f.total:,}개 — 좁지만 비집고 들어갈 여지가 있어요")
     else:
-        d.append(f"경쟁이 많은 편이에요 ({f.total:,}개) — 광고 없이는 힘듭니다")
+        d.append(f"등록이 {f.total:,}개로 많은 편이에요 — 광고 없이는 힘듭니다")
 
     if c is not None:
         if (c.indie_pct or 0) >= 60:
@@ -294,9 +295,10 @@ def grade_of(total: int, open_total: int = _G_OPEN) -> str:
     return "어려움"
 
 
-def _score(total: int, price_min: int, comp: CompetitionProfile | None) -> float:
+def _score(total: int, price_min: int, comp: CompetitionProfile | None,
+           relevance: float = 1.0) -> float:
     """
-    점수 = 비어있음 × 들어갈수있음 × 마진여지.
+    점수 = 비어있음 × 들어갈수있음 × 마진여지 × 관련성.
     설명 가능해야 하므로 단순하게 유지한다.
     """
     # 비어있음: 적을수록 높음 (절대컷 구간 안에서)
@@ -309,7 +311,9 @@ def _score(total: int, price_min: int, comp: CompetitionProfile | None) -> float
         if not comp.can_enter:
             return 0.0
         enter = max(0.2, comp.indie_pct / 100)
-    return round(empt * 60 + room * 20 + enter * 20, 1)
+    # 관련성 보정: 간신히 통과한 시장(rel≈0.5)이 확실한 시장을 밀어내지 않게.
+    rel_f = 0.7 + 0.3 * max(0.0, min(1.0, relevance))
+    return round((empt * 60 + room * 20 + enter * 20) * rel_f, 1)
 
 
 def _title_of(keyword: str, seed: str) -> str:
@@ -456,10 +460,12 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
         if m.total < _MIN_TOTAL:
             rep.ghost += 1
             continue
-        if relevance_of(m, core_kw.replace(" ", "")) < _MIN_RELEVANCE:
+        rel = relevance_of(m, core_kw.replace(" ", ""))
+        if rel < _MIN_RELEVANCE:
             rep.off += 1
             continue
-        if modifier_used(m, kw, core_kw) < _MIN_MOD_USE:
+        mod = modifier_used(m, kw, core_kw)
+        if mod < _MIN_MOD_USE:
             rep.off += 1
             continue
         if m.total > max_total:
@@ -497,7 +503,8 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
         finds.append(Find(
             keyword=kw, axis=axis, category=cat, total=m.total,
             price_min=mp.lowest or 0, comp=comp,
-            score=_score(m.total, mp.lowest or 0, comp),
+            score=_score(m.total, mp.lowest or 0, comp, relevance=rel),
+            relevance=rel,
             grade=grade_of(m.total, open_total),
             title=(lst.get("titles") or [_title_of(kw, core_kw)])[0],
             listing=lst, core=core_kw,
@@ -550,12 +557,9 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
         lo, hi = totals[0], totals[-1]
         span = max(1, hi - lo)
         for f in finds:
-            if f.total <= q1:
-                f.grade = "이 중 가장 빈 곳"
-            elif f.total <= q3:
-                f.grade = "보통"
-            else:
-                f.grade = "붐비는 편"
+            # 등급은 '절대 기준'으로 — 배치가 전부 붐벼도 그중 하나를
+            # '빈 곳'이라 부르지 않는다(정직). 순위는 아래 score 가 정한다.
+            f.grade = grade_of(f.total)
             empt = 1.0 - (f.total - lo) / span
             # 마진 여지 = 최저가 대비 얼마나 싸게 떼야 하나 (여유가 클수록 좋음)
             r2 = 0.0
@@ -565,7 +569,8 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
             if f.comp is not None:
                 enter = max(0.2, (f.comp.indie_pct or 0) / 100)
             w_empt, w_margin, w_enter = score_weights(rule)
-            f.score = round(empt * w_empt + r2 * w_margin + enter * w_enter, 1)
+            rel_f = 0.7 + 0.3 * max(0.0, min(1.0, f.relevance))
+            f.score = round((empt * w_empt + r2 * w_margin + enter * w_enter) * rel_f, 1)
             f.mode_note = mode_advice(rule, f.price_min, f.need_cost)
         for i, f in enumerate(finds):
             f.reasons, f.doubts = explain(f, i + 1, rep.looked)
