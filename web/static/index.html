@@ -257,6 +257,22 @@
   .found{font-size:13px;color:var(--sub);margin:18px 0 10px}
   .linktip{font-size:12.5px;line-height:1.6;color:#f4dea0;background:var(--wait-bg);
     border:1px solid rgba(240,182,56,.3);border-radius:11px;padding:10px 13px;margin:0 0 12px}
+  .gate{position:fixed;inset:0;z-index:9999;background:rgba(8,11,18,.93);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .gatebox{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--line2);
+    border-radius:18px;padding:28px 22px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .gatebox .gtitle{font-family:var(--serif);font-size:22px;color:var(--brand-soft);margin-bottom:10px}
+  .gatebox .gdesc{font-size:13px;color:var(--sub);line-height:1.65;margin-bottom:16px}
+  .gatebox input{width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+    border-radius:11px;padding:13px;font-size:16px;text-align:center;outline:none;margin-bottom:10px}
+  .gatebox input:focus{border-color:var(--brand)}
+  .gatebox .gmsg{font-size:12.5px;min-height:16px;margin-bottom:8px;color:var(--sub)}
+  .gatebox .gmsg.bad{color:var(--stop)} .gatebox .gmsg.ok{color:var(--go)}
+  .gatebox button{width:100%;padding:13px;border:none;border-radius:11px;font-size:15px;
+    font-weight:700;cursor:pointer;color:#1a1408;
+    background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep))}
+  .gatebox .glink{display:inline-block;margin-top:14px;font-size:12.5px;color:var(--brand-soft)}
   .found b{color:var(--brand-soft);font-family:var(--serif);font-size:16px}
   .cards{display:grid;gap:12px}
   .card{background:linear-gradient(180deg,#151b24 0%,#111721 100%);
@@ -534,6 +550,16 @@
 </style>
 </head>
 <body>
+  <div id="gate" class="gate" style="display:none">
+    <div class="gatebox">
+      <div class="gtitle">🔒 열심멤버 이상 전용</div>
+      <p class="gdesc" id="gateNote"><b>AI 재테크 연구소</b> 카페의 <b>열심멤버 이상</b> 등급 게시판에 올라온 <b>이용코드</b>를 넣으면 열려요.</p>
+      <input id="gateCode" type="text" placeholder="이용코드 입력" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div id="gateMsg" class="gmsg"></div>
+      <button id="gateBtn" type="button">확인</button>
+      <a class="glink" href="https://cafe.naver.com/aiprogram1" target="_blank" rel="noopener">카페에서 등급·코드 확인하기 ↗</a>
+    </div>
+  </div>
 <div class="wrap">
 
   <div class="top">
@@ -940,6 +966,34 @@ fetch('/api/version').then(r => r.json()).then(d => {
   $('#ver').textContent = d.version || '';
 }).catch(() => { $('#ver').textContent = '구버전'; });
 
+/* ---------- 이용코드 게이트 (카페 등급 회원 전용) ---------- */
+function showGate(){ const g=$('#gate'); if(g){ g.style.display='flex'; const i=$('#gateCode'); if(i) setTimeout(()=>i.focus(),200); } }
+function hideGate(){ const g=$('#gate'); if(g) g.style.display='none'; }
+async function tryGate(){
+  const code=($('#gateCode').value||'').trim(); const msg=$('#gateMsg');
+  if(!code){ msg.className='gmsg bad'; msg.textContent='코드를 입력해주세요.'; return; }
+  msg.className='gmsg'; msg.textContent='확인 중…';
+  try{
+    const v=await (await fetch('/api/gate/check?code='+encodeURIComponent(code))).json();
+    if(v.valid){ localStorage.setItem('gate_code',code); msg.className='gmsg ok'; msg.textContent='확인됐어요!'; setTimeout(()=>hideGate(),400); }
+    else { msg.className='gmsg bad'; msg.textContent='코드가 올바르지 않아요. 카페 등급 게시판에서 확인해주세요.'; }
+  }catch(e){ msg.className='gmsg bad'; msg.textContent='확인 중 오류가 났어요. 잠시 후 다시 시도해주세요.'; }
+}
+async function initGate(){
+  let s={enabled:false};
+  try{ s=await (await fetch('/api/gate/status')).json(); }catch(e){ s={enabled:false}; }
+  if(!s.enabled) return;                     // 게이트 꺼짐 → 누구나 사용
+  if(s.note){ const n=$('#gateNote'); if(n) n.innerHTML='<b>AI 재테크 연구소</b> 카페 — '+s.note+'<br>등급 게시판의 <b>이용코드</b>를 넣으면 열려요.'; }
+  const saved=localStorage.getItem('gate_code')||'';
+  if(saved){
+    try{ if((await (await fetch('/api/gate/check?code='+encodeURIComponent(saved))).json()).valid) return; }catch(e){}
+  }
+  showGate();
+}
+if($('#gateBtn')) $('#gateBtn').addEventListener('click', tryGate);
+if($('#gateCode')) $('#gateCode').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); tryGate(); }});
+initGate();
+
 /* ---------- 위탁 / 도매 ---------- */
 let MODE = localStorage.getItem('mode') || 'consign';
 let MODES = {};
@@ -976,8 +1030,10 @@ async function autoScan(exclude) {
   try {
     const d = await post('/api/auto', {
       category: catSel.value, budget: 320, exclude: exclude || [], mode: MODE,
-      fee_pct: 25, target_margin: 0
+      fee_pct: 25, target_margin: 0,
+      access_code: (localStorage.getItem('gate_code') || '')
     });
+    if (d && d.gated) { showGate(); return; }
     if (!d.ok) { out.innerHTML = `<div class="err">${d.error}</div>`; return; }
     renderAuto(d);
   } catch (e) {

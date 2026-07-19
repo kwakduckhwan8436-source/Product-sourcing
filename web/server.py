@@ -12,11 +12,13 @@ web.server — 위탁판매 소싱 도우미 (FastAPI)
 from __future__ import annotations
 
 import json
+import os
+import random
 import re
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -42,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v42"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v44"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -57,6 +59,42 @@ _PRESENCE_MAX = 20000                  # 메모리 폭주 방지 상한
 _AUTO_CACHE: dict = {}                 # key -> (ts, response_dict)
 _AUTO_CACHE_TTL = 1800.0               # 30분 — 같은 분야 재스캔은 캐시로
 _AUTO_CACHE_MAX = 400                  # 캐시 항목 상한
+
+# ── 이용코드 게이트 (카페 등급 회원 전용) ───────────────────────
+# Render 환경변수 SOURCING_CODES 에 쉼표로 코드들을 넣으면 그 코드가 있어야
+# '팔 만한 자리 찾기' 를 쓸 수 있다. 비워두면 게이트 꺼짐(누구나 사용).
+# 등급 제한 게시판에만 코드를 올리면 = 그 등급만 코드를 얻는다.
+def _load_codes() -> set:
+    raw = os.environ.get("SOURCING_CODES", "")
+    return {c.strip() for c in raw.split(",") if c.strip()}
+
+_ACCESS_CODES = _load_codes()
+
+# ── 남용 방어: IP별 요청 제한 + 429 쿨다운 ─────────────────────
+_IP_HITS: dict = {}                    # ip -> [최근 스캔 타임스탬프]
+_IP_WINDOW = 300.0                     # 5분 창
+_IP_MAX = 12                           # 5분에 스캔 12회까지 (한 명이 도배 못 함)
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "?"
+
+
+def _ip_ok(ip: str) -> bool:
+    now = _time.time()
+    hits = [t for t in _IP_HITS.get(ip, []) if now - t < _IP_WINDOW]
+    if len(hits) >= _IP_MAX:
+        _IP_HITS[ip] = hits
+        return False
+    hits.append(now)
+    _IP_HITS[ip] = hits
+    if len(_IP_HITS) > 5000:           # 메모리 방어
+        for k in list(_IP_HITS)[:1000]:
+            _IP_HITS.pop(k, None)
+    return True
 
 app = FastAPI(title="위탁판매 소싱 작업대")
 
@@ -290,6 +328,7 @@ class AutoReq(BaseModel):
     max_total: int = 50000       # 이 이상은 못 뚫는다 (기준선)
     open_total: int = 1500       # 이하면 '빈자리' (기준선)
     min_price: int = 8000        # 최저가 이하면 볼 것 없음 (기준선)
+    access_code: str = ""        # 카페 등급 회원 이용코드 (게이트 켜졌을 때)
 
 
 @app.get("/api/modes")
@@ -308,6 +347,23 @@ async def modes():
 async def version():
     """어느 버전이 도는지 — 포트 충돌로 예전 서버가 살아있으면 여기서 드러난다."""
     return {"version": APP_VERSION}
+
+
+@app.get("/api/gate/status")
+async def gate_status():
+    """이용코드 게이트가 켜져 있는지 + 안내 문구(등급 이름).
+    SOURCING_GATE_NOTE 환경변수로 '열심멤버 이상' 같은 등급 문구를 바꿀 수 있다."""
+    note = os.environ.get("SOURCING_GATE_NOTE",
+                          "열심멤버 이상 등급만 이용할 수 있어요.")
+    return {"enabled": bool(_ACCESS_CODES), "note": note}
+
+
+@app.get("/api/gate/check")
+async def gate_check(code: str = ""):
+    """입력한 코드가 유효한지 — 프런트에서 잠금 해제 전에 확인."""
+    if not _ACCESS_CODES:
+        return {"ok": True, "enabled": False, "valid": True}
+    return {"ok": True, "enabled": True, "valid": (code or "").strip() in _ACCESS_CODES}
 
 
 @app.get("/api/presence")
@@ -353,14 +409,25 @@ async def get_categories():
 
 
 @app.post("/api/auto")
-async def auto(req: AutoReq):
+async def auto(req: AutoReq, request: Request):
     """자동 발굴 — 아무것도 입력하지 않아도 팔 만한 것을 찾아 대령.
 
     [Failed to fetch 방지] 예산 × 호출 간격에 429 재시도가 겹치면 1분을 넘겨
     브라우저가 끊는다 → 시간 상한을 두고 '그때까지 찾은 것' 이라도 돌려준다.
 
     [여러 사용자 방어] 같은 (분야·모드) 첫 스캔은 결과를 짧게 캐시해,
-    여러 명이 같은 분야를 눌러도 네이버를 한 번만 친다 (IP 폭주 방지)."""
+    여러 명이 같은 분야를 눌러도 네이버를 한 번만 친다 (IP 폭주 방지).
+    이용코드 게이트 + IP별 횟수 제한으로 남용도 막는다."""
+    # ① 이용코드 게이트 (카페 등급 회원 전용) — 켜져 있을 때만
+    if _ACCESS_CODES and (req.access_code or "").strip() not in _ACCESS_CODES:
+        return {"ok": False, "gated": True,
+                "error": "열심멤버 이상 등급 전용이에요 — 등급 게시판의 이용코드를 넣어주세요."}
+    # ② IP별 횟수 제한 (한 명이 도배해서 IP 를 태우지 못하게)
+    ip = _client_ip(request)
+    if not _ip_ok(ip):
+        return {"ok": False, "error": (
+            "잠깐요 — 짧은 시간에 너무 많이 눌렀어요. 네이버 차단을 막기 위해 "
+            "잠시 쉬어주세요 (몇 분 뒤 다시 가능).")}
     from discovery.auto_scan import auto_scan
     from discovery.providers.naver_client import NaverClient
     from discovery.providers.naver_demand import NaverDemandProvider
