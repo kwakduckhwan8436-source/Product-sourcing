@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v54"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v55"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -440,6 +440,49 @@ async def _hub_datalab(cid: str, csec: str, path: str, body: dict) -> dict:
     return r.json()
 
 
+async def _hub_datalab_probe(cid: str, csec: str, paths: list, body: dict) -> tuple:
+    """경로가 공식문서로 확정 안 돼, 유력 후보들을 실키로 눌러 '되는 경로'를 찾는다.
+    401/429 는 경로 문제가 아니므로 즉시 중단. 404/300(URL없음)이면 다음 후보로.
+    성공 시 (응답, 맞은 경로) 반환."""
+    import httpx
+    headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": csec,
+               "Content-Type": "application/json"}
+    last = ""
+    async with httpx.AsyncClient(timeout=15.0) as c:
+        for p in paths:
+            try:
+                r = await c.post(f"{_HUB_BASE}{p}", headers=headers, json=body)
+            except Exception as e:  # noqa: BLE001
+                last = f"{p} → {type(e).__name__}"
+                continue
+            if r.status_code == 200:
+                return r.json(), p
+            if r.status_code in (401, 429):
+                raise NaverHubAuth(
+                    ("401 인증 실패 — 허브 키/‘쇼핑 인사이트’ API 선택 확인"
+                     if r.status_code == 401
+                     else "429 한도/미선택 — 쇼핑 인사이트 API 선택·월 한도 확인"))
+            last = f"{p} → {r.status_code}: {(r.text or '')[:100]}"
+    raise NaverHubAuth("쇼핑 인사이트 경로를 못 찾았어요(후보 모두 실패). 마지막 응답: " + last)
+
+
+# 쇼핑 인사이트 후보 경로 — 되는 것 하나를 실키로 자동 탐지한다
+_SHOP_CAT_PATHS = [
+    "/datalab/v1/shopping/categories",
+    "/datalab/v1/shopping/category",
+    "/shopping-insight/v1/categories",
+    "/datalab/v1/shopping-insight/categories",
+    "/shopping/v1/categories",
+]
+_SHOP_KW_PATHS = [
+    "/datalab/v1/shopping/category/keywords",
+    "/datalab/v1/shopping/category/keyword",
+    "/shopping-insight/v1/category/keywords",
+    "/datalab/v1/shopping-insight/category/keywords",
+    "/shopping/v1/category/keywords",
+]
+
+
 def _trend_of(points: list) -> dict:
     """데이터랩 시계열(data:[{period,ratio}])에서 상승/하락 신호를 뽑는다.
     최근 3구간 평균 vs 그 이전 평균의 변화율로 '뜨는 중'을 판정."""
@@ -500,7 +543,7 @@ async def insight_category(req: InsightCatReq):
     start, end = _date_range(12)
     body = {"startDate": start, "endDate": end, "timeUnit": "month", "category": cat_param}
     try:
-        data = await _hub_datalab(cid, csec, "/datalab/v1/shopping/categories", body)
+        data, used_path = await _hub_datalab_probe(cid, csec, _SHOP_CAT_PATHS, body)
     except NaverHubAuth as e:
         return {"ok": False, "error": str(e)}
     except Exception as e:  # noqa: BLE001
@@ -510,7 +553,7 @@ async def insight_category(req: InsightCatReq):
         t = _trend_of(r.get("data") or [])
         out.append({"name": r.get("title") or "", **t})
     out.sort(key=lambda x: -x["rise"])
-    return {"ok": True, "items": out, "range": f"{start} ~ {end}"}
+    return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": used_path}
 
 
 class InsightKwReq(BaseModel):
@@ -544,7 +587,7 @@ async def insight_keyword(req: InsightKwReq):
     body = {"startDate": start, "endDate": end, "timeUnit": "month",
             "category": str(code), "keyword": kw_param}
     try:
-        data = await _hub_datalab(cid, csec, "/datalab/v1/shopping/category/keywords", body)
+        data, used_path = await _hub_datalab_probe(cid, csec, _SHOP_KW_PATHS, body)
     except NaverHubAuth as e:
         return {"ok": False, "error": str(e)}
     except Exception as e:  # noqa: BLE001
@@ -554,7 +597,8 @@ async def insight_keyword(req: InsightKwReq):
         t = _trend_of(r.get("data") or [])
         out.append({"name": r.get("title") or "", **t})
     out.sort(key=lambda x: -x["rise"])
-    return {"ok": True, "items": out, "category": req.category, "range": f"{start} ~ {end}"}
+    return {"ok": True, "items": out, "category": req.category,
+            "range": f"{start} ~ {end}", "path": used_path}
 
 
 @app.post("/api/keytest")
