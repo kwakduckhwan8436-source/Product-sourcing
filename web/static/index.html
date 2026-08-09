@@ -288,6 +288,13 @@
   .spark{display:flex;align-items:flex-end;gap:2px;height:26px;margin-top:6px}
   .spark i{width:5px;background:var(--brand-soft);border-radius:1px;opacity:.7}
   @media(max-width:640px){ .insrow{grid-template-columns:1fr} }
+  .tgh{font-size:12.5px;color:var(--brand-soft);font-weight:700;margin-bottom:6px}
+  .tgbars{display:flex;flex-direction:column;gap:6px}
+  .tgrow{display:grid;grid-template-columns:56px 1fr 46px;align-items:center;gap:8px}
+  .tgl{font-size:12.5px;color:var(--ink)}
+  .tgbar{height:12px;background:var(--panel);border-radius:6px;overflow:hidden}
+  .tgbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold-hi))}
+  .tgp{font-size:12px;color:var(--sub);text-align:right}
   .gate{position:fixed;inset:0;z-index:9999;background:rgba(8,11,18,.93);
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;padding:24px}
@@ -655,12 +662,11 @@
           <div class="jtitle"><small>Find</small>찾기 <span class="jicon">🔎</span></div>
         </div>
         <p class="jbody">
-          먼저 <span class="hi">재고 없이 파는 ‘위탁’</span>인지,
-          <span class="hi">싸게 많이 떼는 ‘도매’</span>인지 고르고, 관심 있는 분야만 누르세요.
-          <b>무슨 키워드로 팔지 몰라도 됩니다.</b> 네이버 쇼핑을 수백 번 훑어서,
-          경쟁이 적으면서 지금 잘 팔리는 <b>‘빈자리’</b>를 카드로 찾아 줍니다.
+          먼저 위 <span class="hi">🛒 쇼핑 인사이트</span>에서 <b>지금 뜨는 분야·키워드</b>를 찾으세요.
+          <b>무슨 걸 팔지 몰라도 됩니다.</b> 검색 클릭이 오르는 상품군, 성별·연령 타깃,
+          검색량 추이를 <b>상승률 순</b>으로 보여줘 — <b>수요가 막 오르는 자리</b>를 남보다 먼저 잡습니다.
         </p>
-        <div class="jpress">👉 아래 <b>「팔 만한 자리 찾기」</b> 버튼</div>
+        <div class="jpress">👉 위 <b>🛒 쇼핑 인사이트</b>의 4개 탭</div>
       </div>
 
       <!-- 2 -->
@@ -722,37 +728,6 @@
     </details>
   </div>
 
-  <div class="panel">
-    <h2>어떻게 떼오실 건가요?</h2>
-    <div class="modes">
-      <button class="mbtn on" data-mode="consign" onclick="setMode('consign')">
-        위탁 <small>재고 없이</small></button>
-      <button class="mbtn" data-mode="wholesale" onclick="setMode('wholesale')">
-        도매 <small>대량 사입</small></button>
-    </div>
-    <p class="hint" id="modeNote"></p>
-
-    <h2 style="margin-top:16px">어느 분야를 볼까요?</h2>
-    <div class="autorow">
-      <select id="cat"><option value="">전체 분야</option></select>
-      <button id="auto">팔 만한 자리 찾기</button>
-      <button id="cal" class="ghost">1년 장사 달력</button>
-    </div>
-    <div class="links" style="margin-top:8px">
-      <button id="more" class="ghost">🔁 더 찾기 — 방금 본 건 빼고</button>
-      <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
-      <button id="alerts" class="ghost">🔔 변동 알림 <span id="acnt"></span></button>
-      <button id="goldmap" class="ghost">🗺️ 황금존 지도</button>
-      <button id="cafe" class="ghost">📋 카페에 올릴 글로 복사</button>
-      <button id="chk" class="ghost">📋 시작 전 준비물</button>
-    </div>
-    <p class="hint">
-      네이버를 <b>300번 넘게 동시에</b> 훑어 최대 <b>60개</b>를 찾아옵니다 (40초쯤). 자리가 없으면 <b>왜 없는지</b> 알려드립니다.
-    </p>
-  </div>
-
-  <div id="out"></div>
-
   <section class="insbox">
     <div class="inshead">
       <span class="ibadge">NEW · 무료</span>
@@ -762,6 +737,8 @@
     <div class="instab">
       <button class="itab on" data-m="cat" type="button">분야별 트렌드</button>
       <button class="itab" data-m="kw" type="button">키워드별 트렌드</button>
+      <button class="itab" data-m="tg" type="button">타깃(성별·연령)</button>
+      <button class="itab" data-m="tr" type="button">검색어 트렌드</button>
     </div>
 
     <div id="insCat" class="inspane">
@@ -777,8 +754,52 @@
       <button id="insKwGo" type="button">키워드별 트렌드 보기</button>
     </div>
 
+    <div id="insTg" class="inspane" style="display:none">
+      <p class="ihint">한 검색어를 <b>누가</b> 많이 클릭하는지(성별·연령)를 봐요. 타깃을 정하는 데 써요.</p>
+      <div class="insrow">
+        <select id="insTgCat"></select>
+        <input id="insTgKw" type="text" placeholder="검색어 1개 예: 캠핑의자">
+      </div>
+      <button id="insTgGo" type="button">타깃 분석 보기</button>
+    </div>
+
+    <div id="insTr" class="inspane" style="display:none">
+      <p class="ihint">키워드들의 <b>검색량</b> 추이를 봐요. <b>쇼핑 클릭(위 탭)도 오르고 검색량도 오르면</b> 진짜 뜨는 자리예요.</p>
+      <input id="insTrList" type="text" placeholder="검색어 (쉼표, 최대 5개) 예: 캠핑의자, 무선선풍기" style="width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:11px;padding:12px;font-size:14px;margin-bottom:10px">
+      <button id="insTrGo" type="button">검색어 트렌드 보기</button>
+    </div>
+
     <div id="insOut"></div>
   </section>
+
+  <div class="panel">
+    <h2>어떻게 떼오실 건가요?</h2>
+    <div class="modes">
+      <button class="mbtn on" data-mode="consign" onclick="setMode('consign')">
+        위탁 <small>재고 없이</small></button>
+      <button class="mbtn" data-mode="wholesale" onclick="setMode('wholesale')">
+        도매 <small>대량 사입</small></button>
+    </div>
+    <p class="hint" id="modeNote"></p>
+
+    <h2 style="margin-top:16px">어느 분야를 볼까요?</h2>
+    <div class="linktip" style="margin-bottom:10px">🛑 <b>「팔 만한 자리 찾기」는 은퇴했어요.</b> 네이버가 쇼핑 <b>검색</b> API(경쟁수·최저가)를 종료해서 더 이상 동작하지 않아요. 대신 위쪽 <b>🛒 쇼핑 인사이트</b>로 <b>뜨는 분야·키워드·타깃·검색어 트렌드</b>를 확인하세요.</div>
+    <div class="autorow">
+      <select id="cat"><option value="">전체 분야</option></select>
+      <button id="auto" disabled style="opacity:.5;cursor:not-allowed">팔 만한 자리 찾기 (종료)</button>
+      <button id="cal" class="ghost">1년 장사 달력</button>
+    </div>
+    <div class="links" style="margin-top:8px">
+      <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
+      <button id="cafe" class="ghost">📋 카페에 올릴 글로 복사</button>
+      <button id="chk" class="ghost">📋 시작 전 준비물</button>
+    </div>
+    <div style="display:none" aria-hidden="true">
+      <button id="more"></button><button id="alerts"><span id="acnt"></span></button><button id="goldmap"></button>
+    </div>
+  </div>
+
+  <div id="out"></div>
 
   <details class="tool" id="marginTool">
     <summary>
@@ -994,14 +1015,17 @@ function seasonChip(s) {
 /* ---------- 🛒 쇼핑 인사이트 (새 허브 Data Lab) ---------- */
 const INS_CATS = ['패션의류','패션잡화','화장품/미용','디지털/가전','가구/인테리어','출산/육아','식품','스포츠/레저','생활/건강','여가/생활편의'];
 function initIns(){
-  const sel = $('#insKwCat');
-  if(sel) sel.innerHTML = INS_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const opts = INS_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if($('#insKwCat')) $('#insKwCat').innerHTML = opts;
+  if($('#insTgCat')) $('#insTgCat').innerHTML = opts;
   document.querySelectorAll('.itab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
     const m = t.dataset.m;
     $('#insCat').style.display = m==='cat' ? '' : 'none';
     $('#insKw').style.display  = m==='kw'  ? '' : 'none';
+    $('#insTg').style.display  = m==='tg'  ? '' : 'none';
+    $('#insTr').style.display  = m==='tr'  ? '' : 'none';
     $('#insOut').innerHTML = '';
   }));
 }
@@ -1052,6 +1076,41 @@ if ($('#insKwGo')) $('#insKwGo').addEventListener('click', ()=>{
   const kws = ($('#insKwList').value||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean).slice(0,5);
   if(!kws.length){ $('#insOut').innerHTML = '<div class="err">비교할 검색어를 1개 이상 넣어주세요.</div>'; return; }
   insRun('/api/insight/keyword', {category:cat, keywords:kws}, '키워드별 트렌드');
+});
+
+function bar(list){
+  return '<div class="tgbars">' + list.map(s=>`
+    <div class="tgrow"><span class="tgl">${(s.label||'').replace(/</g,'&lt;')}</span>
+      <span class="tgbar"><i style="width:${Math.min(100,s.pct)}%"></i></span>
+      <span class="tgp">${s.pct}%</span></div>`).join('') + '</div>';
+}
+async function insTarget(){
+  const k = insKeys(); if(!k) return;
+  const cat = $('#insTgCat').value;
+  const kw = ($('#insTgKw').value||'').trim();
+  const box = $('#insOut');
+  if(!kw){ box.innerHTML = '<div class="err">검색어를 1개 넣어주세요.</div>'; return; }
+  box.innerHTML = '<div class="card"><span class="spin"></span>타깃(성별·연령) 분석 중…</div>';
+  let d;
+  try{
+    const r = await fetch('/api/insight/target', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, keyword:kw})});
+    d = await r.json();
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v57) 재배포를 확인해주세요.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  let html = `<div class="inscard" style="display:block">
+    <div class="ic-name">"${(d.keyword||'').replace(/</g,'&lt;')}" 타깃</div>
+    ${d.summary?`<div class="ic-stage st-up" style="margin-top:6px">주 타깃 ${d.summary}</div>`:''}`;
+  html += '<div style="margin-top:12px"><div class="tgh">성별</div>' + (d.gender?bar(d.gender):`<p class="hint">${d.gender_err||'데이터 없음'}</p>`) + '</div>';
+  html += '<div style="margin-top:12px"><div class="tgh">연령</div>' + (d.age?bar(d.age):`<p class="hint">${d.age_err||'데이터 없음'}</p>`) + '</div>';
+  html += '</div>';
+  box.innerHTML = html;
+}
+if ($('#insTgGo')) $('#insTgGo').addEventListener('click', insTarget);
+if ($('#insTrGo')) $('#insTrGo').addEventListener('click', ()=>{
+  const kws = ($('#insTrList').value||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean).slice(0,5);
+  if(!kws.length){ $('#insOut').innerHTML = '<div class="err">키워드를 1개 이상 넣어주세요.</div>'; return; }
+  insRun('/api/trend/search', {keywords:kws}, '검색어 트렌드');
 });
 
 /* ---------- 열쇠 (브라우저에만 저장) ---------- */

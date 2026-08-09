@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v56"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v59"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -601,6 +601,158 @@ async def insight_keyword(req: InsightKwReq):
     out.sort(key=lambda x: -x["rise"])
     return {"ok": True, "items": out, "category": req.category,
             "range": f"{start} ~ {end}", "path": used_path}
+
+
+_AGE_LABEL = {"10": "10대", "20": "20대", "30": "30대",
+              "40": "40대", "50": "50대", "60": "60대+"}
+
+
+def _segments_from(data: dict) -> dict:
+    """성별/연령 응답에서 {구간라벨: 평균지수}를 뽑는다.
+    응답 형식이 (a)구간별 result 분리 또는 (b)data 안 group 필드, 둘 다 대응."""
+    segs: dict = {}
+    for r in (data.get("results") or []):
+        pts = r.get("data") or []
+        grouped: dict = {}
+        for p in pts:
+            g = p.get("group")
+            try:
+                v = float(p.get("ratio"))
+            except (TypeError, ValueError):
+                continue
+            if g is not None:
+                grouped.setdefault(str(g), []).append(v)
+        if grouped:                                   # (b) group 필드형
+            for g, vs in grouped.items():
+                segs.setdefault(g, []).extend(vs)
+        else:                                         # (a) result 분리형
+            label = str(r.get("title") or r.get("group") or "")
+            vs = []
+            for p in pts:
+                try:
+                    vs.append(float(p.get("ratio")))
+                except (TypeError, ValueError):
+                    pass
+            if label and vs:
+                segs.setdefault(label, []).extend(vs)
+    return {k: sum(v) / len(v) for k, v in segs.items() if v}
+
+
+def _pct(segs: dict) -> list:
+    """평균지수를 합=100% 비율로 바꿔 [{label, pct}] 내림차순."""
+    tot = sum(segs.values()) or 1.0
+    out = [{"label": k, "pct": round(v / tot * 100, 1)} for k, v in segs.items()]
+    out.sort(key=lambda x: -x["pct"])
+    return out
+
+
+class InsightTargetReq(BaseModel):
+    client_id: str
+    client_secret: str
+    category: str = ""
+    keyword: str = ""
+
+
+@app.post("/api/insight/target")
+async def insight_target(req: InsightTargetReq):
+    """③ 타깃 분석 — 한 키워드를 '누가(성별·연령)' 많이 클릭하는지.
+    성별·연령 전용 엔드포인트는 한 응답에 전 구간이 같이 정규화돼 비교 가능하다."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    code = _CATS.get(req.category or "")
+    if not code:
+        return {"ok": False, "error": "분야를 먼저 선택해주세요."}
+    kw = (req.keyword or "").strip()
+    if not kw:
+        return {"ok": False, "error": "타깃을 볼 검색어를 1개 넣어주세요."}
+    start, end = _date_range(12)
+    base = {"startDate": start, "endDate": end, "timeUnit": "month",
+            "category": str(code), "keyword": [{"name": kw, "param": [kw]}]}
+    res = {"ok": True, "keyword": kw, "category": req.category}
+    # 성별
+    try:
+        g = await _hub_datalab(cid, csec, "/shopping/v1/category/keyword/gender", dict(base))
+        gs = _segments_from(g)
+        gs = {("여성" if k in ("f", "female", "F") else
+               "남성" if k in ("m", "male", "M") else k): v for k, v in gs.items()}
+        res["gender"] = _pct(gs)
+    except NaverHubAuth as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        res["gender_err"] = f"{type(e).__name__}: {str(e)[:150]}"
+    # 연령
+    try:
+        a = await _hub_datalab(cid, csec, "/shopping/v1/category/keyword/age", dict(base))
+        ags = _segments_from(a)
+        ags = {_AGE_LABEL.get(k, k): v for k, v in ags.items()}
+        res["age"] = _pct(ags)
+    except NaverHubAuth as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        res["age_err"] = f"{type(e).__name__}: {str(e)[:150]}"
+    # 한 줄 요약
+    bits = []
+    if res.get("gender"):
+        bits.append(res["gender"][0]["label"])
+    if res.get("age"):
+        bits.append(res["age"][0]["label"])
+    res["summary"] = (" · ".join(bits) + " 중심") if bits else ""
+    if not res.get("gender") and not res.get("age"):
+        return {"ok": False,
+                "error": "타깃 데이터를 못 받았어요 — "
+                         + (res.get("gender_err") or res.get("age_err") or "")}
+    return res
+
+
+# 검색어 트렌드 후보 경로 (미확인 → 실키로 자동 탐지)
+_TREND_PATHS = [
+    "/datalab/v1/search",
+    "/search-trend/v1/search",
+    "/searchtrend/v1/search",
+    "/trend/v1/search",
+]
+
+
+class TrendReq(BaseModel):
+    client_id: str
+    client_secret: str
+    keywords: list = []
+
+
+@app.post("/api/trend/search")
+async def trend_search(req: TrendReq):
+    """④ 검색어 트렌드 — 키워드들의 '검색량' 추이(오르는지)를 본다.
+    쇼핑 인사이트(클릭)와 교차하면: 검색↑ + 클릭↑ = 진짜 뜨는 자리."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    kws, seen = [], set()
+    for k in (req.keywords or []):
+        k = (k or "").strip()
+        if k and k not in seen:
+            seen.add(k)
+            kws.append(k)
+    kws = kws[:5]
+    if not kws:
+        return {"ok": False, "error": "검색량을 볼 키워드를 1개 이상 넣어주세요."}
+    start, end = _date_range(12)
+    body = {"startDate": start, "endDate": end, "timeUnit": "month",
+            "keywordGroups": [{"groupName": k, "keywords": [k]} for k in kws]}
+    try:
+        data, used_path = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+    except NaverHubAuth as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+    out = []
+    for r in (data.get("results") or []):
+        t = _trend_of(r.get("data") or [])
+        out.append({"name": r.get("title") or "", **t})
+    out.sort(key=lambda x: -x["rise"])
+    return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": used_path}
 
 
 @app.post("/api/keytest")
