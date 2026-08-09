@@ -265,6 +265,17 @@
   .ibadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#1a1408;
     background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));border-radius:999px;padding:3px 9px}
   .idesc{font-size:13px;color:var(--sub);line-height:1.65;margin:0 0 14px}
+  .discbox{background:linear-gradient(135deg,rgba(216,178,60,.13),rgba(216,178,60,.04));
+    border:1px solid rgba(216,178,60,.32);border-radius:14px;padding:16px;margin-bottom:16px}
+  .disctitle{font-size:16px;font-weight:800;color:var(--gold-hi)}
+  .discsub{font-size:12.5px;color:var(--sub);line-height:1.6;margin-top:4px}
+  .disccard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:8px}
+  .disccard .dc-rank{font-family:var(--serif);font-size:15px;color:var(--sub);margin-right:8px}
+  .disccard .dc-kw{font-size:15px;font-weight:800}
+  .disccard .dc-cat{font-size:11px;color:var(--sub);border:1px solid var(--line2);border-radius:20px;padding:2px 8px;margin-left:6px}
+  .disccard .dc-rise{font-family:var(--serif);font-size:19px;text-align:right}
+  .dischot{font-size:11px;font-weight:800;color:#1a1408;background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));border-radius:20px;padding:2px 8px;margin-left:6px}
   .instab{display:flex;gap:6px;margin-bottom:12px}
   .itab{flex:1;border:1px solid var(--line2);background:var(--panel2);color:var(--sub);
     border-radius:10px;padding:10px;font-size:13.5px;font-weight:700;cursor:pointer}
@@ -734,6 +745,20 @@
       <h2>🛒 쇼핑 인사이트 — 뜨는 자리 찾기</h2>
     </div>
     <p class="idesc">네이버 쇼핑에서 <b>어떤 분야·검색어의 클릭이 오르는지</b>(최근 12개월)를 봐요. <b>상승률이 높을수록 지금 뜨는 자리</b>예요.</p>
+
+    <div class="discbox">
+      <div class="disctop">
+        <div>
+          <div class="disctitle">🎯 자동 발굴 — 지금 뜨는 위탁 후보</div>
+          <div class="discsub">키워드를 안 넣어도 돼요. 내장 후보(218개)를 트렌드에 돌려 <b>오르는 것만</b> 자동으로 골라줘요.</div>
+        </div>
+      </div>
+      <div class="insrow" style="grid-template-columns:1fr auto;margin-top:10px">
+        <select id="discCat"><option value="">전체 분야 (느림 · 40초쯤)</option></select>
+        <button id="discGo" type="button">자동 발굴</button>
+      </div>
+      <div id="discOut"></div>
+    </div>
     <div class="instab">
       <button class="itab on" data-m="cat" type="button">분야별 트렌드</button>
       <button class="itab" data-m="kw" type="button">키워드별 트렌드</button>
@@ -1018,6 +1043,7 @@ function initIns(){
   const opts = INS_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
   if($('#insKwCat')) $('#insKwCat').innerHTML = opts;
   if($('#insTgCat')) $('#insTgCat').innerHTML = opts;
+  if($('#discCat')) $('#discCat').innerHTML = '<option value="">전체 분야 (느림 · 40초쯤)</option>' + opts;
   document.querySelectorAll('.itab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
@@ -1030,6 +1056,42 @@ function initIns(){
   }));
 }
 initIns();
+
+async function autoDiscover(){
+  const k = insKeys(); if(!k) return;
+  const box = $('#discOut');
+  const cat = $('#discCat').value;
+  box.innerHTML = `<div class="card"><span class="spin"></span>${cat||'전체 분야'} 자동 발굴 중… (뜨는 후보를 고르는 중)</div>`;
+  let d;
+  try{
+    const r = await fetch('/api/discover', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat})});
+    d = await r.json();
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v61) 재배포를 확인해주세요.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">뜨는 후보가 없어요.</p>'; return; }
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const hotN = d.items.filter(x=>x.hot).length;
+  let html = `<p class="ihint" style="margin-top:10px">후보 ${d.items.length}개 · 급상승/상승 <b>${hotN}개</b> · 상승률 순</p>`;
+  html += d.items.map((it,i)=>{
+    const up = it.rise>0;
+    return `<div class="disccard">
+      <div>
+        <span class="dc-rank">${i+1}</span>
+        <span class="dc-kw">${esc(it.keyword)}</span>
+        <span class="dc-cat">${esc(it.category)}</span>
+        ${it.hot?'<span class="dischot">🔥 뜸</span>':''}
+        ${spark(it.series)}
+      </div>
+      <div>
+        <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
+        <div class="ic-sub">${it.stage} · 지수 ${it.latest}</div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML = html;
+}
+if ($('#discGo')) $('#discGo').addEventListener('click', autoDiscover);
 function insKeys(){
   const id = cid.value.trim(), sec = csec.value.trim();
   if(!id || !sec){ $('#insOut').innerHTML = '<div class="err">먼저 <b>네이버 허브 열쇠</b>를 넣고 「🔌 새 허브 연결 점검」이 ✅ 인지 확인해주세요.</div>'; $('#keybox').open=true; return null; }

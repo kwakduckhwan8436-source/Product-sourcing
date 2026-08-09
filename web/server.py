@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v60"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v61"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -757,6 +757,84 @@ async def trend_search(req: TrendReq):
         out.append({"name": r.get("title") or "", **t})
     out.sort(key=lambda x: -x["rise"])
     return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": used_path}
+
+
+def _seed_bank() -> dict:
+    """분야별 씨앗 키워드 은행 {분야명: (코드, [키워드...])} — 자동 발굴 후보 풀."""
+    try:
+        p = _HERE.parent / "discovery" / "data" / "category_seeds.json"
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return {c["name"]: (str(c["cat_id"]), list(c.get("keywords", [])))
+                for c in d.get("categories", [])}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+class DiscoverReq(BaseModel):
+    client_id: str
+    client_secret: str
+    category: str = ""          # 분야명 ("" = 전체 분야 스캔)
+
+
+@app.post("/api/discover")
+async def discover(req: DiscoverReq):
+    """🎯 자동 발굴 — 사용자가 키워드를 안 넣어도, 내장 씨앗(분야별 수십 개)을
+    쇼핑 인사이트 트렌드에 돌려 '지금 뜨는 위탁 후보'를 상승률 순으로 찾아준다."""
+    import asyncio
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    bank = _seed_bank()
+    if not bank:
+        return {"ok": False, "error": "씨앗 데이터를 불러오지 못했어요(category_seeds.json)."}
+    targets = [req.category] if req.category in bank else list(bank.keys())
+    start, end = _date_range(12)
+    # (분야, 코드, 5개 배치) 작업 목록
+    jobs = []
+    for cat in targets:
+        code, kws = bank[cat]
+        for i in range(0, len(kws), 5):
+            jobs.append((cat, code, kws[i:i + 5]))
+    sem = asyncio.Semaphore(4)
+    first_err = {"msg": ""}
+
+    async def run(cat, code, batch):
+        async with sem:
+            body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                    "category": code,
+                    "keyword": [{"name": k, "param": [k]} for k in batch]}
+            try:
+                data = await _hub_datalab(cid, csec,
+                                          "/shopping/v1/category/keywords", body)
+            except NaverHubAuth as e:
+                if not first_err["msg"]:
+                    first_err["msg"] = str(e)
+                return []
+            except Exception as e:  # noqa: BLE001
+                if not first_err["msg"]:
+                    first_err["msg"] = f"{type(e).__name__}: {str(e)[:120]}"
+                return []
+            picked = []
+            for r in (data.get("results") or []):
+                t = _trend_of(r.get("data") or [])
+                if t.get("series"):
+                    picked.append({"keyword": r.get("title") or "",
+                                   "category": cat, **t})
+            return picked
+
+    batches = await asyncio.gather(*(run(c, code, b) for c, code, b in jobs))
+    items = [x for sub in batches for x in sub]
+    if not items:
+        return {"ok": False,
+                "error": "발굴 결과가 비었어요 — " + (first_err["msg"] or
+                         "트렌드 데이터를 못 받았어요.")}
+    # 상승률 순 → 상위. 급상승·상승만 '뜨는 후보'로 표시
+    items.sort(key=lambda x: -x["rise"])
+    for it in items:
+        it["hot"] = it["rise"] >= 5
+    return {"ok": True, "items": items[:40], "range": f"{start} ~ {end}",
+            "scanned": len(items), "targets": targets}
 
 
 @app.post("/api/keytest")
