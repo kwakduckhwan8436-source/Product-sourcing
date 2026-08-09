@@ -116,7 +116,7 @@ def check_ui() -> int:
         if f"function {fn}" not in js:
             bad += 1
             print(f"  [화면] onclick 이 부르는 {fn}() 정의 없음")
-    for bid in ("auto", "cal", "more", "wlist", "cafe", "chk"):
+    for bid in ("cal", "wlist", "cafe", "chk"):
         if f"$('#{bid}').addEventListener" not in js:
             bad += 1
             print(f"  [화면] #{bid} 버튼에 리스너 없음")
@@ -149,8 +149,10 @@ def check_ui() -> int:
     # (상단바를 갈아끼우다 위탁/도매 토글을 통째로 잘라먹은 적이 있다 —
     #  CSS·JS 는 남아 있어서 문법 검사로는 안 잡혔다)
     must_have = {
-        "위탁/도매 토글": 'data-mode="consign"',
-        "도매 버튼": 'data-mode="wholesale"',
+        "위탁/사입 발굴 토글": 'data-dm="consign"',
+        "사입 발굴 버튼": 'data-dm="wholesale"',
+        "자동 발굴": 'id="discGo"',
+        "허브 연결 점검": 'id="hubtest"',
         "카페 링크": "cafe.naver.com/aiprogram1",
         "브랜드 로고": "재테크 연구소",
         "분야 선택": 'id="cat"',

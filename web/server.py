@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v61"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v64"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -474,8 +474,10 @@ _SHOP_KW_PATHS = [
 
 
 def _trend_of(points: list) -> dict:
-    """데이터랩 시계열(data:[{period,ratio}])에서 상승/하락 신호를 뽑는다.
-    최근 3구간 평균 vs 그 이전 평균의 변화율로 '뜨는 중'을 판정."""
+    """데이터랩 시계열(data:[{period,ratio}])에서 신호를 뽑는다.
+    rise(상승률)·level(평균 수준)·stability(안정성)·momentum(최근 방향)까지 계산해
+    위탁(급상승)·사입(꾸준+높음) 구분과 정밀도의 근거로 쓴다."""
+    import statistics
     vals = []
     for p in (points or []):
         try:
@@ -483,12 +485,20 @@ def _trend_of(points: list) -> dict:
         except (TypeError, ValueError):
             pass
     if len(vals) < 4:
-        return {"latest": round(vals[-1], 1) if vals else 0.0,
-                "rise": 0.0, "stage": "데이터부족", "series": [round(v, 1) for v in vals]}
+        return {"latest": round(vals[-1], 1) if vals else 0.0, "rise": 0.0,
+                "stage": "데이터부족", "series": [round(v, 1) for v in vals],
+                "level": round(sum(vals) / len(vals), 1) if vals else 0.0,
+                "stability": 0.0, "momentum": 0.0, "n": len(vals)}
     recent = sum(vals[-3:]) / 3.0
     earlier = sum(vals[:-3]) / max(1, len(vals) - 3)
     rise = round((recent - earlier) / max(1.0, earlier) * 100, 1)
     peak = max(vals) or 1.0
+    level = sum(vals) / len(vals)                       # 평균 수준(관심 크기 대용)
+    mean_v = level or 1.0
+    sd = statistics.pstdev(vals)
+    cv = sd / mean_v if mean_v else 1.0                 # 변동계수
+    stability = round(max(0.0, min(1.0, 1.0 - cv)), 2)  # 낮게 출렁일수록 1에 가까움
+    momentum = round((vals[-1] - vals[-2]) / max(1.0, vals[-2]) * 100, 1)
     if rise >= 20:
         stage = "급상승"
     elif rise >= 5:
@@ -501,7 +511,9 @@ def _trend_of(points: list) -> dict:
         stage = "보합"
     return {"latest": round(vals[-1], 1), "rise": rise, "stage": stage,
             "peak_pct": round(vals[-1] / peak * 100),
-            "series": [round(v, 1) for v in vals]}
+            "series": [round(v, 1) for v in vals],
+            "level": round(level, 1), "stability": stability,
+            "momentum": momentum, "n": len(vals)}
 
 
 def _date_range(months: int = 12) -> tuple:
@@ -774,6 +786,7 @@ class DiscoverReq(BaseModel):
     client_id: str
     client_secret: str
     category: str = ""          # 분야명 ("" = 전체 분야 스캔)
+    mode: str = "consign"       # consign(위탁) | wholesale(사입/도매)
 
 
 @app.post("/api/discover")
@@ -829,12 +842,50 @@ async def discover(req: DiscoverReq):
         return {"ok": False,
                 "error": "발굴 결과가 비었어요 — " + (first_err["msg"] or
                          "트렌드 데이터를 못 받았어요.")}
-    # 상승률 순 → 상위. 급상승·상승만 '뜨는 후보'로 표시
-    items.sort(key=lambda x: -x["rise"])
+    mode = "wholesale" if req.mode == "wholesale" else "consign"
+    kept = []
     for it in items:
-        it["hot"] = it["rise"] >= 5
-    return {"ok": True, "items": items[:40], "range": f"{start} ~ {end}",
-            "scanned": len(items), "targets": targets}
+        lv = it.get("level", 0.0)
+        st = it.get("stability", 0.0)
+        rs = it.get("rise", 0.0)
+        mo = it.get("momentum", 0.0)
+        n = it.get("n", 0)
+        # 정밀도 1) 데이터가 부족하면(6개월 미만) 추세를 못 믿으니 제외
+        if n < 6:
+            continue
+        # 정밀도 2) 관심이 미미하고(수준 낮음) 오르지도 않으면 제외
+        if lv < 6 and rs < 5:
+            continue
+        # 위탁 적합 = 급상승·모멘텀 (정규화 무관 지표 → 배치 간 비교 정확)
+        consign = round(max(0.0, rs) * 0.7 + max(0.0, mo) * 0.3, 1)
+        # 사입 적합 = 높은 수준 × 안정성 (안정성은 정규화 무관, 수준은 분야 내 비교)
+        wholesale = round(lv * (0.45 + 0.55 * st), 1)
+        it["consign_score"] = consign
+        it["wholesale_score"] = wholesale
+        fit = []
+        if rs >= 10 or mo >= 15:
+            fit.append("위탁형")
+        if lv >= 40 and st >= 0.6:
+            fit.append("사입형")
+        it["fit"] = fit or ["관망"]
+        kept.append(it)
+    if not kept:
+        return {"ok": False, "error": "조건을 넘는 뜨는 후보가 없어요 — 다른 분야로 바꿔보세요."}
+    # 정밀도 3) 같은 키워드가 여러 분야 씨앗에 겹치면 점수 높은 것만 남긴다
+    key = "wholesale_score" if mode == "wholesale" else "consign_score"
+    best = {}
+    for it in kept:
+        kw = it.get("keyword", "")
+        if kw not in best or it.get(key, 0) > best[kw].get(key, 0):
+            best[kw] = it
+    kept = list(best.values())
+    # 점수 → 모멘텀(동점 시 최근 방향) 순
+    kept.sort(key=lambda x: (-x.get(key, 0), -x.get("momentum", 0)))
+    for it in kept:
+        it["hot"] = ("사입형" in it["fit"]) if mode == "wholesale" else ("위탁형" in it["fit"])
+        it["score"] = it["wholesale_score"] if mode == "wholesale" else it["consign_score"]
+    return {"ok": True, "items": kept[:40], "range": f"{start} ~ {end}",
+            "scanned": len(items), "mode": mode, "targets": targets}
 
 
 @app.post("/api/keytest")
