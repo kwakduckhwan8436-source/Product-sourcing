@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v52"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v54"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -417,77 +417,144 @@ class NaverHubAuth(Exception):
     pass
 
 
-# 지식iN 질문에서 '상품을 찾는 니즈'를 드러내는 표현들
-_PAIN_WORDS = ("추천", "어디서", "어디", "없나요", "없을까", "실패", "비교", "차이",
-               "고민", "괜찮", "어떤", "뭐가", "vs", "후기", "단점", "문제", "고르",
-               "골라", "가성비", "질좋", "싸게", "구매", "사려", "살까")
-
-
 def _strip_tags(s: str) -> str:
     return re.sub(r"<[^>]+>", "", s or "").strip()
 
 
-class KinMineReq(BaseModel):
+async def _hub_datalab(cid: str, csec: str, path: str, body: dict) -> dict:
+    """NAVER API HUB Data Lab(쇼핑 인사이트·검색어 트렌드) POST 호출.
+    공식 명세: POST /datalab/v1/... + JSON 바디, X-NCP-APIGW 헤더."""
+    import httpx
+    url = f"{_HUB_BASE}{path}"
+    headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": csec,
+               "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=15.0) as c:
+        r = await c.post(url, headers=headers, json=body)
+    if r.status_code == 401:
+        raise NaverHubAuth("401 인증 실패 — 허브 키가 맞는지, 앱에 '쇼핑 인사이트' API가 "
+                           "선택됐는지 확인해주세요.")
+    if r.status_code == 429:
+        raise NaverHubAuth("429 한도/미선택 — 쇼핑 인사이트 API 선택 여부와 월 한도를 확인해주세요.")
+    if r.status_code >= 400:
+        raise NaverHubAuth(f"{r.status_code}: {(r.text or '')[:220]}")
+    return r.json()
+
+
+def _trend_of(points: list) -> dict:
+    """데이터랩 시계열(data:[{period,ratio}])에서 상승/하락 신호를 뽑는다.
+    최근 3구간 평균 vs 그 이전 평균의 변화율로 '뜨는 중'을 판정."""
+    vals = []
+    for p in (points or []):
+        try:
+            vals.append(float(p.get("ratio")))
+        except (TypeError, ValueError):
+            pass
+    if len(vals) < 4:
+        return {"latest": round(vals[-1], 1) if vals else 0.0,
+                "rise": 0.0, "stage": "데이터부족", "series": [round(v, 1) for v in vals]}
+    recent = sum(vals[-3:]) / 3.0
+    earlier = sum(vals[:-3]) / max(1, len(vals) - 3)
+    rise = round((recent - earlier) / max(1.0, earlier) * 100, 1)
+    peak = max(vals) or 1.0
+    if rise >= 20:
+        stage = "급상승"
+    elif rise >= 5:
+        stage = "상승"
+    elif rise <= -20:
+        stage = "급하락"
+    elif rise <= -5:
+        stage = "하락"
+    else:
+        stage = "보합"
+    return {"latest": round(vals[-1], 1), "rise": rise, "stage": stage,
+            "peak_pct": round(vals[-1] / peak * 100),
+            "series": [round(v, 1) for v in vals]}
+
+
+def _date_range(months: int = 12) -> tuple:
+    """오늘 기준 최근 N개월 [시작, 끝] (YYYY-MM-DD)."""
+    from datetime import date
+    end = date.today()
+    y, m = end.year, end.month - months
+    while m <= 0:
+        m += 12
+        y -= 1
+    return f"{y:04d}-{m:02d}-01", end.isoformat()
+
+
+class InsightCatReq(BaseModel):
     client_id: str
     client_secret: str
-    keywords: list = []
+    categories: list = []       # 분야 이름들 (비면 10개 전체)
 
 
-@app.post("/api/kinmine")
-async def kinmine(req: KinMineReq):
-    """지식iN 페인포인트 발굴 — 키워드별로 '질문 수(수요)'와
-    '니즈 표현 밀도(추천·어디서·없나요…)'를 재서 상품 기회를 점수화한다.
-    수요는 크고 사람들이 뭘 살지 고민 중인 키워드 = 소싱 노른자."""
-    import math
+@app.post("/api/insight/category")
+async def insight_category(req: InsightCatReq):
+    """① 분야별 트렌드 — 대분류들의 클릭 추이를 비교해 '뜨는 분야'를 찾는다."""
     cid = (req.client_id or "").strip()
     csec = (req.client_secret or "").strip()
     if not cid or not csec:
         return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    names = [n for n in (req.categories or []) if n in _CATS] or list(_CATS.keys())
+    cat_param = [{"name": n, "param": [str(_CATS[n])]} for n in names][:14]
+    start, end = _date_range(12)
+    body = {"startDate": start, "endDate": end, "timeUnit": "month", "category": cat_param}
+    try:
+        data = await _hub_datalab(cid, csec, "/datalab/v1/shopping/categories", body)
+    except NaverHubAuth as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+    out = []
+    for r in (data.get("results") or []):
+        t = _trend_of(r.get("data") or [])
+        out.append({"name": r.get("title") or "", **t})
+    out.sort(key=lambda x: -x["rise"])
+    return {"ok": True, "items": out, "range": f"{start} ~ {end}"}
+
+
+class InsightKwReq(BaseModel):
+    client_id: str
+    client_secret: str
+    category: str = ""          # 분야 이름
+    keywords: list = []
+
+
+@app.post("/api/insight/keyword")
+async def insight_keyword(req: InsightKwReq):
+    """② 키워드별 트렌드 — 한 분야 안에서 검색어들의 클릭 추이를 비교."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    code = _CATS.get(req.category or "")
+    if not code:
+        return {"ok": False, "error": "분야를 먼저 선택해주세요."}
     kws, seen = [], set()
     for k in (req.keywords or []):
         k = (k or "").strip()
         if k and k not in seen:
             seen.add(k)
             kws.append(k)
-    kws = kws[:12]
+    kws = kws[:5]               # 데이터랩 키워드 최대 5개
     if not kws:
-        return {"ok": False, "error": "조사할 키워드를 1개 이상 입력해주세요."}
+        return {"ok": False, "error": "이 분야에서 비교할 검색어를 1개 이상 넣어주세요."}
+    kw_param = [{"name": k, "param": [k]} for k in kws]
+    start, end = _date_range(12)
+    body = {"startDate": start, "endDate": end, "timeUnit": "month",
+            "category": str(code), "keyword": kw_param}
+    try:
+        data = await _hub_datalab(cid, csec, "/datalab/v1/shopping/category/keywords", body)
+    except NaverHubAuth as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
     out = []
-    first_err = ""
-    for kw in kws:
-        try:
-            data = await _hub_search(cid, csec, "kin", kw, display=20, sort="sim")
-        except NaverHubAuth as e:
-            return {"ok": False, "error": str(e)}
-        except Exception as e:  # noqa: BLE001
-            msg = f"{type(e).__name__}: {str(e)[:200]}"
-            if not first_err:
-                first_err = msg
-            out.append({"keyword": kw, "error": msg})
-            continue
-        total = int(data.get("total") or 0)
-        items = data.get("items") or []
-        titles = [_strip_tags(it.get("title", "")) for it in items]
-        blob = " ".join(titles + [_strip_tags(it.get("description", "")) for it in items])
-        hits = sum(1 for p in _PAIN_WORDS if p in blob)
-        pain = min(1.0, hits / 8.0)                        # 8+ 표현이면 포화
-        demand = max(0.0, min(1.0, math.log10(total + 1) / 5.0))  # 10만 질문 ≈ 1.0
-        score = round((demand * 0.55 + pain * 0.45) * 100, 1)
-        if total >= 3000 and pain >= 0.5:
-            verdict, level = "수요 크고 니즈 뚜렷 — 상품 기회", "go"
-        elif total >= 500:
-            verdict, level = "수요는 있음 — 니즈 표현 확인해보기", "wait"
-        else:
-            verdict, level = "질문이 적음 — 아직 수요 약함", "stop"
-        out.append({"keyword": kw, "total": total, "pain": round(pain, 2),
-                    "score": score, "verdict": verdict, "level": level,
-                    "samples": titles[:4]})
-    # 전부 실패했으면 실제 원인을 위로 올려 확실히 보여준다
-    if first_err and not any("score" in x for x in out):
-        return {"ok": False,
-                "error": "지식iN 조회가 전부 실패했어요 — 실제 오류: " + first_err}
-    out.sort(key=lambda x: -(x.get("score") or 0))
-    return {"ok": True, "items": out}
+    for r in (data.get("results") or []):
+        t = _trend_of(r.get("data") or [])
+        out.append({"name": r.get("title") or "", **t})
+    out.sort(key=lambda x: -x["rise"])
+    return {"ok": True, "items": out, "category": req.category, "range": f"{start} ~ {end}"}
 
 
 @app.post("/api/keytest")

@@ -257,36 +257,40 @@
   .found{font-size:13px;color:var(--sub);margin:18px 0 10px}
   .linktip{font-size:12.5px;line-height:1.6;color:#f4dea0;background:var(--wait-bg);
     border:1px solid rgba(240,182,56,.3);border-radius:11px;padding:10px 13px;margin:0 0 12px}
-  /* ===== 지식iN 수요·니즈 발굴 ===== */
-  .kinbox{background:linear-gradient(180deg,#151b24,#111721);border:1px solid var(--line2);
+  /* ===== 쇼핑 인사이트 ===== */
+  .insbox{background:linear-gradient(180deg,#151b24,#111721);border:1px solid var(--line2);
     border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 16px 40px rgba(0,0,0,.3)}
-  .kinhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .kinhead h2{font-family:var(--serif);font-size:20px;font-weight:400;margin:0}
-  .kbadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#1a1408;
+  .inshead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .inshead h2{font-family:var(--serif);font-size:20px;font-weight:400;margin:0}
+  .ibadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#1a1408;
     background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));border-radius:999px;padding:3px 9px}
-  .kdesc{font-size:13px;color:var(--sub);line-height:1.65;margin:0 0 14px}
-  .kinrow{display:grid;grid-template-columns:1fr auto;gap:8px}
-  .kinrow input{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
-    border-radius:11px;padding:13px;font-size:15px;outline:none;width:100%}
-  .kinrow input:focus{border-color:var(--brand)}
-  .kinrow button{border:none;border-radius:11px;padding:13px 20px;font-size:15px;font-weight:700;
+  .idesc{font-size:13px;color:var(--sub);line-height:1.65;margin:0 0 14px}
+  .instab{display:flex;gap:6px;margin-bottom:12px}
+  .itab{flex:1;border:1px solid var(--line2);background:var(--panel2);color:var(--sub);
+    border-radius:10px;padding:10px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .itab.on{background:var(--brand);color:#191307;border-color:transparent}
+  .ihint{font-size:12.5px;color:var(--sub);margin:0 0 10px;line-height:1.6}
+  .insrow{display:grid;grid-template-columns:150px 1fr;gap:8px;margin-bottom:10px}
+  .insrow select,.insrow input{background:var(--panel2);border:1px solid var(--line2);
+    color:var(--ink);border-radius:11px;padding:12px;font-size:14px;outline:none;width:100%}
+  .insrow select:focus,.insrow input:focus{border-color:var(--brand)}
+  .inspane>button{border:none;border-radius:11px;padding:13px 22px;font-size:15px;font-weight:700;
     cursor:pointer;color:#1a1408;background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep))}
-  .kincard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;
-    padding:14px 15px;margin-top:10px}
-  .kincard .kc-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px}
-  .kincard .kc-kw{font-size:16px;font-weight:800}
-  .kincard .kc-score{font-family:var(--serif);font-size:20px;margin-left:auto}
-  .kincard .kc-v{font-size:12.5px;border-radius:999px;padding:3px 10px}
-  .kincard .kc-v.go{background:var(--go-bg);color:var(--go)}
-  .kincard .kc-v.wait{background:var(--wait-bg);color:var(--wait)}
-  .kincard .kc-v.stop{background:var(--stop-bg);color:var(--stop)}
-  .kincard .kc-meta{font-size:12.5px;color:var(--sub);margin-bottom:8px}
-  .kincard .kc-q{font-size:12.5px;color:#c8d2df;line-height:1.7;
-    border-left:2px solid var(--line2);padding-left:10px}
-  @media(max-width:640px){ .kinrow{grid-template-columns:1fr} }
+  .inscard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    padding:13px 15px;margin-top:9px}
+  .inscard .ic-name{font-size:15px;font-weight:800}
+  .inscard .ic-sub{font-size:12px;color:var(--sub);margin-top:3px}
+  .inscard .ic-rise{font-family:var(--serif);font-size:20px;text-align:right}
+  .inscard .ic-stage{font-size:11.5px;border-radius:999px;padding:3px 10px;display:inline-block;margin-top:4px}
+  .st-up{background:var(--go-bg);color:var(--go)} .st-dn{background:var(--stop-bg);color:var(--stop)}
+  .st-fl{background:var(--wait-bg);color:var(--wait)}
+  .spark{display:flex;align-items:flex-end;gap:2px;height:26px;margin-top:6px}
+  .spark i{width:5px;background:var(--brand-soft);border-radius:1px;opacity:.7}
+  @media(max-width:640px){ .insrow{grid-template-columns:1fr} }
   .gate{position:fixed;inset:0;z-index:9999;background:rgba(8,11,18,.93);
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-    display:flex;align-items:center;justify-content:center;padding:20px}
+    display:flex;align-items:center;justify-content:center;padding:24px}
   .gatebox{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--line2);
     border-radius:18px;padding:28px 22px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55)}
   .gatebox .gtitle{font-family:var(--serif);font-size:22px;color:var(--brand-soft);margin-bottom:10px}
@@ -749,17 +753,31 @@
 
   <div id="out"></div>
 
-  <section class="kinbox">
-    <div class="kinhead">
-      <span class="kbadge">NEW · 무료</span>
-      <h2>🔍 지식iN 수요·니즈 발굴</h2>
+  <section class="insbox">
+    <div class="inshead">
+      <span class="ibadge">NEW · 무료</span>
+      <h2>🛒 쇼핑 인사이트 — 뜨는 자리 찾기</h2>
     </div>
-    <p class="kdesc">사람들이 <b>지식iN에 묻는 질문</b>으로 수요를 읽어요. <b>질문이 많고(수요), "추천·어디서·없나요"처럼 살 걸 고민하는(니즈)</b> 키워드일수록 상품 기회예요. 궁금한 키워드를 넣어보세요.</p>
-    <div class="kinrow">
-      <input id="kinKw" type="text" placeholder="예: 캠핑의자, 무선청소기, 강아지계단 (쉼표로 여러 개)">
-      <button id="kinGo" type="button">발굴</button>
+    <p class="idesc">네이버 쇼핑에서 <b>어떤 분야·검색어의 클릭이 오르는지</b>(최근 12개월)를 봐요. <b>상승률이 높을수록 지금 뜨는 자리</b>예요.</p>
+    <div class="instab">
+      <button class="itab on" data-m="cat" type="button">분야별 트렌드</button>
+      <button class="itab" data-m="kw" type="button">키워드별 트렌드</button>
     </div>
-    <div id="kinOut"></div>
+
+    <div id="insCat" class="inspane">
+      <p class="ihint">10개 대분류의 클릭 추이를 비교해 <b>뜨는 분야</b>를 상승률 순으로 보여줘요.</p>
+      <button id="insCatGo" type="button">분야별 트렌드 보기</button>
+    </div>
+
+    <div id="insKw" class="inspane" style="display:none">
+      <div class="insrow">
+        <select id="insKwCat"></select>
+        <input id="insKwList" type="text" placeholder="비교할 검색어 (쉼표, 최대 5개) 예: 캠핑의자, 릴렉스체어">
+      </div>
+      <button id="insKwGo" type="button">키워드별 트렌드 보기</button>
+    </div>
+
+    <div id="insOut"></div>
   </section>
 
   <details class="tool" id="marginTool">
@@ -973,40 +991,68 @@ function seasonChip(s) {
   return `<span class="achip">🗓️ <b class="${cls}">${lab}</b> (${s.peak_month}월·평소 ${s.peak_ratio||'?'}배)</span>`;
 }
 
-/* ---------- 🔍 지식iN 수요·니즈 발굴 (새 허브) ---------- */
-async function kinMine(){
-  const box = $('#kinOut');
-  const raw = ($('#kinKw').value || '').trim();
-  if(!raw){ box.innerHTML = '<p class="hint">키워드를 1개 이상 넣어주세요.</p>'; return; }
+/* ---------- 🛒 쇼핑 인사이트 (새 허브 Data Lab) ---------- */
+const INS_CATS = ['패션의류','패션잡화','화장품/미용','디지털/가전','가구/인테리어','출산/육아','식품','스포츠/레저','생활/건강','여가/생활편의'];
+function initIns(){
+  const sel = $('#insKwCat');
+  if(sel) sel.innerHTML = INS_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.querySelectorAll('.itab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    const m = t.dataset.m;
+    $('#insCat').style.display = m==='cat' ? '' : 'none';
+    $('#insKw').style.display  = m==='kw'  ? '' : 'none';
+    $('#insOut').innerHTML = '';
+  }));
+}
+initIns();
+function insKeys(){
   const id = cid.value.trim(), sec = csec.value.trim();
-  if(!id || !sec){ box.innerHTML = '<div class="err">먼저 위쪽에서 <b>네이버 허브 열쇠</b>를 넣고, 「🔌 새 허브 연결 점검」이 ✅ 되는지 확인해주세요.</div>'; $('#keybox').open = true; return; }
-  const kws = raw.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).slice(0,12);
-  box.innerHTML = '<div class="card"><span class="spin"></span>지식iN에서 수요·니즈를 읽는 중…</div>';
+  if(!id || !sec){ $('#insOut').innerHTML = '<div class="err">먼저 <b>네이버 허브 열쇠</b>를 넣고 「🔌 새 허브 연결 점검」이 ✅ 인지 확인해주세요.</div>'; $('#keybox').open=true; return null; }
+  return {id, sec};
+}
+function spark(series){
+  if(!series || series.length<2) return '';
+  const mx = Math.max(...series)||1;
+  return '<div class="spark">'+series.map(v=>`<i style="height:${Math.max(2,Math.round(v/mx*26))}px"></i>`).join('')+'</div>';
+}
+function insCard(it){
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const up = it.rise>0, cls = up?'st-up':(it.rise<0?'st-dn':'st-fl');
+  const arrow = up?'▲':(it.rise<0?'▼':'—');
+  return `<div class="inscard">
+    <div>
+      <div class="ic-name">${esc(it.name)}</div>
+      <span class="ic-stage ${cls}">${it.stage}</span>
+      ${spark(it.series)}
+    </div>
+    <div>
+      <div class="ic-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${arrow} ${Math.abs(it.rise)}%</div>
+      <div class="ic-sub">최근지수 ${it.latest}${it.peak_pct?` · 고점대비 ${it.peak_pct}%`:''}</div>
+    </div>
+  </div>`;
+}
+async function insRun(url, body, label){
+  const k = insKeys(); if(!k) return;
+  const box = $('#insOut');
+  box.innerHTML = `<div class="card"><span class="spin"></span>${label} 불러오는 중…</div>`;
   let d;
   try{
-    const r = await fetch('/api/kinmine', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({client_id:id, client_secret:sec, keywords:kws})});
+    const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(Object.assign({client_id:k.id, client_secret:k.sec}, body))});
     d = await r.json();
-  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v51) 재배포를 확인해주세요.</div>'; return; }
-  if(!d.ok){ box.innerHTML = `<div class="err">${d.error||'실패'}</div>`; return; }
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v54) 재배포를 확인해주세요.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
   if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">결과가 없어요.</p>'; return; }
-  const esc = s => (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  box.innerHTML = d.items.map(it=>{
-    if(it.error) return `<div class="kincard"><div class="kc-top"><span class="kc-kw">${esc(it.keyword)}</span></div><div class="kc-meta" style="color:var(--stop)">${esc(it.error)}</div></div>`;
-    const q = (it.samples||[]).map(s=>'· '+esc(s)).join('<br>');
-    return `<div class="kincard">
-      <div class="kc-top">
-        <span class="kc-kw">${esc(it.keyword)}</span>
-        <span class="kc-v ${it.level}">${esc(it.verdict)}</span>
-        <span class="kc-score">${it.score}점</span>
-      </div>
-      <div class="kc-meta">질문 <b>${(it.total||0).toLocaleString('ko-KR')}개</b>(수요) · 니즈 표현 밀도 ${Math.round((it.pain||0)*100)}%</div>
-      ${q ? `<div class="kc-q">${q}</div>` : ''}
-    </div>`;
-  }).join('');
+  box.innerHTML = `<p class="ihint">기간 ${d.range||''} · 상승률 순</p>` + d.items.map(it=>insCard(it)).join('');
 }
-if ($('#kinGo')) $('#kinGo').addEventListener('click', kinMine);
-if ($('#kinKw')) $('#kinKw').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); kinMine(); }});
+if ($('#insCatGo')) $('#insCatGo').addEventListener('click', ()=> insRun('/api/insight/category', {}, '분야별 트렌드'));
+if ($('#insKwGo')) $('#insKwGo').addEventListener('click', ()=>{
+  const cat = $('#insKwCat').value;
+  const kws = ($('#insKwList').value||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean).slice(0,5);
+  if(!kws.length){ $('#insOut').innerHTML = '<div class="err">비교할 검색어를 1개 이상 넣어주세요.</div>'; return; }
+  insRun('/api/insight/keyword', {category:cat, keywords:kws}, '키워드별 트렌드');
+});
 
 /* ---------- 열쇠 (브라우저에만 저장) ---------- */
 cid.value = localStorage.getItem('nid') || '';
