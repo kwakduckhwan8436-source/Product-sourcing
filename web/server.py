@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v66"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v70"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -419,6 +419,62 @@ class NaverHubAuth(Exception):
 
 def _strip_tags(s: str) -> str:
     return re.sub(r"<[^>]+>", "", s or "").strip()
+
+
+# 연관어 채굴에서 걸러낼 흔한 비(非)상품 단어
+_STOP_WORDS = {
+    "추천", "후기", "사용", "정리", "방법", "가격", "구매", "진짜", "정말", "하나",
+    "그리고", "너무", "완전", "정도", "생각", "경우", "이번", "요즘", "오늘", "우리",
+    "가능", "관련", "각종", "다양", "여기", "저기", "이것", "그것", "무엇", "때문",
+    "네이버", "블로그", "지식", "질문", "답변", "제품", "상품", "브랜드", "쇼핑",
+    "비교", "차이", "장점", "단점", "문의", "판매", "최고", "인기", "베스트",
+}
+
+
+async def _search_total(cid: str, csec: str, kind: str, query: str) -> int:
+    """검색 API 로 그 키워드의 총 문서 수만 가볍게 얻는다(display=1).
+    지식iN=질문 수(수요 폭), 블로그=글 수(화제성)."""
+    try:
+        data = await _hub_search(cid, csec, kind, query, display=1, sort="sim")
+        return int(data.get("total") or 0)
+    except Exception:  # noqa: BLE001
+        return -1
+
+
+def _confidence(it: dict, x_state: str, kin_total: int, blog_total: int) -> int:
+    """신뢰도 0~100 — 데이터 충분도·교차검증·안정성·수요폭·화제성을 합산."""
+    import math
+    n = it.get("n", 0)
+    st = it.get("stability", 0.0)
+    c = min(30.0, n / 12.0 * 30.0)                 # 데이터 충분도 (≤30)
+    c += {"both": 25.0, "search": 12.0, "click": 6.0}.get(x_state, 0.0)  # 교차검증 (≤25)
+    c += st * 20.0                                  # 안정성 (≤20)
+    if kin_total and kin_total > 0:
+        c += min(15.0, math.log10(kin_total + 1) / 5.0 * 15.0)   # 수요 폭 (≤15)
+    if blog_total and blog_total > 0:
+        c += min(10.0, math.log10(blog_total + 1) / 6.0 * 10.0)  # 화제성 (≤10)
+    return round(min(100.0, c))
+
+
+async def _related_terms(cid: str, csec: str, base: str, limit: int = 8) -> list:
+    """블로그·지식iN 검색 결과 제목/설명에서 base 와 함께 자주 나오는 한글 단어를
+    빈도순으로 뽑아 '실제 연관어'를 만든다(형태소기 없이 가벼운 명사 근사)."""
+    from collections import Counter
+    cnt: Counter = Counter()
+    for kind in ("blog", "kin"):
+        try:
+            data = await _hub_search(cid, csec, kind, base, display=30, sort="sim")
+        except Exception:  # noqa: BLE001
+            continue
+        for it in (data.get("items") or []):
+            text = _strip_tags(it.get("title", "")) + " " + _strip_tags(it.get("description", ""))
+            for w in re.findall(r"[가-힣]{2,10}", text):
+                if w == base or base in w or w in base:
+                    continue
+                if w in _STOP_WORDS or w.endswith(("합니다", "했어요", "하는", "해서", "니다")):
+                    continue
+                cnt[w] += 1
+    return [w for w, c in cnt.most_common(limit) if c >= 3]
 
 
 async def _hub_datalab(cid: str, csec: str, path: str, body: dict) -> dict:
@@ -961,14 +1017,14 @@ async def discover(req: DiscoverReq):
         it["verdict"] = _discover_verdict(it, mode)      # [level, text]
         it["season"] = _season_of(it.get("series") or [])
     result = kept[:40]
-    # 🔗 검색량 교차검증 — 상위 후보만 검색어 트렌드로 확인(클릭↑ + 검색↑ = 진짜)
+    # 🔗 3중 교차검증 + 신뢰도 — 상위 후보를 검색량·지식iN·블로그로 재확인
     trend_path = None
+    import asyncio as _aio
     try:
         top = result[:20]
-        tkws = [it["keyword"] for it in top]
         srise = {}
-        for i in range(0, len(tkws), 5):
-            b = tkws[i:i + 5]
+        for i in range(0, len(top), 5):
+            b = [x["keyword"] for x in top[i:i + 5]]
             body = {"startDate": start, "endDate": end, "timeUnit": "month",
                     "keywordGroups": [{"groupName": k, "keywords": [k]} for k in b]}
             data, trend_path = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
@@ -976,25 +1032,121 @@ async def discover(req: DiscoverReq):
                 t = _trend_of(r.get("data") or [])
                 if t.get("series"):
                     srise[r.get("title") or ""] = t["rise"]
+        # 지식iN 질문 수 + 블로그 글 수 (상위 10개만, 병렬)
+        deep = top[:10]
+        kin_t = await _aio.gather(*(_search_total(cid, csec, "kin", x["keyword"]) for x in deep))
+        blog_t = await _aio.gather(*(_search_total(cid, csec, "blog", x["keyword"]) for x in deep))
+        totals = {deep[i]["keyword"]: (kin_t[i], blog_t[i]) for i in range(len(deep))}
         for it in top:
-            sr = srise.get(it["keyword"])
-            if sr is None:
-                continue
+            kw = it["keyword"]
+            sr = srise.get(kw)
             cr = it.get("rise", 0.0)
-            if sr >= 5 and cr >= 5:
-                lvl, note = "go", f"검색량도 {sr:.0f}%↑ — 클릭·검색 둘 다 오름(신뢰도 높음)"
-            elif cr >= 5 and sr <= -5:
-                lvl, note = "wait", f"검색량은 {sr:.0f}%↓ — 클릭만 오름(반짝일 수 있음)"
-            elif sr >= 5:
-                lvl, note = "wait", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
+            kin, blog = totals.get(kw, (None, None))
+            # 교차검증 상태
+            if sr is not None and sr >= 5 and cr >= 5:
+                x_state, xnote = "both", f"검색량 {sr:.0f}%↑ · 클릭도 ↑ (둘 다 오름)"
+            elif sr is not None and sr >= 5:
+                x_state, xnote = "search", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
+            elif cr >= 5:
+                x_state, xnote = "click", "클릭은 오르나 검색량은 완만"
             else:
-                lvl, note = "neutral", f"검색량 변화 {sr:+.0f}%"
-            it["xcheck"] = {"search_rise": sr, "level": lvl, "note": note}
+                x_state, xnote = "none", "뚜렷한 상승 신호 약함"
+            bits = [xnote]
+            if kin and kin > 0:
+                bits.append(f"지식iN 질문 {kin:,}건")
+            if blog and blog > 0:
+                bits.append(f"블로그 {blog:,}건")
+            it["xcheck"] = {"level": ("go" if x_state == "both" else
+                                      "wait" if x_state in ("search", "click") else "neutral"),
+                            "note": " · ".join(bits)}
+            it["confidence"] = _confidence(it, x_state,
+                                           kin if kin and kin > 0 else 0,
+                                           blog if blog and blog > 0 else 0)
     except Exception:  # noqa: BLE001
-        pass                                            # 교차검증 실패해도 발굴 결과는 유지
+        pass
     return {"ok": True, "items": result, "range": f"{start} ~ {end}",
             "scanned": len(items), "mode": mode, "targets": targets,
             "trend_path": trend_path}
+
+
+_NICHE_MODS = ["무선", "미니", "대용량", "저소음", "접이식", "휴대용", "방수",
+               "소형", "대형", "프리미엄", "1인용", "정리", "세트", "실내", "캐릭터",
+               "가성비", "고급"]
+
+
+class NicheReq(BaseModel):
+    client_id: str
+    client_secret: str
+    category: str = ""
+    keyword: str = ""
+
+
+@app.post("/api/niche")
+async def niche(req: NicheReq):
+    """🧭 니치 조합 발굴 — 기준 키워드에 수식어를 곱해 세부 조합의 트렌드를 재고,
+    '아직 안 붐비지만 수요가 오르는' 롱테일 니치를 상승률 순으로 찾는다."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    code = _CATS.get(req.category or "")
+    if not code:
+        return {"ok": False, "error": "분야를 먼저 선택해주세요."}
+    base = (req.keyword or "").strip()
+    if not base:
+        return {"ok": False, "error": "기준 키워드를 넣어주세요 (예: 청소기)."}
+    combos, seen = [base], {base}
+    for m in _NICHE_MODS:
+        c = f"{m} {base}"
+        if c not in seen:
+            seen.add(c)
+            combos.append(c)
+    # 🔎 연관검색어 자동 확장 — 블로그·지식iN에서 실제로 함께 쓰이는 단어로 조합
+    related = await _related_terms(cid, csec, base, limit=8)
+    rel_set = set()
+    for w in related:
+        c = f"{w} {base}"
+        if c not in seen:
+            seen.add(c)
+            rel_set.add(c)
+            combos.append(c)
+    combos = combos[:30]
+    start, end = _date_range(12)
+    out = []
+    first_err = ""
+    for i in range(0, len(combos), 5):
+        b = combos[i:i + 5]
+        body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                "category": str(code),
+                "keyword": [{"name": c, "param": [c]} for c in b]}
+        try:
+            data = await _hub_datalab(cid, csec,
+                                      "/shopping/v1/category/keywords", body)
+        except NaverHubAuth as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:  # noqa: BLE001
+            if not first_err:
+                first_err = f"{type(e).__name__}: {str(e)[:120]}"
+            continue
+        for r in (data.get("results") or []):
+            t = _trend_of(r.get("data") or [])
+            if t.get("n", 0) >= 6 and t.get("series"):
+                it = {"keyword": r.get("title") or "", "category": req.category, **t}
+                it["consign_score"] = round(max(0.0, it["rise"]) * 0.7
+                                             + max(0.0, it["momentum"]) * 0.3, 1)
+                it["reasons"] = _discover_reasons(it)
+                it["verdict"] = _discover_verdict(it, "consign")
+                it["season"] = _season_of(it.get("series") or [])
+                it["fit"] = (["위탁형"] if (it["rise"] >= 10 or it["momentum"] >= 15)
+                             else ["관망"])
+                if it["keyword"] in rel_set:
+                    it["from_related"] = True   # 실제 연관어에서 나온 조합 표시
+                out.append(it)
+    if not out:
+        return {"ok": False, "error": "조합 데이터를 못 받았어요 — " + (first_err or "다른 키워드로.")}
+    out.sort(key=lambda x: -x["rise"])
+    return {"ok": True, "items": out, "range": f"{start} ~ {end}",
+            "base": base, "mode": "consign", "related": related}
 
 
 @app.post("/api/keytest")

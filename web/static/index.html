@@ -301,6 +301,14 @@
   .dc-reasons{margin:0 0 8px;padding-left:18px;font-size:12.5px;color:#cdd6e2;line-height:1.7}
   .dc-reasons li{margin:1px 0}
   .dc-xcheck{font-size:12.5px;border-radius:8px;padding:7px 10px;margin:0 0 8px;font-weight:600}
+  .dc-conf{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+  .dc-conf-l{font-size:12.5px;color:var(--sub);white-space:nowrap}
+  .dc-conf-l b{color:var(--ink);font-size:14px}
+  .dc-conf-bar{flex:1;height:8px;background:var(--panel);border-radius:5px;overflow:hidden}
+  .dc-conf-bar i{display:block;height:100%;border-radius:5px}
+  .src-link.customs{color:#c8b6ff;background:rgba(150,120,255,.12)}
+  .sweep{background:rgba(216,178,60,.12);border:1px solid rgba(216,178,60,.28);
+    border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:13px;color:#f0e2b8}
   .xc-go{background:var(--go-bg);color:#bff0d2}
   .xc-wait{background:var(--wait-bg);color:#f4e6bc}
   .xc-neutral{background:var(--panel);color:var(--sub)}
@@ -644,6 +652,30 @@
       background:linear-gradient(180deg,var(--brand),var(--gold-hi))}
     .autorow,.searchrow,.kpis,.keyrow{grid-template-columns:1fr}
   }
+  /* ===== 새 카드/탭/신뢰도 모바일 최적화 ===== */
+  @media(max-width:640px){
+    .insbox,.discbox{padding:14px}
+    .inshead h2{font-size:17px}
+    .instab{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;padding-bottom:2px}
+    .instab::-webkit-scrollbar{display:none}
+    .itab{flex:0 0 auto;padding:9px 13px;font-size:12.5px;white-space:nowrap}
+    .discmode{flex-direction:column}
+    .disccard{padding:12px}
+    .dc-line{gap:8px}
+    .dc-kw{font-size:14px}
+    .dc-cat{font-size:10.5px}
+    .dc-rise{font-size:17px}
+    .dc-verdict{font-size:12.5px;padding:8px 10px}
+    .dc-reasons{font-size:12px;padding-left:16px}
+    .dc-xcheck{font-size:11.5px;padding:6px 9px}
+    .dc-conf-l{font-size:11.5px}
+    .src-link{font-size:11px;padding:5px 8px}
+    .dc-act{font-size:11.5px;padding:6px 9px}
+    .tgrow{grid-template-columns:46px 1fr 38px;gap:6px}
+    .tgl{font-size:11.5px}
+    .fitrow,.dc-acts,.src-links{gap:5px}
+  }
 </style>
 </head>
 <body>
@@ -800,6 +832,7 @@
       <button class="itab" data-m="kw" type="button">키워드별 트렌드</button>
       <button class="itab" data-m="tg" type="button">타깃(성별·연령)</button>
       <button class="itab" data-m="tr" type="button">검색어 트렌드</button>
+      <button class="itab" data-m="ni" type="button">🧭 니치 조합</button>
     </div>
 
     <div id="insCat" class="inspane">
@@ -828,6 +861,15 @@
       <p class="ihint">키워드들의 <b>검색량</b> 추이를 봐요. <b>쇼핑 클릭(위 탭)도 오르고 검색량도 오르면</b> 진짜 뜨는 자리예요.</p>
       <input id="insTrList" type="text" placeholder="검색어 (쉼표, 최대 5개) 예: 캠핑의자, 무선선풍기" style="width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:11px;padding:12px;font-size:14px;margin-bottom:10px">
       <button id="insTrGo" type="button">검색어 트렌드 보기</button>
+    </div>
+
+    <div id="insNi" class="inspane" style="display:none">
+      <p class="ihint">기준 키워드에 <b>수식어(무선·미니·대용량·저소음…)</b>를 곱해 <b>아직 안 붐빈 세부 니치</b> 중 뜨는 걸 찾아요.</p>
+      <div class="insrow">
+        <select id="insNiCat"></select>
+        <input id="insNiKw" type="text" placeholder="기준 키워드 1개 예: 청소기, 텀블러">
+      </div>
+      <button id="insNiGo" type="button">니치 조합 발굴</button>
     </div>
 
     <div id="insOut"></div>
@@ -1036,6 +1078,7 @@ function initIns(){
   const opts = INS_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
   if($('#insKwCat')) $('#insKwCat').innerHTML = opts;
   if($('#insTgCat')) $('#insTgCat').innerHTML = opts;
+  if($('#insNiCat')) $('#insNiCat').innerHTML = opts;
   if($('#discCat')) $('#discCat').innerHTML = '<option value="">전체 분야 (느림 · 40초쯤)</option>' + opts;
   document.querySelectorAll('.itab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
@@ -1045,6 +1088,7 @@ function initIns(){
     $('#insKw').style.display  = m==='kw'  ? '' : 'none';
     $('#insTg').style.display  = m==='tg'  ? '' : 'none';
     $('#insTr').style.display  = m==='tr'  ? '' : 'none';
+    $('#insNi').style.display  = m==='ni'  ? '' : 'none';
     $('#insOut').innerHTML = '';
   }));
 }
@@ -1056,6 +1100,70 @@ document.querySelectorAll('.dmb').forEach(b=>b.addEventListener('click',()=>{
   b.classList.add('on'); DISC_MODE = b.dataset.dm; $('#discOut').innerHTML='';
   if (typeof setMode === 'function') setMode(DISC_MODE);  // 계산기 마진율도 같이 맞춤
 }));
+function discCardHTML(it, i, isW){
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const fitBadge = f => f==='위탁형'?'<span class="dc-fit fit-c">위탁형</span>':(f==='사입형'?'<span class="dc-fit fit-w">사입형</span>':'<span class="dc-fit fit-n">관망</span>');
+  const up = it.rise>0;
+    const v = it.verdict || ['wait',''];
+    const vico = v[0]==='go'?'✅':(v[0]==='stop'?'⚠️':'🟡');
+    const reasons = (it.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('');
+    const xc = it.xcheck;
+    const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
+    const conf = (typeof it.confidence === 'number') ? it.confidence : null;
+    const confHtml = conf!==null ? `<div class="dc-conf"><span class="dc-conf-l">신뢰도 <b>${conf}%</b></span><span class="dc-conf-bar"><i style="width:${conf}%;background:${conf>=75?'var(--go)':(conf>=50?'var(--wait)':'var(--stop)')}"></i></span></div>` : '';
+    const sea = it.season;
+    const seaHtml = sea ? `<span class="dc-season${sea.hot?' hot':''}">🗓 ${esc(sea.label)}</span>` : '';
+    const kwEnc = encodeURIComponent(it.keyword);
+        const g = q => `https://www.google.com/search?q=${encodeURIComponent(it.keyword+' '+q)}`;
+    // 거래처 링크 — 위탁(국내) / 사입(해외) 각 6곳
+    const consignV = [
+      ['📦 도매꾹', `https://domeggook.com/main/item/itemList.php?sw=${kwEnc}`],
+      ['📦 오너클랜', `https://ownerclan.com/V2/product/search.php?keyword=${kwEnc}`],
+      ['📦 도매매', g('도매매')],
+      ['📦 온채널', g('온채널 위탁')],
+      ['📦 도매토피아', g('도매토피아')],
+      ['📦 사입삼촌·기타', g('위탁 도매 사입처')],
+    ];
+    const wholeV = [
+      ['🏭 1688', `https://s.1688.com/selloffer/offer_search.htm?keywords=${kwEnc}`],
+      ['🛍 타오바오', `https://s.taobao.com/search?q=${kwEnc}`],
+      ['🌐 알리바바', `https://www.alibaba.com/trade/search?SearchText=${kwEnc}`],
+      ['🚀 알리익스프레스', `https://www.aliexpress.com/wholesale?SearchText=${kwEnc}`],
+      ['👗 VVIC(광저우)', g('VVIC 광저우 도매')],
+      ['🏬 이우도매', g('이우도매 义乌')],
+    ];
+    const links = (isW ? wholeV : consignV)
+      .map(([t,u])=>`<a class="src-link buy" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
+    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}">
+      <div class="dc-line">
+        <div>
+          <span class="dc-rank">${i+1}</span>
+          <span class="dc-kw">${esc(it.keyword)}</span>
+          <span class="dc-cat">${esc(it.category)}</span>
+          ${(it.fit||[]).map(fitBadge).join('')}
+          ${it.from_related?'<span class="dc-fit fit-w">🔎 연관어</span>':''}
+        </div>
+        <div>
+          <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
+          <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
+        </div>
+      </div>
+      <div class="dc-verdict ${v[0]}">${vico} <b>${esc(v[1])}</b></div>
+      ${confHtml}
+      ${xcHtml}
+      ${seaHtml}
+      ${reasons?`<ul class="dc-reasons">${reasons}</ul>`:''}
+      ${spark(it.series)}
+      <div class="src-links">${links}${isW?`<a class="src-link customs" href="${g('수입 통계 관세청')}" target="_blank" rel="noopener">📊 수입동향</a>`:''}</div>
+      <div class="dc-acts">
+        <button class="dc-act" data-act="target">👥 누가 사나</button>
+        <button class="dc-act" data-act="dig">🧭 더 파기</button>
+        <button class="dc-act" data-act="margin">💰 마진 계산</button>
+      </div>
+      <div class="dc-detail"></div>
+    </div>`;
+}
+
 async function autoDiscover(){
   const k = insKeys(); if(!k) return;
   const box = $('#discOut');
@@ -1073,81 +1181,88 @@ async function autoDiscover(){
   const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const fitBadge = f => f==='위탁형'?'<span class="dc-fit fit-c">위탁형</span>':(f==='사입형'?'<span class="dc-fit fit-w">사입형</span>':'<span class="dc-fit fit-n">관망</span>');
   const hotN = d.items.filter(x=>x.hot).length;
-  let html = `<p class="ihint" style="margin-top:10px">${modeLbl} 후보 ${d.items.length}개 · 적합 <b>${hotN}개</b> · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>`;
-  html += d.items.map((it,i)=>{
-    const up = it.rise>0;
-    const v = it.verdict || ['wait',''];
-    const vico = v[0]==='go'?'✅':(v[0]==='stop'?'⚠️':'🟡');
-    const reasons = (it.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('');
-    const xc = it.xcheck;
-    const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
-    const sea = it.season;
-    const seaHtml = sea ? `<span class="dc-season${sea.hot?' hot':''}">🗓 ${esc(sea.label)}</span>` : '';
-    const kwEnc = encodeURIComponent(it.keyword);
-    const isW = (d.mode==='wholesale');
-    // 시장 확인 + 소싱처 링크 (모드별 강조)
-    const links = `
-      <a class="src-link market" href="https://search.shopping.naver.com/search/all?query=${kwEnc}" target="_blank" rel="noopener">🛒 네이버쇼핑 시세</a>
-      ${isW
-        ? `<a class="src-link buy" href="https://s.1688.com/selloffer/offer_search.htm?keywords=${kwEnc}" target="_blank" rel="noopener">🏭 1688 사입</a>
-           <a class="src-link buy" href="https://s.taobao.com/search?q=${kwEnc}" target="_blank" rel="noopener">🛍 타오바오</a>`
-        : `<a class="src-link buy" href="https://domeggook.com/main/item/itemList.php?sw=${kwEnc}" target="_blank" rel="noopener">📦 도매꾹 위탁</a>
-           <a class="src-link buy" href="https://ownerclan.com/V2/product/search.php?keyword=${kwEnc}" target="_blank" rel="noopener">📦 오너클랜</a>`}`;
-    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}">
-      <div class="dc-line">
-        <div>
-          <span class="dc-rank">${i+1}</span>
-          <span class="dc-kw">${esc(it.keyword)}</span>
-          <span class="dc-cat">${esc(it.category)}</span>
-          ${(it.fit||[]).map(fitBadge).join('')}
-        </div>
-        <div>
-          <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
-          <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
-        </div>
-      </div>
-      <div class="dc-verdict ${v[0]}">${vico} <b>${esc(v[1])}</b></div>
-      ${xcHtml}
-      ${seaHtml}
-      ${reasons?`<ul class="dc-reasons">${reasons}</ul>`:''}
-      ${spark(it.series)}
-      <div class="src-links">${links}</div>
-      <div class="dc-acts">
-        <button class="dc-act" data-act="target">👥 누가 사나</button>
-        <button class="dc-act" data-act="margin">💰 마진 계산</button>
-      </div>
-      <div class="dc-detail"></div>
-    </div>`;
-  }).join('');
+  let sweep = '';
+  if(!cat){ // 전체 분야 자동순회 — 어느 분야가 가장 뜨거운지 요약
+    const byCat = {};
+    d.items.forEach(x=>{ if(x.hot) byCat[x.category]=(byCat[x.category]||0)+1; });
+    const top = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    if(top.length) sweep = `<div class="sweep">🔥 이번에 가장 뜨거운 분야: ${top.map(([c,n])=>`<b>${c}</b> ${n}개`).join(' · ')}</div>`;
+  }
+  let html = sweep + `<p class="ihint" style="margin-top:10px">${modeLbl} 후보 ${d.items.length}개 · 적합 <b>${hotN}개</b> · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>`;
+  html += d.items.map((it,i)=>discCardHTML(it,i,d.mode==='wholesale')).join('');
   box.innerHTML = html;
+  const tops = box.querySelectorAll('.disccard');
+  for (let i = 0; i < Math.min(3, tops.length); i++) loadTarget(tops[i]);
 }
 if ($('#discGo')) $('#discGo').addEventListener('click', autoDiscover);
 
+/* 🧭 니치 조합 발굴 */
+async function nicheRun(){
+  const k = insKeys(); if(!k) return;
+  const box = $('#insOut');
+  const cat = $('#insNiCat').value, base = ($('#insNiKw').value||'').trim();
+  if(!base){ box.innerHTML = '<div class="err">기준 키워드를 넣어주세요.</div>'; return; }
+  box.innerHTML = `<div class="card"><span class="spin"></span>"${base}" 니치 조합 발굴 중…</div>`;
+  let d;
+  try{
+    const r = await fetch('/api/niche', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, keyword:base})});
+    d = await r.json();
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v67) 재배포를 확인해주세요.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">뜨는 조합이 없어요.</p>'; return; }
+  const relLine = (d.related&&d.related.length)
+    ? `<p class="ihint" style="margin-top:10px">🔎 실제 연관어 자동 확장: <b>${d.related.map(w=>w.replace(/</g,'&lt;')).join(', ')}</b></p>` : '';
+  let html = `<p class="ihint" style="margin-top:10px">"${base}" 세부 조합 ${d.items.length}개 · 상승률 순</p>` + relLine;
+  html += d.items.map((it,i)=>discCardHTML(it,i,false)).join('');
+  box.innerHTML = html;
+  const tops = box.querySelectorAll('.disccard');
+  for (let i = 0; i < Math.min(2, tops.length); i++) loadTarget(tops[i]);
+}
+if ($('#insNiGo')) $('#insNiGo').addEventListener('click', nicheRun);
+
 /* 발굴 카드 액션: 👥 누가 사나(타깃) · 💰 마진 계산 */
-if ($('#discOut')) $('#discOut').addEventListener('click', async (e)=>{
-  const btn = e.target.closest('.dc-act'); if(!btn) return;
-  const card = btn.closest('.disccard'); if(!card) return;
+async function loadTarget(card){
   const kw = card.dataset.kw, cat = card.dataset.cat;
   const det = card.querySelector('.dc-detail');
-  if(btn.dataset.act === 'margin'){
-    const mt = $('#marginTool'); if(mt){ mt.open = true; mt.scrollIntoView({behavior:'smooth', block:'start'}); }
-    return;
-  }
-  // target
+  if(!det || det.dataset.loaded) return;
   const k = insKeys(); if(!k) return;
+  det.dataset.loaded = '1';
   det.innerHTML = '<p class="hint" style="margin:6px 0">누가 사는지 보는 중…</p>';
   let d;
   try{
     const r = await fetch('/api/insight/target', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, keyword:kw})});
     d = await r.json();
-  }catch(err){ det.innerHTML = '<p class="hint">타깃 조회 실패</p>'; return; }
-  if(!d.ok){ det.innerHTML = `<p class="hint">${(d.error||'실패').replace(/</g,'&lt;')}</p>`; return; }
-  let h = d.summary ? `<div class="dc-fit fit-c" style="margin:6px 0">주 타깃 ${d.summary}</div>` : '';
+  }catch(err){ det.innerHTML = '<p class="hint">타깃 조회 실패</p>'; det.dataset.loaded=''; return; }
+  if(!d.ok){ det.innerHTML = `<p class="hint">${(d.error||'실패').replace(/</g,'&lt;')}</p>`; det.dataset.loaded=''; return; }
+  let h = d.summary ? `<div class="dc-fit fit-c" style="margin:6px 0">👥 주 타깃 ${d.summary}</div>` : '';
   if(d.gender) h += '<div class="tgh">성별</div>'+bar(d.gender);
   if(d.age) h += '<div class="tgh" style="margin-top:6px">연령</div>'+bar(d.age);
   det.innerHTML = h || '<p class="hint">타깃 데이터 없음</p>';
-});
+}
+function cardActionHandler(e){
+  const btn = e.target.closest('.dc-act'); if(!btn) return;
+  const card = btn.closest('.disccard'); if(!card) return;
+  if(btn.dataset.act === 'margin'){
+    const mt = $('#marginTool'); if(mt){ mt.open = true; mt.scrollIntoView({behavior:'smooth', block:'start'}); }
+    return;
+  }
+  if(btn.dataset.act === 'dig'){
+    // 🧭 2차 확장 — 이 키워드를 기준으로 니치를 또 판다
+    const kw = card.dataset.kw, cat = card.dataset.cat;
+    const niTab = document.querySelector('.itab[data-m="ni"]');
+    if(niTab) niTab.click();
+    if($('#insNiCat') && cat) $('#insNiCat').value = cat;
+    if($('#insNiKw')) $('#insNiKw').value = kw;
+    const box = $('.insbox'); if(box) box.scrollIntoView({behavior:'smooth', block:'start'});
+    nicheRun();
+    return;
+  }
+  loadTarget(card);
+}
+if ($('#discOut')) $('#discOut').addEventListener('click', cardActionHandler);
+if ($('#insOut')) $('#insOut').addEventListener('click', cardActionHandler);
 function insKeys(){
   const id = cid.value.trim(), sec = csec.value.trim();
   if(!id || !sec){ $('#insOut').innerHTML = '<div class="err">먼저 <b>네이버 허브 열쇠</b>를 넣고 「🔌 새 허브 연결 점검」이 ✅ 인지 확인해주세요.</div>'; $('#keybox').open=true; return null; }
