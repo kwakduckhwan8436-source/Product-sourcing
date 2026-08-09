@@ -146,6 +146,11 @@ class NaverClient:
             if resp.status_code == 401:
                 # 키/권한 문제 — 재시도 무의미, 즉시 치명 오류로 중단
                 raise NaverAuthError(self._explain_401(resp))
+            if resp.status_code == 403:
+                # 앱에 '검색 API' 사용 설정이 안 된 대표 케이스 — 딱 짚어준다.
+                raise NaverAuthError(
+                    "403 — 이 열쇠에 '검색' API 권한이 없어요. 네이버 개발자센터 → "
+                    "내 애플리케이션 → 'API 설정'에서 '검색'을 추가(체크)한 뒤 다시 시도해주세요.")
             if resp.status_code == 429:
                 attempt += 1
                 if attempt > retries:

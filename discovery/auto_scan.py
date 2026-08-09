@@ -73,18 +73,23 @@ class ScanReport:
     passed: int = 0
     rate_limited: bool = False   # 네이버 검색 API 한도(429)로 조회 실패
     no_seeds: bool = False       # 씨앗(분야 키워드)을 못 불러옴 = 데이터 문제
+    error: str = ""              # 씨앗 조회가 전부 실패한 실제 이유(진단용)
 
     def as_dict(self) -> dict:
         return {"looked": self.looked, "red": self.red, "ghost": self.ghost,
                 "off": self.off, "nolow": self.nolow,
                 "cheap": self.cheap, "blocked": self.blocked,
                 "passed": self.passed,
-                "rate_limited": self.rate_limited, "no_seeds": self.no_seeds}
+                "rate_limited": self.rate_limited, "no_seeds": self.no_seeds,
+                "error": self.error}
 
     def summary(self) -> str:
         if self.no_seeds:
             return ("분야 키워드(씨앗)를 불러오지 못했어요 — 서버에 "
                     "category_seeds.json 데이터가 올라갔는지 확인해주세요.")
+        if self.error:
+            return (f"네이버 검색 조회에 전부 실패했어요 — {self.error}. "
+                    "키·권한 문제이거나 네이버 응답 형식이 바뀌었을 수 있어요.")
         if self.rate_limited and not self.passed:
             return ("네이버 검색 API 한도에 걸렸어요 — 잠시(1~2분) 뒤 다시 눌러주세요. "
                     "여러 명이 몰렸거나 하루 한도(키당 2.5만회)를 넘었을 수 있어요.")
@@ -409,11 +414,15 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
     used += len(seeds)
     ok_seeds = sum(1 for x in m0s if not isinstance(x, Exception))
     rate_hits = sum(1 for x in m0s if _is_rate(x))
-    # 씨앗이 하나도 안 열렸는데 한도만 잔뜩이면 = 진짜 한도. 일부라도 열리면 진행.
-    if ok_seeds == 0 and rate_hits >= 1:
-        rep.rate_limited = True
+    # 씨앗이 하나도 안 열리면 = 한도이거나 API 오류. 실제 원인을 남겨 진단한다.
+    if ok_seeds == 0:
+        rep.rate_limited = rate_hits > 0
+        if not rate_hits:
+            first = next((x for x in m0s if isinstance(x, Exception)), None)
+            if first is not None:
+                rep.error = f"{type(first).__name__}: {str(first)[:180]}"
         if progress_cb:
-            progress_cb(used, budget, "한도소진")
+            progress_cb(used, budget, "조회 실패")
         return [], rep
     if rate_hits:
         rep.rate_limited = True   # 부분 한도 — 기록만 하고 살릴 수 있는 건 살린다
