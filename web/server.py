@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v55"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v56"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -467,19 +467,9 @@ async def _hub_datalab_probe(cid: str, csec: str, paths: list, body: dict) -> tu
 
 
 # 쇼핑 인사이트 후보 경로 — 되는 것 하나를 실키로 자동 탐지한다
-_SHOP_CAT_PATHS = [
-    "/datalab/v1/shopping/categories",
-    "/datalab/v1/shopping/category",
-    "/shopping-insight/v1/categories",
-    "/datalab/v1/shopping-insight/categories",
-    "/shopping/v1/categories",
-]
 _SHOP_KW_PATHS = [
-    "/datalab/v1/shopping/category/keywords",
-    "/datalab/v1/shopping/category/keyword",
-    "/shopping-insight/v1/category/keywords",
-    "/datalab/v1/shopping-insight/category/keywords",
     "/shopping/v1/category/keywords",
+    "/shopping/v1/category/keyword",
 ]
 
 
@@ -533,27 +523,39 @@ class InsightCatReq(BaseModel):
 
 @app.post("/api/insight/category")
 async def insight_category(req: InsightCatReq):
-    """① 분야별 트렌드 — 대분류들의 클릭 추이를 비교해 '뜨는 분야'를 찾는다."""
+    """① 분야별 트렌드 — 대분류들의 클릭 추이를 비교해 '뜨는 분야'를 찾는다.
+    쇼핑 인사이트는 한 번에 분야 3개까지라, 3개씩 나눠 호출해 합친다.
+    (각 분야의 '시간 추이 기울기'는 요청 내부 정규화와 무관해 배치 합산이 안전.)"""
     cid = (req.client_id or "").strip()
     csec = (req.client_secret or "").strip()
     if not cid or not csec:
         return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
     names = [n for n in (req.categories or []) if n in _CATS] or list(_CATS.keys())
-    cat_param = [{"name": n, "param": [str(_CATS[n])]} for n in names][:14]
     start, end = _date_range(12)
-    body = {"startDate": start, "endDate": end, "timeUnit": "month", "category": cat_param}
-    try:
-        data, used_path = await _hub_datalab_probe(cid, csec, _SHOP_CAT_PATHS, body)
-    except NaverHubAuth as e:
-        return {"ok": False, "error": str(e)}
-    except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+    path = "/shopping/v1/categories"
     out = []
-    for r in (data.get("results") or []):
-        t = _trend_of(r.get("data") or [])
-        out.append({"name": r.get("title") or "", **t})
+    for i in range(0, len(names), 3):                 # 최대 3개씩
+        batch = names[i:i + 3]
+        cat_param = [{"name": n, "param": [str(_CATS[n])]} for n in batch]
+        body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                "category": cat_param}
+        try:
+            data = await _hub_datalab(cid, csec, path, body)
+        except NaverHubAuth as e:
+            if not out:
+                return {"ok": False, "error": str(e)}
+            break                                     # 일부라도 받았으면 그걸로
+        except Exception as e:  # noqa: BLE001
+            if not out:
+                return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+            break
+        for r in (data.get("results") or []):
+            t = _trend_of(r.get("data") or [])
+            out.append({"name": r.get("title") or "", **t})
+    if not out:
+        return {"ok": False, "error": "결과가 비어 있어요."}
     out.sort(key=lambda x: -x["rise"])
-    return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": used_path}
+    return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": path}
 
 
 class InsightKwReq(BaseModel):
