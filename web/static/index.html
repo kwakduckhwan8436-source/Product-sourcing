@@ -1079,6 +1079,16 @@ function renderAuto(d) {
   LAST_FINDS = d.finds || [];
   if (!LAST_FINDS.length) {
     const r = d.report || {};
+    if (r.no_seeds) {
+      out.innerHTML = `<div class="err">⚠️ 분야 키워드(씨앗) 데이터를 불러오지 못했어요.<br>
+        <span class="g">서버에 <b>discovery/data/category_seeds.json</b> 파일이 올라갔는지 확인해주세요 (부분 업로드 시 누락되기 쉬워요).</span></div>`;
+      return;
+    }
+    if (r.rate_limited) {
+      out.innerHTML = `<div class="err">⏳ 네이버 검색 API <b>한도</b>에 걸렸어요 — 잠시(1~2분) 뒤 다시 눌러주세요.<br>
+        <span class="g">여러 명이 몰렸거나, 오늘 이 열쇠로 너무 많이 검색(하루 2.5만회 한도)했을 수 있어요. 조금 쉬면 풀려요.</span></div>`;
+      return;
+    }
     out.innerHTML = `<div class="card">
       <div class="fhead"><span class="t">이 분야엔 자리가 없어요</span></div>
       <p class="hint">${d.note || ''}</p>

@@ -71,14 +71,23 @@ class ScanReport:
     cheap: int = 0        # 최저가가 낮아 마진 불가
     blocked: int = 0      # 카탈로그/대형몰 장악
     passed: int = 0
+    rate_limited: bool = False   # 네이버 검색 API 한도(429)로 조회 실패
+    no_seeds: bool = False       # 씨앗(분야 키워드)을 못 불러옴 = 데이터 문제
 
     def as_dict(self) -> dict:
         return {"looked": self.looked, "red": self.red, "ghost": self.ghost,
                 "off": self.off, "nolow": self.nolow,
                 "cheap": self.cheap, "blocked": self.blocked,
-                "passed": self.passed}
+                "passed": self.passed,
+                "rate_limited": self.rate_limited, "no_seeds": self.no_seeds}
 
     def summary(self) -> str:
+        if self.no_seeds:
+            return ("분야 키워드(씨앗)를 불러오지 못했어요 — 서버에 "
+                    "category_seeds.json 데이터가 올라갔는지 확인해주세요.")
+        if self.rate_limited and not self.passed:
+            return ("네이버 검색 API 한도에 걸렸어요 — 잠시(1~2분) 뒤 다시 눌러주세요. "
+                    "여러 명이 몰렸거나 하루 한도(키당 2.5만회)를 넘었을 수 있어요.")
         if self.passed:
             hard = []
             if self.red:
@@ -383,6 +392,7 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
     seeds = [(k, category) for k in pooled] + list(base_seeds)
     rep = ScanReport()
     if not seeds:
+        rep.no_seeds = True
         return [], rep
     # [더 찾기] 방금 보여준 것들은 빼고 새 땅을 판다
     skip = {str(x).strip() for x in (exclude or []) if x}
@@ -397,10 +407,16 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
         progress_cb(0, budget, f"{len(seeds)}개 분야를 한꺼번에 살펴보는 중")
     m0s = await _gather([shop.market_of(k) for k, _ in seeds])
     used += len(seeds)
-    if sum(1 for x in m0s if _is_rate(x)) >= 3:
+    ok_seeds = sum(1 for x in m0s if not isinstance(x, Exception))
+    rate_hits = sum(1 for x in m0s if _is_rate(x))
+    # 씨앗이 하나도 안 열렸는데 한도만 잔뜩이면 = 진짜 한도. 일부라도 열리면 진행.
+    if ok_seeds == 0 and rate_hits >= 1:
+        rep.rate_limited = True
         if progress_cb:
             progress_cb(used, budget, "한도소진")
         return [], rep
+    if rate_hits:
+        rep.rate_limited = True   # 부분 한도 — 기록만 하고 살릴 수 있는 건 살린다
 
     # ── 2단계: 캔 말들을 모아서 한꺼번에 ──────────────────────────
     cands: list[tuple[str, str, str, str]] = []   # (kw, axis, seed, cat)
@@ -441,6 +457,7 @@ async def auto_scan(shop, category: str = "", budget: int = 320,
     used += len(to_fetch)
     if sum(1 for x in fetched if _is_rate(x)) >= 3 and not any(
             not isinstance(x, Exception) for x in fetched):
+        rep.rate_limited = True
         if progress_cb:
             progress_cb(used, budget, "한도소진")
         return [], rep
