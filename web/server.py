@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v44"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v45"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -537,6 +537,17 @@ async def auto(req: AutoReq, request: Request):
         d = f.as_dict()
         d["movement"] = moves.get(f.keyword)
         d["season"] = seasons.get(f.keyword)
+        # 수요 검증(상위 후보만 데이터랩 확인) — 낮으면 '안 팔리는 빈자리' 경고.
+        # '빈자리인데 수요 없음' 은 초보가 가장 크게 당하는 함정이라 명시한다.
+        if f.keyword in demands:
+            lvl = demands[f.keyword]
+            d["demand_level"] = round(lvl, 1)
+            if lvl < 15.0:
+                d["demand_low"] = True
+                doubts = list(d.get("doubts") or [])
+                doubts.append("검색 수요가 낮아요 — '빈자리'가 아니라 "
+                              "'안 팔려서 빈 자리'일 수 있어요 (수요 먼저 확인)")
+                d["doubts"] = doubts
         out.append(d)
     try:
         hr = hit_rate()

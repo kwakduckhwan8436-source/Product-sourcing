@@ -283,24 +283,36 @@
   .rank{font-family:var(--serif);background:var(--brand);color:#191307;width:23px;
     height:23px;border-radius:7px;display:inline-flex;align-items:center;
     justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto}
-  .fhead .t{font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .fhead .t{font-size:17px;font-weight:800;letter-spacing:-.01em}
   .tag{font-size:11px;border:1px solid var(--line2);border-radius:20px;
     padding:3px 9px;color:var(--sub)}
   .tag.go{background:var(--go-bg);color:var(--go);border-color:transparent}
   .tag.wait{background:var(--wait-bg);color:var(--wait);border-color:transparent}
   .tag.stop{background:var(--stop-bg);color:var(--stop);border-color:transparent}
 
+  /* 한 줄 결론 배너 — 카드에서 제일 먼저 읽히게 */
+  .verdict{display:flex;gap:9px;align-items:flex-start;border-radius:12px;
+    padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.55}
+  .verdict .vi{flex:0 0 auto;font-size:15px}
+  .verdict b{font-weight:800}
+  .verdict.go{background:var(--go-bg);border:1px solid rgba(61,220,132,.35);color:#c6f2d8}
+  .verdict.go b{color:#8ff0b6}
+  .verdict.wait{background:var(--wait-bg);border:1px solid rgba(240,182,56,.32);color:#f4e6bc}
+  .verdict.wait b{color:#ffd873}
+  .verdict.stop{background:var(--stop-bg);border:1px solid rgba(242,97,107,.32);color:#fbccd0}
+  .verdict.stop b{color:#ff9ba1}
+
   .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
   .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:11px;
     padding:12px 13px}
-  .kpi .l{font-size:11px;color:var(--sub);margin-bottom:4px}
-  .kpi .v{font-family:var(--serif);font-size:19px;letter-spacing:-.01em}
-  .kpi .s{font-size:11px;color:var(--sub);margin-top:3px}
+  .kpi .l{font-size:11.5px;color:var(--sub);margin-bottom:5px;line-height:1.35}
+  .kpi .v{font-family:var(--serif);font-size:20px;letter-spacing:-.01em}
+  .kpi .s{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.4}
 
-  .fact{display:grid;grid-template-columns:86px 1fr;gap:11px;padding:10px 0;
-    border-top:1px solid var(--line);font-size:13.5px}
-  .fact .k{color:var(--sub);font-size:12px}
-  .fact .v{line-height:1.6}
+  .fact{display:grid;grid-template-columns:90px 1fr;gap:12px;padding:11px 0;
+    border-top:1px solid var(--line);font-size:14px}
+  .fact .k{color:var(--brand-soft);font-size:12px;font-weight:700}
+  .fact .v{line-height:1.65;color:#dbe3ee}
   .bars{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
   .bars span{font-size:11px;color:var(--sub);border:1px solid var(--line);
     border-radius:7px;padding:3px 8px}
@@ -1044,6 +1056,25 @@ async function autoScan(exclude) {
   } finally { $('#auto').disabled = false; }
 }
 
+/* 한 줄 결론 — 여러 숫자를 초보가 읽을 수 있는 한 문장으로 */
+function cardVerdict(f){
+  const c = f.comp || {};
+  const g = f.grade, tm = f.target_margin || 0;
+  const indie = c.indie_pct || 0, canEnter = c.can_enter !== false;
+  let level = 'wait', head = '조건부 가능';
+  if (f.demand_low){ level = 'stop'; head = '신중히 — 검색 수요 낮음'; }
+  else if (g === '어려움' || !canEnter || tm <= 0){ level = 'stop'; head = '신중히 보세요'; }
+  else if (g === '빈자리' && indie >= 30 && tm > 0){ level = 'go'; head = '해볼 만해요'; }
+  else if (tm > 0){ level = 'wait'; head = '조건부 가능'; }
+  const bits = [];
+  bits.push(g === '빈자리' ? '경쟁 빈자리' : (g === '좁음' ? '경쟁 좁음' : '경쟁 많음'));
+  if (indie >= 30) bits.push('개인셀러 자리 있음');
+  if (tm > 0) bits.push(`개당 ${won(f.need_cost)}원 이하로 떼면 ~${won(tm)}원 남음`);
+  if (typeof f.demand_level === 'number') bits.push('검색수요 ' + f.demand_level);
+  const ico = level === 'go' ? '✅' : (level === 'stop' ? '⚠️' : '🟡');
+  return `<div class="verdict ${level}"><span class="vi">${ico}</span><span><b>${head}</b> — ${bits.join(' · ')}</span></div>`;
+}
+
 function renderAuto(d) {
   LAST_FINDS = d.finds || [];
   if (!LAST_FINDS.length) {
@@ -1079,6 +1110,7 @@ function renderAuto(d) {
         <span class="tag">${f.category}</span>
         ${mv ? `<span class="tag ${mCls(mv.stage)}">${mv.stage}</span>` : ''}
       </div>
+      ${cardVerdict(f)}
       <div class="kpis">
         <div class="kpi"><div class="l">경쟁 (이미 올라온 수)</div>
           <div class="v">${won(f.total)}개</div><div class="s">${c.grade || ''}</div></div>
