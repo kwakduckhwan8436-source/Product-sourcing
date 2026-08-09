@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v59"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v60"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -599,8 +599,12 @@ async def insight_keyword(req: InsightKwReq):
         t = _trend_of(r.get("data") or [])
         out.append({"name": r.get("title") or "", **t})
     out.sort(key=lambda x: -x["rise"])
-    return {"ok": True, "items": out, "category": req.category,
+    resp = {"ok": True, "items": out, "category": req.category,
             "range": f"{start} ~ {end}", "path": used_path}
+    if not any(x.get("series") for x in out):
+        import json as _json
+        resp["debug"] = _json.dumps(data, ensure_ascii=False)[:500]
+    return resp
 
 
 _AGE_LABEL = {"10": "10대", "20": "20대", "30": "30대",
@@ -669,7 +673,7 @@ async def insight_target(req: InsightTargetReq):
         return {"ok": False, "error": "타깃을 볼 검색어를 1개 넣어주세요."}
     start, end = _date_range(12)
     base = {"startDate": start, "endDate": end, "timeUnit": "month",
-            "category": str(code), "keyword": [{"name": kw, "param": [kw]}]}
+            "category": str(code), "keyword": kw}
     res = {"ok": True, "keyword": kw, "category": req.category}
     # 성별
     try:

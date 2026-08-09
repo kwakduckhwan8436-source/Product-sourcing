@@ -1068,7 +1068,9 @@ async function insRun(url, body, label){
   }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v54) 재배포를 확인해주세요.</div>'; return; }
   if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
   if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">결과가 없어요.</p>'; return; }
-  box.innerHTML = `<p class="ihint">기간 ${d.range||''} · 상승률 순${d.path?` · 경로 ✓ <code>${d.path}</code>`:''}</p>` + d.items.map(it=>insCard(it)).join('');
+  let head = `<p class="ihint">기간 ${d.range||''} · 상승률 순${d.path?` · 경로 ✓ <code>${d.path}</code>`:''}</p>`;
+  if(d.debug){ head += `<div class="err" style="font-size:11px;word-break:break-all">응답 구조 확인용: <code>${(d.debug+'').replace(/</g,'&lt;')}</code></div>`; }
+  box.innerHTML = head + d.items.map(it=>insCard(it)).join('');
 }
 if ($('#insCatGo')) $('#insCatGo').addEventListener('click', ()=> insRun('/api/insight/category', {}, '분야별 트렌드'));
 if ($('#insKwGo')) $('#insKwGo').addEventListener('click', ()=>{
