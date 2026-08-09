@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v47"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v49"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -347,6 +347,48 @@ async def modes():
 async def version():
     """어느 버전이 도는지 — 포트 충돌로 예전 서버가 살아있으면 여기서 드러난다."""
     return {"version": APP_VERSION}
+
+
+class KeyTestReq(BaseModel):
+    client_id: str
+    client_secret: str
+
+
+@app.post("/api/keytest")
+async def keytest(req: KeyTestReq):
+    """열쇠 하나만 딱 점검 — 씨앗·한도와 무관하게 '이 키가 유효한지 +
+    쇼핑 검색 API 가 살아있는지' 를 정확한 상태코드로 알려준다."""
+    from discovery.providers.naver_client import (
+        NaverClient, NaverAuthError, NaverRateLimited)
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "kind": "empty",
+                "msg": "Client ID / Secret 을 둘 다 넣어주세요."}
+    try:
+        async with NaverClient(cid, csec) as c:
+            data = await c.search_shop("테스트", display=1)
+        total = data.get("total") if isinstance(data, dict) else None
+        return {"ok": True, "kind": "ok",
+                "msg": f"정상! 쇼핑 검색 API 가 살아있고 열쇠도 유효해요. (표본 total={total})"}
+    except NaverAuthError as e:
+        m = str(e)
+        if "404" in m:
+            return {"ok": False, "kind": "shutdown",
+                    "msg": "쇼핑 검색 API 가 404 — 네이버가 이 API 를 종료한 상태예요. "
+                           "열쇠가 맞아도 데이터를 받을 수 없어요."}
+        if "403" in m:
+            return {"ok": False, "kind": "noperm",
+                    "msg": "이 열쇠에 '검색' API 권한이 없어요 — 개발자센터 → API 설정에서 '검색' 추가."}
+        return {"ok": False, "kind": "auth",
+                "msg": "인증 실패 — Client ID/Secret 이 틀렸거나 서로 뒤바뀌었을 수 있어요. "
+                       "개발자센터에서 값을 다시 복사해주세요. (원문: " + m[:120] + ")"}
+    except NaverRateLimited:
+        return {"ok": False, "kind": "rate",
+                "msg": "지금은 네이버 한도에 걸려 있어요 — 1~2분 뒤 다시 점검해주세요."}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "kind": "error",
+                "msg": f"{type(e).__name__}: {str(e)[:160]}"}
 
 
 @app.get("/api/gate/status")

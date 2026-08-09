@@ -674,6 +674,8 @@
         <input id="cid" placeholder="Client ID" autocomplete="off"/>
         <input id="csec" placeholder="Client Secret" type="password" autocomplete="off"/>
       </div>
+      <div style="margin-top:8px"><button id="keytest" class="ghost" type="button">🔑 열쇠 점검 (오류 원인 확인)</button>
+        <span id="keytestMsg" style="font-size:12.5px;margin-left:8px"></span></div>
       <div class="guide">
         <b>🔑 처음이신가요? 열쇠(무료) 3분이면 받아요:</b>
         <ol style="margin:8px 0 0;padding-left:20px;line-height:1.85">
@@ -947,6 +949,22 @@ function syncKey() {
 }));
 syncKey();
 
+/* 열쇠 점검 — 오류 원인을 딱 짚어준다 (씨앗·한도와 무관) */
+if ($('#keytest')) $('#keytest').addEventListener('click', async () => {
+  const m = $('#keytestMsg');
+  const id = cid.value.trim(), sec = csec.value.trim();
+  if (!id || !sec) { m.style.color = 'var(--wait)'; m.textContent = 'Client ID/Secret을 먼저 넣어주세요.'; return; }
+  m.style.color = 'var(--sub)'; m.textContent = '점검 중…';
+  try {
+    const r = await (await fetch('/api/keytest', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:id, client_secret:sec})})).json();
+    m.style.color = r.ok ? 'var(--go)' : (r.kind === 'rate' ? 'var(--wait)' : 'var(--stop)');
+    m.textContent = (r.ok ? '✅ ' : '⚠️ ') + (r.msg || '');
+  } catch (e) {
+    m.style.color = 'var(--stop)'; m.textContent = '점검 요청 실패 — 서버가 재배포됐는지 확인해주세요.';
+  }
+});
+
 function needKey() {
   if (cid.value.trim() && csec.value.trim()) return false;
   out.innerHTML = '<div class="err">네이버 열쇠를 먼저 넣어주세요. 위쪽 \'네이버 열쇠\' 를 열면 받는 방법이 있습니다.</div>';
@@ -1085,9 +1103,16 @@ function renderAuto(d) {
       return;
     }
     if (r.error) {
+      const isShutdown = /404|SHUTDOWN|종료/.test(r.error + '');
+      if (isShutdown) {
+        out.innerHTML = `<div class="err" style="line-height:1.7">🛑 <b>네이버가 쇼핑 검색 API를 종료했어요.</b><br>
+          <span class="g">네이버가 '검색 오픈API(쇼핑 포함)' 서비스를 단계적으로 종료하면서, 이 도구가 쓰던 공식 쇼핑 검색 데이터 통로가 막혔어요. <b>키·권한 문제가 아니라 네이버 정책 변경</b>이에요.</span><br>
+          <span class="g">→ 이건 도구 코드로는 해결할 수 없어요. 대체 데이터 경로가 필요합니다 (아래 안내 참고). 데이터랩(수요·트렌드)은 아직 살아있을 수 있어요.</span></div>`;
+        return;
+      }
       out.innerHTML = `<div class="err">⚠️ 네이버 검색 조회에 <b>전부 실패</b>했어요.<br>
         <span class="g">실제 오류: <b>${(r.error+'').replace(/</g,'&lt;')}</b></span><br>
-        <span class="g">→ 네이버 열쇠(Client ID/Secret)가 맞는지, 그 열쇠에 <b>검색 API</b>가 등록됐는지 확인해주세요. 네이버 응답 형식이 바뀐 경우일 수도 있어요.</span></div>`;
+        <span class="g">→ 네이버 열쇠(Client ID/Secret)가 맞는지, 그 열쇠에 <b>검색 API</b>가 등록됐는지 확인해주세요.</span></div>`;
       return;
     }
     if (r.rate_limited) {
