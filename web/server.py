@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v64"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v66"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -516,6 +516,28 @@ def _trend_of(points: list) -> dict:
             "momentum": momentum, "n": len(vals)}
 
 
+def _season_of(series: list) -> dict:
+    """12개월 시계열에서 '예상 성수기'와 남은 주(D-day)를 추정한다.
+    고점이 평균보다 뚜렷이 높을 때만(계절성 있음) 표시한다."""
+    if not series or len(series) < 8:
+        return None
+    avg = sum(series) / len(series)
+    if avg <= 0:
+        return None
+    peak = max(series)
+    if peak / avg < 1.35:                        # 고점이 평균의 1.35배 미만 = 계절성 약함
+        return None
+    peak_i = series.index(peak)
+    months_ago = (len(series) - 1) - peak_i       # 고점이 몇 달 전이었나
+    if months_ago == 0:
+        return {"label": "지금이 예상 성수기 🔥", "weeks": 0, "hot": True}
+    months_until = (12 - months_ago) % 12         # 연 주기 가정, 다음 성수기까지
+    weeks = round(months_until * 4.33)
+    if weeks <= 8:
+        return {"label": f"예상 성수기 D-{weeks}주 — 지금 준비할 때", "weeks": weeks, "hot": True}
+    return {"label": f"예상 성수기까지 D-{weeks}주", "weeks": weeks, "hot": False}
+
+
 def _date_range(months: int = 12) -> tuple:
     """오늘 기준 최근 N개월 [시작, 끝] (YYYY-MM-DD)."""
     from datetime import date
@@ -789,6 +811,57 @@ class DiscoverReq(BaseModel):
     mode: str = "consign"       # consign(위탁) | wholesale(사입/도매)
 
 
+def _discover_reasons(it: dict) -> list:
+    """숫자를 '사도 되는 근거' 문장으로 — 왜 뽑혔는지 명확히 보여준다."""
+    rs = it.get("rise", 0.0)
+    mo = it.get("momentum", 0.0)
+    st = it.get("stability", 0.0)
+    lv = it.get("level", 0.0)
+    n = it.get("n", 0)
+    out = []
+    if rs >= 20:
+        out.append(f"검색 클릭이 최근 {rs:.0f}% 급상승 — 수요가 빠르게 커지는 중")
+    elif rs >= 5:
+        out.append(f"검색 클릭이 최근 {rs:.0f}% 상승 — 수요가 붙는 중")
+    elif rs <= -5:
+        out.append(f"검색 클릭이 {abs(rs):.0f}% 하락 — 수요가 식는 중(주의)")
+    else:
+        out.append("검색 클릭이 큰 변동 없이 유지되는 중")
+    if mo >= 15:
+        out.append(f"직전 달 대비 +{mo:.0f}% — 지금도 오르는 중(모멘텀 살아있음)")
+    elif mo <= -15:
+        out.append(f"직전 달 대비 {mo:.0f}% — 최근 꺾임(주의)")
+    if st >= 0.7:
+        out.append("12개월 내내 안정적(변동 적음) — 반짝 유행이 아님")
+    elif st < 0.4:
+        out.append("월별 변동이 큼 — 계절/이벤트 영향일 수 있음")
+    if lv >= 50:
+        out.append("이 분야에서 관심이 높은 편(수요 규모 큼)")
+    out.append(f"최근 {n}개월 데이터로 검증됨")
+    return out
+
+
+def _discover_verdict(it: dict, mode: str) -> list:
+    """종합 판단 — 이 모드(위탁/사입)에서 사도 되는지 한 줄로."""
+    rs = it.get("rise", 0.0)
+    mo = it.get("momentum", 0.0)
+    st = it.get("stability", 0.0)
+    lv = it.get("level", 0.0)
+    if mode == "consign":
+        if rs >= 20 and mo >= 0:
+            return ["go", "지금 위탁으로 들어갈 타이밍 — 수요가 빠르게 오르는 중"]
+        if rs >= 5:
+            return ["go", "위탁 후보로 괜찮음 — 수요가 붙는 중"]
+        if rs <= -5:
+            return ["stop", "지금은 피하기 — 수요가 식는 중"]
+        return ["wait", "관망 — 뚜렷한 상승 근거가 약함"]
+    if lv >= 40 and st >= 0.6:
+        return ["go", "사입해도 안전 — 수요 높고 12개월 안정적"]
+    if st >= 0.6:
+        return ["wait", "안정적이나 수요 규모는 보통 — 소량부터 시작"]
+    return ["stop", "대량 사입은 위험 — 월별 변동이 큼"]
+
+
 @app.post("/api/discover")
 async def discover(req: DiscoverReq):
     """🎯 자동 발굴 — 사용자가 키워드를 안 넣어도, 내장 씨앗(분야별 수십 개)을
@@ -884,8 +957,44 @@ async def discover(req: DiscoverReq):
     for it in kept:
         it["hot"] = ("사입형" in it["fit"]) if mode == "wholesale" else ("위탁형" in it["fit"])
         it["score"] = it["wholesale_score"] if mode == "wholesale" else it["consign_score"]
-    return {"ok": True, "items": kept[:40], "range": f"{start} ~ {end}",
-            "scanned": len(items), "mode": mode, "targets": targets}
+        it["reasons"] = _discover_reasons(it)
+        it["verdict"] = _discover_verdict(it, mode)      # [level, text]
+        it["season"] = _season_of(it.get("series") or [])
+    result = kept[:40]
+    # 🔗 검색량 교차검증 — 상위 후보만 검색어 트렌드로 확인(클릭↑ + 검색↑ = 진짜)
+    trend_path = None
+    try:
+        top = result[:20]
+        tkws = [it["keyword"] for it in top]
+        srise = {}
+        for i in range(0, len(tkws), 5):
+            b = tkws[i:i + 5]
+            body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                    "keywordGroups": [{"groupName": k, "keywords": [k]} for k in b]}
+            data, trend_path = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+            for r in (data.get("results") or []):
+                t = _trend_of(r.get("data") or [])
+                if t.get("series"):
+                    srise[r.get("title") or ""] = t["rise"]
+        for it in top:
+            sr = srise.get(it["keyword"])
+            if sr is None:
+                continue
+            cr = it.get("rise", 0.0)
+            if sr >= 5 and cr >= 5:
+                lvl, note = "go", f"검색량도 {sr:.0f}%↑ — 클릭·검색 둘 다 오름(신뢰도 높음)"
+            elif cr >= 5 and sr <= -5:
+                lvl, note = "wait", f"검색량은 {sr:.0f}%↓ — 클릭만 오름(반짝일 수 있음)"
+            elif sr >= 5:
+                lvl, note = "wait", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
+            else:
+                lvl, note = "neutral", f"검색량 변화 {sr:+.0f}%"
+            it["xcheck"] = {"search_rise": sr, "level": lvl, "note": note}
+    except Exception:  # noqa: BLE001
+        pass                                            # 교차검증 실패해도 발굴 결과는 유지
+    return {"ok": True, "items": result, "range": f"{start} ~ {end}",
+            "scanned": len(items), "mode": mode, "targets": targets,
+            "trend_path": trend_path}
 
 
 @app.post("/api/keytest")

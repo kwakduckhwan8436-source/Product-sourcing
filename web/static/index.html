@@ -290,6 +290,28 @@
     border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:600}
   .dc-act:hover{border-color:var(--brand)}
   .dc-detail:not(:empty){margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+  .disccard.vblock{display:block}
+  .dc-line{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .dc-line .dc-rise{text-align:right}
+  .dc-verdict{border-radius:10px;padding:9px 12px;margin:10px 0 8px;font-size:13.5px;line-height:1.5}
+  .dc-verdict.go{background:var(--go-bg);color:#c6f2d8;border:1px solid rgba(61,220,132,.3)}
+  .dc-verdict.wait{background:var(--wait-bg);color:#f4e6bc;border:1px solid rgba(240,182,56,.3)}
+  .dc-verdict.stop{background:var(--stop-bg);color:#fbccd0;border:1px solid rgba(242,97,107,.3)}
+  .dc-verdict b{color:#fff}
+  .dc-reasons{margin:0 0 8px;padding-left:18px;font-size:12.5px;color:#cdd6e2;line-height:1.7}
+  .dc-reasons li{margin:1px 0}
+  .dc-xcheck{font-size:12.5px;border-radius:8px;padding:7px 10px;margin:0 0 8px;font-weight:600}
+  .xc-go{background:var(--go-bg);color:#bff0d2}
+  .xc-wait{background:var(--wait-bg);color:#f4e6bc}
+  .xc-neutral{background:var(--panel);color:var(--sub)}
+  .dc-season{display:inline-block;font-size:12px;font-weight:700;color:#8fbaff;
+    background:rgba(90,160,255,.12);border-radius:20px;padding:3px 10px;margin-bottom:8px}
+  .dc-season.hot{color:var(--gold-hi);background:rgba(216,178,60,.15)}
+  .src-links{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .src-link{font-size:12px;font-weight:700;text-decoration:none;border-radius:8px;padding:5px 10px;border:1px solid var(--line2)}
+  .src-link.market{color:#8fbaff;background:rgba(90,160,255,.1)}
+  .src-link.buy{color:var(--gold-hi);background:rgba(216,178,60,.1)}
+  .src-link:hover{border-color:var(--brand)}
   .instab{display:flex;gap:6px;margin-bottom:12px}
   .itab{flex:1;border:1px solid var(--line2);background:var(--panel2);color:var(--sub);
     border-radius:10px;padding:10px;font-size:13.5px;font-weight:700;cursor:pointer}
@@ -1054,23 +1076,47 @@ async function autoDiscover(){
   let html = `<p class="ihint" style="margin-top:10px">${modeLbl} 후보 ${d.items.length}개 · 적합 <b>${hotN}개</b> · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>`;
   html += d.items.map((it,i)=>{
     const up = it.rise>0;
-    return `<div class="disccard" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}">
-      <div>
-        <span class="dc-rank">${i+1}</span>
-        <span class="dc-kw">${esc(it.keyword)}</span>
-        <span class="dc-cat">${esc(it.category)}</span>
-        ${(it.fit||[]).map(fitBadge).join('')}
-        ${spark(it.series)}
-        <div class="dc-acts">
-          <button class="dc-act" data-act="target">👥 누가 사나</button>
-          <button class="dc-act" data-act="margin">💰 마진 계산</button>
+    const v = it.verdict || ['wait',''];
+    const vico = v[0]==='go'?'✅':(v[0]==='stop'?'⚠️':'🟡');
+    const reasons = (it.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('');
+    const xc = it.xcheck;
+    const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
+    const sea = it.season;
+    const seaHtml = sea ? `<span class="dc-season${sea.hot?' hot':''}">🗓 ${esc(sea.label)}</span>` : '';
+    const kwEnc = encodeURIComponent(it.keyword);
+    const isW = (d.mode==='wholesale');
+    // 시장 확인 + 소싱처 링크 (모드별 강조)
+    const links = `
+      <a class="src-link market" href="https://search.shopping.naver.com/search/all?query=${kwEnc}" target="_blank" rel="noopener">🛒 네이버쇼핑 시세</a>
+      ${isW
+        ? `<a class="src-link buy" href="https://s.1688.com/selloffer/offer_search.htm?keywords=${kwEnc}" target="_blank" rel="noopener">🏭 1688 사입</a>
+           <a class="src-link buy" href="https://s.taobao.com/search?q=${kwEnc}" target="_blank" rel="noopener">🛍 타오바오</a>`
+        : `<a class="src-link buy" href="https://domeggook.com/main/item/itemList.php?sw=${kwEnc}" target="_blank" rel="noopener">📦 도매꾹 위탁</a>
+           <a class="src-link buy" href="https://ownerclan.com/V2/product/search.php?keyword=${kwEnc}" target="_blank" rel="noopener">📦 오너클랜</a>`}`;
+    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}">
+      <div class="dc-line">
+        <div>
+          <span class="dc-rank">${i+1}</span>
+          <span class="dc-kw">${esc(it.keyword)}</span>
+          <span class="dc-cat">${esc(it.category)}</span>
+          ${(it.fit||[]).map(fitBadge).join('')}
         </div>
-        <div class="dc-detail"></div>
+        <div>
+          <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
+          <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
+        </div>
       </div>
-      <div>
-        <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
-        <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
+      <div class="dc-verdict ${v[0]}">${vico} <b>${esc(v[1])}</b></div>
+      ${xcHtml}
+      ${seaHtml}
+      ${reasons?`<ul class="dc-reasons">${reasons}</ul>`:''}
+      ${spark(it.series)}
+      <div class="src-links">${links}</div>
+      <div class="dc-acts">
+        <button class="dc-act" data-act="target">👥 누가 사나</button>
+        <button class="dc-act" data-act="margin">💰 마진 계산</button>
       </div>
+      <div class="dc-detail"></div>
     </div>`;
   }).join('');
   box.innerHTML = html;
