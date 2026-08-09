@@ -257,6 +257,33 @@
   .found{font-size:13px;color:var(--sub);margin:18px 0 10px}
   .linktip{font-size:12.5px;line-height:1.6;color:#f4dea0;background:var(--wait-bg);
     border:1px solid rgba(240,182,56,.3);border-radius:11px;padding:10px 13px;margin:0 0 12px}
+  /* ===== 지식iN 수요·니즈 발굴 ===== */
+  .kinbox{background:linear-gradient(180deg,#151b24,#111721);border:1px solid var(--line2);
+    border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 16px 40px rgba(0,0,0,.3)}
+  .kinhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .kinhead h2{font-family:var(--serif);font-size:20px;font-weight:400;margin:0}
+  .kbadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#1a1408;
+    background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));border-radius:999px;padding:3px 9px}
+  .kdesc{font-size:13px;color:var(--sub);line-height:1.65;margin:0 0 14px}
+  .kinrow{display:grid;grid-template-columns:1fr auto;gap:8px}
+  .kinrow input{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+    border-radius:11px;padding:13px;font-size:15px;outline:none;width:100%}
+  .kinrow input:focus{border-color:var(--brand)}
+  .kinrow button{border:none;border-radius:11px;padding:13px 20px;font-size:15px;font-weight:700;
+    cursor:pointer;color:#1a1408;background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep))}
+  .kincard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;
+    padding:14px 15px;margin-top:10px}
+  .kincard .kc-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+  .kincard .kc-kw{font-size:16px;font-weight:800}
+  .kincard .kc-score{font-family:var(--serif);font-size:20px;margin-left:auto}
+  .kincard .kc-v{font-size:12.5px;border-radius:999px;padding:3px 10px}
+  .kincard .kc-v.go{background:var(--go-bg);color:var(--go)}
+  .kincard .kc-v.wait{background:var(--wait-bg);color:var(--wait)}
+  .kincard .kc-v.stop{background:var(--stop-bg);color:var(--stop)}
+  .kincard .kc-meta{font-size:12.5px;color:var(--sub);margin-bottom:8px}
+  .kincard .kc-q{font-size:12.5px;color:#c8d2df;line-height:1.7;
+    border-left:2px solid var(--line2);padding-left:10px}
+  @media(max-width:640px){ .kinrow{grid-template-columns:1fr} }
   .gate{position:fixed;inset:0;z-index:9999;background:rgba(8,11,18,.93);
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;padding:20px}
@@ -722,6 +749,19 @@
 
   <div id="out"></div>
 
+  <section class="kinbox">
+    <div class="kinhead">
+      <span class="kbadge">NEW · 무료</span>
+      <h2>🔍 지식iN 수요·니즈 발굴</h2>
+    </div>
+    <p class="kdesc">사람들이 <b>지식iN에 묻는 질문</b>으로 수요를 읽어요. <b>질문이 많고(수요), "추천·어디서·없나요"처럼 살 걸 고민하는(니즈)</b> 키워드일수록 상품 기회예요. 궁금한 키워드를 넣어보세요.</p>
+    <div class="kinrow">
+      <input id="kinKw" type="text" placeholder="예: 캠핑의자, 무선청소기, 강아지계단 (쉼표로 여러 개)">
+      <button id="kinGo" type="button">발굴</button>
+    </div>
+    <div id="kinOut"></div>
+  </section>
+
   <details class="tool" id="marginTool">
     <summary>
       <span class="tico">🧮</span> 판매 마진 계산기
@@ -932,6 +972,41 @@ function seasonChip(s) {
   const cls = (dP != null && dP <= 45) ? 'up' : 'down';
   return `<span class="achip">🗓️ <b class="${cls}">${lab}</b> (${s.peak_month}월·평소 ${s.peak_ratio||'?'}배)</span>`;
 }
+
+/* ---------- 🔍 지식iN 수요·니즈 발굴 (새 허브) ---------- */
+async function kinMine(){
+  const box = $('#kinOut');
+  const raw = ($('#kinKw').value || '').trim();
+  if(!raw){ box.innerHTML = '<p class="hint">키워드를 1개 이상 넣어주세요.</p>'; return; }
+  const id = cid.value.trim(), sec = csec.value.trim();
+  if(!id || !sec){ box.innerHTML = '<div class="err">먼저 위쪽에서 <b>네이버 허브 열쇠</b>를 넣고, 「🔌 새 허브 연결 점검」이 ✅ 되는지 확인해주세요.</div>'; $('#keybox').open = true; return; }
+  const kws = raw.split(/[,\n]/).map(s=>s.trim()).filter(Boolean).slice(0,12);
+  box.innerHTML = '<div class="card"><span class="spin"></span>지식iN에서 수요·니즈를 읽는 중…</div>';
+  let d;
+  try{
+    const r = await fetch('/api/kinmine', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:id, client_secret:sec, keywords:kws})});
+    d = await r.json();
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v51) 재배포를 확인해주세요.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${d.error||'실패'}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">결과가 없어요.</p>'; return; }
+  const esc = s => (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  box.innerHTML = d.items.map(it=>{
+    if(it.error) return `<div class="kincard"><div class="kc-top"><span class="kc-kw">${esc(it.keyword)}</span><span class="kc-meta">조회 실패</span></div></div>`;
+    const q = (it.samples||[]).map(s=>'· '+esc(s)).join('<br>');
+    return `<div class="kincard">
+      <div class="kc-top">
+        <span class="kc-kw">${esc(it.keyword)}</span>
+        <span class="kc-v ${it.level}">${esc(it.verdict)}</span>
+        <span class="kc-score">${it.score}점</span>
+      </div>
+      <div class="kc-meta">질문 <b>${(it.total||0).toLocaleString('ko-KR')}개</b>(수요) · 니즈 표현 밀도 ${Math.round((it.pain||0)*100)}%</div>
+      ${q ? `<div class="kc-q">${q}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+if ($('#kinGo')) $('#kinGo').addEventListener('click', kinMine);
+if ($('#kinKw')) $('#kinKw').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); kinMine(); }});
 
 /* ---------- 열쇠 (브라우저에만 저장) ---------- */
 cid.value = localStorage.getItem('nid') || '';

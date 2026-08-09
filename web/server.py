@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v50"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v51"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -389,6 +389,98 @@ async def hubtest(req: KeyTestReq):
                        f"하루 한도를 넘지 않았는지 확인해주세요. (응답: {body})"}
     return {"ok": False, "kind": "http",
             "msg": f"{r.status_code} 응답 — {body}"}
+
+
+_HUB_BASE = "https://naverapihub.apigw.ntruss.com"
+
+
+async def _hub_search(cid: str, csec: str, kind: str, query: str,
+                      display: int = 20, sort: str = "sim") -> dict:
+    """NAVER API HUB 검색 API 호출 (공식 명세: /search/v1/{kind}).
+    kind: kin(지식iN)·blog·cafearticle·news·webkr 등."""
+    import httpx
+    url = f"{_HUB_BASE}/search/v1/{kind}"
+    headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": csec}
+    params = {"query": query, "display": min(max(display, 1), 100),
+              "start": 1, "sort": sort, "format": "json"}
+    await _global_throttle()
+    async with httpx.AsyncClient(timeout=12.0) as c:
+        r = await c.get(url, headers=headers, params=params)
+    if r.status_code == 401:
+        raise NaverHubAuth("401 인증 실패 — 허브 키가 맞는지, 앱에 '검색 API'가 선택됐는지 확인해주세요.")
+    if r.status_code == 429:
+        raise NaverHubAuth("429 한도/미선택 — 검색 API 선택 여부와 하루 한도를 확인해주세요.")
+    r.raise_for_status()
+    return r.json()
+
+
+class NaverHubAuth(Exception):
+    pass
+
+
+# 지식iN 질문에서 '상품을 찾는 니즈'를 드러내는 표현들
+_PAIN_WORDS = ("추천", "어디서", "어디", "없나요", "없을까", "실패", "비교", "차이",
+               "고민", "괜찮", "어떤", "뭐가", "vs", "후기", "단점", "문제", "고르",
+               "골라", "가성비", "질좋", "싸게", "구매", "사려", "살까")
+
+
+def _strip_tags(s: str) -> str:
+    return re.sub(r"<[^>]+>", "", s or "").strip()
+
+
+class KinMineReq(BaseModel):
+    client_id: str
+    client_secret: str
+    keywords: list = []
+
+
+@app.post("/api/kinmine")
+async def kinmine(req: KinMineReq):
+    """지식iN 페인포인트 발굴 — 키워드별로 '질문 수(수요)'와
+    '니즈 표현 밀도(추천·어디서·없나요…)'를 재서 상품 기회를 점수화한다.
+    수요는 크고 사람들이 뭘 살지 고민 중인 키워드 = 소싱 노른자."""
+    import math
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    kws, seen = [], set()
+    for k in (req.keywords or []):
+        k = (k or "").strip()
+        if k and k not in seen:
+            seen.add(k)
+            kws.append(k)
+    kws = kws[:12]
+    if not kws:
+        return {"ok": False, "error": "조사할 키워드를 1개 이상 입력해주세요."}
+    out = []
+    for kw in kws:
+        try:
+            data = await _hub_search(cid, csec, "kin", kw, display=20, sort="sim")
+        except NaverHubAuth as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:  # noqa: BLE001
+            out.append({"keyword": kw, "error": f"{type(e).__name__}"})
+            continue
+        total = int(data.get("total") or 0)
+        items = data.get("items") or []
+        titles = [_strip_tags(it.get("title", "")) for it in items]
+        blob = " ".join(titles + [_strip_tags(it.get("description", "")) for it in items])
+        hits = sum(1 for p in _PAIN_WORDS if p in blob)
+        pain = min(1.0, hits / 8.0)                        # 8+ 표현이면 포화
+        demand = max(0.0, min(1.0, math.log10(total + 1) / 5.0))  # 10만 질문 ≈ 1.0
+        score = round((demand * 0.55 + pain * 0.45) * 100, 1)
+        if total >= 3000 and pain >= 0.5:
+            verdict, level = "수요 크고 니즈 뚜렷 — 상품 기회", "go"
+        elif total >= 500:
+            verdict, level = "수요는 있음 — 니즈 표현 확인해보기", "wait"
+        else:
+            verdict, level = "질문이 적음 — 아직 수요 약함", "stop"
+        out.append({"keyword": kw, "total": total, "pain": round(pain, 2),
+                    "score": score, "verdict": verdict, "level": level,
+                    "samples": titles[:4]})
+    out.sort(key=lambda x: -(x.get("score") or 0))
+    return {"ok": True, "items": out}
 
 
 @app.post("/api/keytest")
