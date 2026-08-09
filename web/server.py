@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v51"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v52"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -403,7 +403,6 @@ async def _hub_search(cid: str, csec: str, kind: str, query: str,
     headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": csec}
     params = {"query": query, "display": min(max(display, 1), 100),
               "start": 1, "sort": sort, "format": "json"}
-    await _global_throttle()
     async with httpx.AsyncClient(timeout=12.0) as c:
         r = await c.get(url, headers=headers, params=params)
     if r.status_code == 401:
@@ -454,13 +453,17 @@ async def kinmine(req: KinMineReq):
     if not kws:
         return {"ok": False, "error": "조사할 키워드를 1개 이상 입력해주세요."}
     out = []
+    first_err = ""
     for kw in kws:
         try:
             data = await _hub_search(cid, csec, "kin", kw, display=20, sort="sim")
         except NaverHubAuth as e:
             return {"ok": False, "error": str(e)}
         except Exception as e:  # noqa: BLE001
-            out.append({"keyword": kw, "error": f"{type(e).__name__}"})
+            msg = f"{type(e).__name__}: {str(e)[:200]}"
+            if not first_err:
+                first_err = msg
+            out.append({"keyword": kw, "error": msg})
             continue
         total = int(data.get("total") or 0)
         items = data.get("items") or []
@@ -479,6 +482,10 @@ async def kinmine(req: KinMineReq):
         out.append({"keyword": kw, "total": total, "pain": round(pain, 2),
                     "score": score, "verdict": verdict, "level": level,
                     "samples": titles[:4]})
+    # 전부 실패했으면 실제 원인을 위로 올려 확실히 보여준다
+    if first_err and not any("score" in x for x in out):
+        return {"ok": False,
+                "error": "지식iN 조회가 전부 실패했어요 — 실제 오류: " + first_err}
     out.sort(key=lambda x: -(x.get("score") or 0))
     return {"ok": True, "items": out}
 

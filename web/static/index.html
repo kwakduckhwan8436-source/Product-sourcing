@@ -992,7 +992,7 @@ async function kinMine(){
   if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">결과가 없어요.</p>'; return; }
   const esc = s => (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   box.innerHTML = d.items.map(it=>{
-    if(it.error) return `<div class="kincard"><div class="kc-top"><span class="kc-kw">${esc(it.keyword)}</span><span class="kc-meta">조회 실패</span></div></div>`;
+    if(it.error) return `<div class="kincard"><div class="kc-top"><span class="kc-kw">${esc(it.keyword)}</span></div><div class="kc-meta" style="color:var(--stop)">${esc(it.error)}</div></div>`;
     const q = (it.samples||[]).map(s=>'· '+esc(s)).join('<br>');
     return `<div class="kincard">
       <div class="kc-top">
