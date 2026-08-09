@@ -44,7 +44,7 @@ from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v49"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v50"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -352,6 +352,43 @@ async def version():
 class KeyTestReq(BaseModel):
     client_id: str
     client_secret: str
+
+
+@app.post("/api/hubtest")
+async def hubtest(req: KeyTestReq):
+    """새 NAVER API HUB 연결 점검 — 공식 명세로 확인된 검색 API(뉴스)를
+    허브 주소·인증으로 호출해, 네 새 허브 키가 실제로 되는지 원클릭 확인.
+      GET https://naverapihub.apigw.ntruss.com/search/v1/news
+      헤더 X-NCP-APIGW-API-KEY-ID / X-NCP-APIGW-API-KEY"""
+    import httpx
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "msg": "Client ID / Secret 을 둘 다 넣어주세요."}
+    url = "https://naverapihub.apigw.ntruss.com/search/v1/news"
+    headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": csec}
+    params = {"query": "테스트", "display": 1, "start": 1, "sort": "date", "format": "json"}
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            r = await c.get(url, headers=headers, params=params)
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "kind": "network",
+                "msg": f"허브에 못 닿았어요 — {type(e).__name__}: {str(e)[:140]}"}
+    body = (r.text or "")[:240]
+    if r.status_code == 200:
+        return {"ok": True, "kind": "ok",
+                "msg": "✅ 새 허브 연결 성공! 이 키로 검색 API가 됩니다 "
+                       "(뉴스 검색 테스트 통과). 이제 이 방식으로 소싱기를 재편할 수 있어요."}
+    if r.status_code == 401:
+        return {"ok": False, "kind": "auth",
+                "msg": "401 인증 실패 — 허브 키가 맞는지, 콘솔에서 이 앱에 '검색 API'가 "
+                       f"선택됐는지 확인해주세요. (응답: {body})"}
+    if r.status_code == 429:
+        return {"ok": False, "kind": "quota",
+                "msg": "429 한도/미선택 — 콘솔에서 이 앱에 검색 API가 선택돼 있는지, "
+                       f"하루 한도를 넘지 않았는지 확인해주세요. (응답: {body})"}
+    return {"ok": False, "kind": "http",
+            "msg": f"{r.status_code} 응답 — {body}"}
 
 
 @app.post("/api/keytest")

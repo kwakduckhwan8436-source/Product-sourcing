@@ -674,8 +674,9 @@
         <input id="cid" placeholder="Client ID" autocomplete="off"/>
         <input id="csec" placeholder="Client Secret" type="password" autocomplete="off"/>
       </div>
-      <div style="margin-top:8px"><button id="keytest" class="ghost" type="button">🔑 열쇠 점검 (오류 원인 확인)</button>
-        <span id="keytestMsg" style="font-size:12.5px;margin-left:8px"></span></div>
+      <div style="margin-top:8px"><button id="keytest" class="ghost" type="button">🔑 열쇠 점검 (옛 방식)</button>
+        <button id="hubtest" class="ghost" type="button" style="margin-left:6px">🔌 새 허브(API HUB) 연결 점검</button>
+        <div id="keytestMsg" style="font-size:12.5px;margin-top:8px"></div></div>
       <div class="guide">
         <b>🔑 처음이신가요? 열쇠(무료) 3분이면 받아요:</b>
         <ol style="margin:8px 0 0;padding-left:20px;line-height:1.85">
@@ -962,6 +963,21 @@ if ($('#keytest')) $('#keytest').addEventListener('click', async () => {
     m.textContent = (r.ok ? '✅ ' : '⚠️ ') + (r.msg || '');
   } catch (e) {
     m.style.color = 'var(--stop)'; m.textContent = '점검 요청 실패 — 서버가 재배포됐는지 확인해주세요.';
+  }
+});
+
+if ($('#hubtest')) $('#hubtest').addEventListener('click', async () => {
+  const m = $('#keytestMsg');
+  const id = cid.value.trim(), sec = csec.value.trim();
+  if (!id || !sec) { m.style.color = 'var(--wait)'; m.textContent = '새 허브 Client ID/Secret을 먼저 넣어주세요.'; return; }
+  m.style.color = 'var(--sub)'; m.textContent = '새 허브 연결 확인 중…';
+  try {
+    const r = await (await fetch('/api/hubtest', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:id, client_secret:sec})})).json();
+    m.style.color = r.ok ? 'var(--go)' : 'var(--stop)';
+    m.textContent = r.msg || '';
+  } catch (e) {
+    m.style.color = 'var(--stop)'; m.textContent = '점검 요청 실패 — 서버(v50)가 재배포됐는지 확인해주세요.';
   }
 });
 
