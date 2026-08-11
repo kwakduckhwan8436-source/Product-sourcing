@@ -37,14 +37,16 @@ from discovery.calendar import build_calendar  # noqa: E402
 from discovery.listing import build_listing  # noqa: E402
 from discovery.segments import build_report  # noqa: E402
 from discovery.title_mining import mine_titles  # noqa: E402
-from discovery.tracker import (grade_verdicts, hit_rate, movement_of,  # noqa: E402
+from discovery.tracker import (backtest_log, backtest_pending,  # noqa: E402
+                               calib_get, calib_set_from_hitrate,
+                               grade_verdicts, hit_rate, movement_of,
                                pool_stats, record, say_verdict,
                                tracked_keywords, watch_add,
                                watch_list, watch_remove)
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v70"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v83"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -431,6 +433,23 @@ _STOP_WORDS = {
 }
 
 
+_INTENT_WORDS = ("추천", "어디서", "어디", "가성비", "싸게", "구매", "살까", "사려",
+                 "고르", "골라", "비교", "후기", "괜찮", "어떤", "뭐가", "vs", "차이")
+
+
+async def _kin_signal(cid: str, csec: str, kw: str) -> tuple:
+    """지식iN 질문 수(수요 폭) + 제목의 구매의도 밀도(살 마음)를 한 번에 잰다."""
+    try:
+        data = await _hub_search(cid, csec, "kin", kw, display=10, sort="sim")
+    except Exception:  # noqa: BLE001
+        return (-1, 0.0)
+    total = int(data.get("total") or 0)
+    blob = " ".join(_strip_tags(it.get("title", "")) for it in (data.get("items") or []))
+    hits = sum(1 for w in _INTENT_WORDS if w in blob)
+    intent = round(min(1.0, hits / 6.0), 2)
+    return (total, intent)
+
+
 async def _search_total(cid: str, csec: str, kind: str, query: str) -> int:
     """검색 API 로 그 키워드의 총 문서 수만 가볍게 얻는다(display=1).
     지식iN=질문 수(수요 폭), 블로그=글 수(화제성)."""
@@ -439,6 +458,37 @@ async def _search_total(cid: str, csec: str, kind: str, query: str) -> int:
         return int(data.get("total") or 0)
     except Exception:  # noqa: BLE001
         return -1
+
+
+def _market_of(rise: float, blog_total: int) -> list:
+    """블로그 글 수(화제성)와 상승률로 시장 상태를 근사한다.
+    글은 적은데 뜨는 = 블루오션(초기), 글 많은데 정체 = 레드오션(포화)."""
+    if not blog_total or blog_total <= 0:
+        return ["", ""]
+    if rise >= 10 and blog_total < 30000:
+        return ["blue", "블루오션 — 뜨는데 아직 덜 붐빔"]
+    if rise < 5 and blog_total >= 120000:
+        return ["red", "레드오션 — 포화·성장 정체(주의)"]
+    return ["", ""]
+
+
+def _grade_of(confidence: int, sustained: float, spike: bool, market: str,
+              rollover: bool = False) -> str:
+    """선별 등급 A/B/C — 신뢰도·지속성·시장상태·되돌림을 합쳐 '살 만한가'를 한 글자로.
+    A급 신뢰도 하한은 백테스트 적중률로 자동 보정된다(calib)."""
+    try:
+        a_min = calib_get()
+    except Exception:  # noqa: BLE001
+        a_min = 75
+    if market == "red" or spike or rollover:
+        if confidence >= 60 and sustained >= 0.67 and not spike and not rollover:
+            return "B"
+        return "C"
+    if confidence >= a_min and sustained >= 0.67:
+        return "A"
+    if confidence >= 50 and sustained >= 0.33:
+        return "B"
+    return "C"
 
 
 def _confidence(it: dict, x_state: str, kin_total: int, blog_total: int) -> int:
@@ -544,7 +594,8 @@ def _trend_of(points: list) -> dict:
         return {"latest": round(vals[-1], 1) if vals else 0.0, "rise": 0.0,
                 "stage": "데이터부족", "series": [round(v, 1) for v in vals],
                 "level": round(sum(vals) / len(vals), 1) if vals else 0.0,
-                "stability": 0.0, "momentum": 0.0, "n": len(vals)}
+                "stability": 0.0, "momentum": 0.0, "n": len(vals),
+                "sustained": 0.0, "spike": False}
     recent = sum(vals[-3:]) / 3.0
     earlier = sum(vals[:-3]) / max(1, len(vals) - 3)
     rise = round((recent - earlier) / max(1.0, earlier) * 100, 1)
@@ -555,6 +606,19 @@ def _trend_of(points: list) -> dict:
     cv = sd / mean_v if mean_v else 1.0                 # 변동계수
     stability = round(max(0.0, min(1.0, 1.0 - cv)), 2)  # 낮게 출렁일수록 1에 가까움
     momentum = round((vals[-1] - vals[-2]) / max(1.0, vals[-2]) * 100, 1)
+    # 지속성: 최근 3개월 중 '이전 평균'을 넘는 달의 비율(0~1) — 꾸준한 상승일수록 1
+    earlier_mean = sum(vals[:-3]) / max(1, len(vals) - 3)
+    above = sum(1 for v in vals[-3:] if v > earlier_mean)
+    sustained = round(above / 3.0, 2)
+    # 반짝 급등: 마지막 달을 빼면 잠잠했는데(직전까지 상승률<10%) 마지막만 1.5배+ 튄 경우
+    pre = vals[:-1]
+    if len(pre) >= 4:
+        pre_recent = sum(pre[-3:]) / 3.0
+        pre_earlier = sum(pre[:-3]) / max(1, len(pre) - 3)
+        pre_rise = (pre_recent - pre_earlier) / max(1.0, pre_earlier) * 100
+        spike = bool(vals[-1] >= 1.5 * pre_recent and pre_rise < 10 and rise > 0)
+    else:
+        spike = False
     if rise >= 20:
         stage = "급상승"
     elif rise >= 5:
@@ -565,11 +629,17 @@ def _trend_of(points: list) -> dict:
         stage = "하락"
     else:
         stage = "보합"
+    # 되돌림: 고점이 2개월+ 전이고 최근 3개월 연속 하락하며 고점 대비 뚜렷이 내려온 경우
+    peak_i2 = vals.index(peak)
+    rollover = bool(peak_i2 <= len(vals) - 3
+                    and vals[-1] < vals[-2] < vals[-3]
+                    and peak / max(vals[-1], 1.0) >= 1.2)
     return {"latest": round(vals[-1], 1), "rise": rise, "stage": stage,
             "peak_pct": round(vals[-1] / peak * 100),
             "series": [round(v, 1) for v in vals],
             "level": round(level, 1), "stability": stability,
-            "momentum": momentum, "n": len(vals)}
+            "momentum": momentum, "n": len(vals),
+            "sustained": sustained, "spike": spike, "rollover": rollover}
 
 
 def _season_of(series: list) -> dict:
@@ -849,6 +919,15 @@ async def trend_search(req: TrendReq):
     return {"ok": True, "items": out, "range": f"{start} ~ {end}", "path": used_path}
 
 
+# 분야별 기준점(앵커) — 항상 꾸준히 팔리는 에버그린 키워드라야 배치 정규화가 안정적이다
+_ANCHORS = {
+    "패션의류": "티셔츠", "패션잡화": "지갑", "화장품/미용": "선크림",
+    "디지털/가전": "이어폰", "가구/인테리어": "책상", "출산/육아": "기저귀",
+    "식품": "커피", "스포츠/레저": "운동화", "생활/건강": "칫솔",
+    "여가/생활편의": "노트",
+}
+
+
 def _seed_bank() -> dict:
     """분야별 씨앗 키워드 은행 {분야명: (코드, [키워드...])} — 자동 발굴 후보 풀."""
     try:
@@ -858,6 +937,101 @@ def _seed_bank() -> dict:
                 for c in d.get("categories", [])}
     except Exception:  # noqa: BLE001
         return {}
+
+
+def _grade_explain(it: dict, x_state: str, market: str, intent: float) -> dict:
+    """이 등급이 나온 이유를 '올린 근거'와 '깎은 근거'로 나눠 한눈에 설명한다."""
+    plus, minus = [], []
+    conf = it.get("confidence", 0)
+    if conf >= 75:
+        plus.append(f"신뢰도 {conf}%")
+    elif conf < 50:
+        minus.append(f"신뢰도 낮음({conf}%)")
+    if it.get("sustained", 0.0) >= 0.67:
+        plus.append("꾸준한 상승")
+    elif it.get("sustained", 0.0) < 0.34:
+        minus.append("상승 지속성 약함")
+    if x_state == "both":
+        plus.append("검색·클릭 동반 상승")
+    if market == "blue":
+        plus.append("블루오션(덜 붐빔)")
+    elif market == "red":
+        minus.append("레드오션(포화)")
+    if intent >= 0.5:
+        plus.append("구매의도 뚜렷")
+    if it.get("spike"):
+        minus.append("반짝 급등 의심")
+    if it.get("rollover"):
+        minus.append("고점 지나 꺾임")
+    return {"plus": plus, "minus": minus}
+
+
+async def _enrich_top(cid: str, csec: str, items: list, start: str, end: str) -> str:
+    """상위 후보에 3중 교차검증(검색량·지식iN·블로그)·신뢰도·시장·등급을 붙인다.
+    자동발굴과 니치가 공용으로 써서 선별 품질을 동일하게 유지한다. trend_path 반환."""
+    import asyncio as _aio
+    trend_path = None
+    try:
+        top = items[:20]
+        srise = {}
+        for i in range(0, len(top), 5):
+            b = [x["keyword"] for x in top[i:i + 5]]
+            body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                    "keywordGroups": [{"groupName": k, "keywords": [k]} for k in b]}
+            data, trend_path = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+            for r in (data.get("results") or []):
+                t = _trend_of(r.get("data") or [])
+                if t.get("series"):
+                    srise[r.get("title") or ""] = t["rise"]
+        deep = top[:10]
+        kin_sig = await _aio.gather(*(_kin_signal(cid, csec, x["keyword"]) for x in deep))
+        blog_t = await _aio.gather(*(_search_total(cid, csec, "blog", x["keyword"]) for x in deep))
+        totals = {deep[i]["keyword"]: (kin_sig[i][0], kin_sig[i][1], blog_t[i])
+                  for i in range(len(deep))}
+        for it in top:
+            kw = it["keyword"]
+            sr = srise.get(kw)
+            cr = it.get("rise", 0.0)
+            kin, intent, blog = totals.get(kw, (None, 0.0, None))
+            if sr is not None and sr >= 5 and cr >= 5:
+                x_state, xnote = "both", f"검색량 {sr:.0f}%↑ · 클릭도 ↑ (둘 다 오름)"
+            elif sr is not None and sr >= 5:
+                x_state, xnote = "search", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
+            elif cr >= 5:
+                x_state, xnote = "click", "클릭은 오르나 검색량은 완만"
+            else:
+                x_state, xnote = "none", "뚜렷한 상승 신호 약함"
+            bits = [xnote]
+            if kin and kin > 0:
+                bits.append(f"지식iN 질문 {kin:,}건")
+            if intent >= 0.5:
+                bits.append(f"구매의도 높음({int(intent*100)}%)")
+            if blog and blog > 0:
+                bits.append(f"블로그 {blog:,}건")
+            it["xcheck"] = {"level": ("go" if x_state == "both" else
+                                      "wait" if x_state in ("search", "click") else "neutral"),
+                            "note": " · ".join(bits)}
+            conf = _confidence(it, x_state,
+                               kin if kin and kin > 0 else 0,
+                               blog if blog and blog > 0 else 0)
+            conf = min(100, conf + round(intent * 8))
+            it["confidence"] = conf
+            if intent >= 0.5:
+                it.setdefault("reasons", []).append(
+                    f"지식iN에서 '추천·어디서·가성비' 등 살 마음이 뚜렷(구매의도 {int(intent*100)}%)")
+            mk = _market_of(cr, blog if blog and blog > 0 else 0)
+            if mk[0]:
+                it["market"] = {"level": mk[0], "note": mk[1]}
+            it["grade"] = _grade_of(it["confidence"], it.get("sustained", 0.0),
+                                    it.get("spike", False), mk[0],
+                                    it.get("rollover", False))
+            it["grade_why"] = _grade_explain(it, x_state, mk[0], intent)
+            if it.get("spike"):
+                it.setdefault("reasons", []).insert(
+                    0, "⚠️ 최근 한 달만 튄 반짝 급등일 수 있음 — 지속성 확인 필요")
+    except Exception:  # noqa: BLE001
+        pass
+    return trend_path
 
 
 class DiscoverReq(BaseModel):
@@ -932,20 +1106,26 @@ async def discover(req: DiscoverReq):
         return {"ok": False, "error": "씨앗 데이터를 불러오지 못했어요(category_seeds.json)."}
     targets = [req.category] if req.category in bank else list(bank.keys())
     start, end = _date_range(12)
-    # (분야, 코드, 5개 배치) 작업 목록
+    # (분야, 코드, 앵커, 4개 배치) — 앵커를 모든 배치에 넣어 배치 간 수준 비교를 가능케 한다
     jobs = []
+    anchor_of = {}
     for cat in targets:
         code, kws = bank[cat]
-        for i in range(0, len(kws), 5):
-            jobs.append((cat, code, kws[i:i + 5]))
+        anchor = _ANCHORS.get(cat) or (kws[0] if kws else "")   # 에버그린 앵커, 없으면 첫 씨앗
+        anchor_of[cat] = anchor
+        others = [k for k in kws if k != anchor]
+        for i in range(0, len(others), 4):
+            jobs.append((cat, code, anchor, others[i:i + 4]))
     sem = asyncio.Semaphore(4)
     first_err = {"msg": ""}
+    anchor_info = {}                                  # {분야: {keyword, stability, n, ok}}
 
-    async def run(cat, code, batch):
+    async def run(cat, code, anchor, batch):
         async with sem:
+            kws = ([anchor] + batch) if anchor else batch
             body = {"startDate": start, "endDate": end, "timeUnit": "month",
                     "category": code,
-                    "keyword": [{"name": k, "param": [k]} for k in batch]}
+                    "keyword": [{"name": k, "param": [k]} for k in kws]}
             try:
                 data = await _hub_datalab(cid, csec,
                                           "/shopping/v1/category/keywords", body)
@@ -957,15 +1137,33 @@ async def discover(req: DiscoverReq):
                 if not first_err["msg"]:
                     first_err["msg"] = f"{type(e).__name__}: {str(e)[:120]}"
                 return []
-            picked = []
-            for r in (data.get("results") or []):
+            results = data.get("results") or []
+            # 앵커의 수준·안정성을 찾아 배치 내 상대수준 환산의 기준으로 삼는다
+            anchor_lv = 0.0
+            trends = {}
+            for r in results:
                 t = _trend_of(r.get("data") or [])
-                if t.get("series"):
-                    picked.append({"keyword": r.get("title") or "",
-                                   "category": cat, **t})
+                trends[r.get("title") or ""] = t
+                if anchor and (r.get("title") or "") == anchor:
+                    anchor_lv = t.get("level", 0.0)
+                    if cat not in anchor_info:
+                        st = t.get("stability", 0.0)
+                        nn = t.get("n", 0)
+                        anchor_info[cat] = {"keyword": anchor, "stability": st,
+                                            "n": nn, "ok": bool(st >= 0.5 and nn >= 8)}
+            picked = []
+            for name, t in trends.items():
+                if not t.get("series"):
+                    continue
+                if anchor and name == anchor:
+                    continue                       # 앵커 자신은 후보에서 제외
+                # 앵커 대비 상대수준(배치 간 비교 가능). 앵커가 약하면 원수준 유지
+                nlevel = round(t["level"] / anchor_lv * 100, 1) if anchor_lv > 0 else t["level"]
+                picked.append({"keyword": name, "category": cat,
+                               "nlevel": nlevel, **t})
             return picked
 
-    batches = await asyncio.gather(*(run(c, code, b) for c, code, b in jobs))
+    batches = await asyncio.gather(*(run(c, code, anc, b) for c, code, anc, b in jobs))
     items = [x for sub in batches for x in sub]
     if not items:
         return {"ok": False,
@@ -985,16 +1183,19 @@ async def discover(req: DiscoverReq):
         # 정밀도 2) 관심이 미미하고(수준 낮음) 오르지도 않으면 제외
         if lv < 6 and rs < 5:
             continue
-        # 위탁 적합 = 급상승·모멘텀 (정규화 무관 지표 → 배치 간 비교 정확)
-        consign = round(max(0.0, rs) * 0.7 + max(0.0, mo) * 0.3, 1)
-        # 사입 적합 = 높은 수준 × 안정성 (안정성은 정규화 무관, 수준은 분야 내 비교)
-        wholesale = round(lv * (0.45 + 0.55 * st), 1)
+        sus = it.get("sustained", 0.0)
+        nlv = it.get("nlevel", lv)          # 앵커 대비 상대수준(배치 간 비교 가능)
+        # 위탁 적합 = 급상승·모멘텀 × 지속성(반짝 급등은 감점)
+        consign = round((max(0.0, rs) * 0.7 + max(0.0, mo) * 0.3)
+                        * (0.5 + 0.5 * sus), 1)
+        # 사입 적합 = 상대수준 × 안정성 (앵커 정규화로 배치 간 공정 비교)
+        wholesale = round(nlv * (0.45 + 0.55 * st), 1)
         it["consign_score"] = consign
         it["wholesale_score"] = wholesale
         fit = []
         if rs >= 10 or mo >= 15:
             fit.append("위탁형")
-        if lv >= 40 and st >= 0.6:
+        if nlv >= 60 and st >= 0.6:          # 앵커의 60%+ 수준이며 안정적이면 사입형
             fit.append("사입형")
         it["fit"] = fit or ["관망"]
         kept.append(it)
@@ -1016,57 +1217,30 @@ async def discover(req: DiscoverReq):
         it["reasons"] = _discover_reasons(it)
         it["verdict"] = _discover_verdict(it, mode)      # [level, text]
         it["season"] = _season_of(it.get("series") or [])
+        if it.get("rollover"):
+            it["reasons"].insert(0, "⚠️ 고점을 지나 최근 꺾이는 중 — 진입 시점 주의")
+        # 사입 모드에서 기준점(앵커)이 불안정하면 '수준 비교'가 덜 정확함을 표시
+        ai = anchor_info.get(it.get("category", ""))
+        if mode == "wholesale" and ai and not ai["ok"]:
+            it["anchor_weak"] = True
     result = kept[:40]
-    # 🔗 3중 교차검증 + 신뢰도 — 상위 후보를 검색량·지식iN·블로그로 재확인
-    trend_path = None
-    import asyncio as _aio
+    # 🔗 3중 교차검증·신뢰도·등급 (자동발굴/니치 공용)
+    trend_path = await _enrich_top(cid, csec, result, start, end)
+    # 🧪 백테스트: 이번 A·B급 판정을 기록(하루 1회) → 등급별 적중률 검증
     try:
-        top = result[:20]
-        srise = {}
-        for i in range(0, len(top), 5):
-            b = [x["keyword"] for x in top[i:i + 5]]
-            body = {"startDate": start, "endDate": end, "timeUnit": "month",
-                    "keywordGroups": [{"groupName": k, "keywords": [k]} for k in b]}
-            data, trend_path = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
-            for r in (data.get("results") or []):
-                t = _trend_of(r.get("data") or [])
-                if t.get("series"):
-                    srise[r.get("title") or ""] = t["rise"]
-        # 지식iN 질문 수 + 블로그 글 수 (상위 10개만, 병렬)
-        deep = top[:10]
-        kin_t = await _aio.gather(*(_search_total(cid, csec, "kin", x["keyword"]) for x in deep))
-        blog_t = await _aio.gather(*(_search_total(cid, csec, "blog", x["keyword"]) for x in deep))
-        totals = {deep[i]["keyword"]: (kin_t[i], blog_t[i]) for i in range(len(deep))}
-        for it in top:
-            kw = it["keyword"]
-            sr = srise.get(kw)
-            cr = it.get("rise", 0.0)
-            kin, blog = totals.get(kw, (None, None))
-            # 교차검증 상태
-            if sr is not None and sr >= 5 and cr >= 5:
-                x_state, xnote = "both", f"검색량 {sr:.0f}%↑ · 클릭도 ↑ (둘 다 오름)"
-            elif sr is not None and sr >= 5:
-                x_state, xnote = "search", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
-            elif cr >= 5:
-                x_state, xnote = "click", "클릭은 오르나 검색량은 완만"
-            else:
-                x_state, xnote = "none", "뚜렷한 상승 신호 약함"
-            bits = [xnote]
-            if kin and kin > 0:
-                bits.append(f"지식iN 질문 {kin:,}건")
-            if blog and blog > 0:
-                bits.append(f"블로그 {blog:,}건")
-            it["xcheck"] = {"level": ("go" if x_state == "both" else
-                                      "wait" if x_state in ("search", "click") else "neutral"),
-                            "note": " · ".join(bits)}
-            it["confidence"] = _confidence(it, x_state,
-                                           kin if kin and kin > 0 else 0,
-                                           blog if blog and blog > 0 else 0)
+        rows_log = [{"keyword": it["keyword"], "category": it.get("category", ""),
+                     "grade": it.get("grade", ""), "rise": it.get("rise", 0)}
+                    for it in result if it.get("grade") in ("A", "B")]
+        if rows_log:
+            backtest_log(rows_log)
     except Exception:  # noqa: BLE001
         pass
     return {"ok": True, "items": result, "range": f"{start} ~ {end}",
             "scanned": len(items), "mode": mode, "targets": targets,
-            "trend_path": trend_path}
+            "trend_path": trend_path,
+            "anchors": [{"category": c, "keyword": v["keyword"],
+                         "stability": v["stability"], "ok": v["ok"]}
+                        for c, v in anchor_info.items()]}
 
 
 _NICHE_MODS = ["무선", "미니", "대용량", "저소음", "접이식", "휴대용", "방수",
@@ -1145,8 +1319,93 @@ async def niche(req: NicheReq):
     if not out:
         return {"ok": False, "error": "조합 데이터를 못 받았어요 — " + (first_err or "다른 키워드로.")}
     out.sort(key=lambda x: -x["rise"])
+    # 니치도 자동발굴과 동일한 3중 교차검증·신뢰도·등급을 붙인다
+    trend_path = await _enrich_top(cid, csec, out[:20], start, end)
     return {"ok": True, "items": out, "range": f"{start} ~ {end}",
-            "base": base, "mode": "consign", "related": related}
+            "base": base, "mode": "consign", "related": related,
+            "trend_path": trend_path}
+
+
+class BacktestReq(BaseModel):
+    client_id: str
+    client_secret: str
+
+
+@app.post("/api/backtest")
+async def backtest_api(req: BacktestReq):
+    """🧪 백테스트 — 7일+ 전에 A급이라 한 종목이 이후에도 상승을 유지했는지
+    다시 재서 적중률을 낸다(등급 공식이 실제로 맞는지 자기검증)."""
+    import asyncio
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    try:
+        pend = backtest_pending(days=7)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc), "items": []}
+    if not pend:
+        return {"ok": True, "items": [], "note": "아직 검증할 기록이 없어요(A급을 발굴한 지 7일 지나면 쌓여요)."}
+    start, end = _date_range(12)
+    sem = asyncio.Semaphore(4)
+
+    async def one(row):
+        kw = row.get("keyword")
+        code = _CATS.get(row.get("category", ""))
+        if not kw or not code:
+            return None
+        body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                "category": str(code), "keyword": [{"name": kw, "param": [kw]}]}
+        async with sem:
+            try:
+                data = await _hub_datalab(cid, csec,
+                                          "/shopping/v1/category/keywords", body)
+            except Exception:  # noqa: BLE001
+                return None
+        res = data.get("results") or []
+        if not res:
+            return None
+        t = _trend_of(res[0].get("data") or [])
+        now = t.get("rise", 0.0)
+        # 판정 당시 상승세가 이후에도 유지(하락 전환 안 함)됐으면 적중
+        hit = bool(now >= 0 and not t.get("rollover"))
+        return {"keyword": kw, "category": row.get("category", ""),
+                "grade": row.get("grade", ""),
+                "logged_at": row.get("logged_at", "")[:10],
+                "then_rise": round(float(row.get("rise") or 0), 1),
+                "now_rise": now, "hit": hit}
+
+    got = await asyncio.gather(*(one(r) for r in pend))
+    out = [x for x in got if x]
+    hits = sum(1 for x in out if x["hit"])
+    rate = round(hits / len(out) * 100) if out else 0
+
+    def _rate(grade):
+        sub = [x for x in out if x.get("grade") == grade]
+        avg_now = round(sum(x["now_rise"] for x in sub) / len(sub), 1) if sub else None
+        avg_then = round(sum(x["then_rise"] for x in sub) / len(sub), 1) if sub else None
+        return {"grade": grade, "total": len(sub),
+                "hits": sum(1 for x in sub if x["hit"]),
+                "rate": round(sum(1 for x in sub if x["hit"]) / len(sub) * 100) if sub else None,
+                "avg_now": avg_now, "avg_then": avg_then}
+    by_grade = [_rate("A"), _rate("B")]
+    # A급 적중률로만 기준 보정(A의 표본으로)
+    a_stat = by_grade[0]
+    try:
+        a_min = calib_set_from_hitrate(a_stat["rate"] if a_stat["rate"] is not None else rate,
+                                       a_stat["total"])
+    except Exception:  # noqa: BLE001
+        a_min = 75
+    # 등급 변별력: A가 B보다 (1)잘 맞고 (2)실제로 더 크게 올랐으면 유효
+    valid = None
+    mag = None                                    # 상승 유지폭 우위(A평균 - B평균)
+    if a_stat["rate"] is not None and by_grade[1]["rate"] is not None:
+        valid = a_stat["rate"] >= by_grade[1]["rate"]
+    if a_stat["avg_now"] is not None and by_grade[1]["avg_now"] is not None:
+        mag = round(a_stat["avg_now"] - by_grade[1]["avg_now"], 1)
+    return {"ok": True, "items": out, "hit_rate": rate,
+            "hits": hits, "total": len(out), "a_min_conf": a_min,
+            "by_grade": by_grade, "grade_valid": valid, "mag_gap": mag}
 
 
 @app.post("/api/keytest")
@@ -1769,6 +2028,70 @@ async def watch_remove_api(req: WatchReq):
         return {"ok": True, "count": len(watch_list(who))}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+class WatchTrackReq(BaseModel):
+    client_id: str
+    client_secret: str
+    owner: str = "local"
+
+
+@app.post("/api/watch/track")
+async def watch_track_api(req: WatchTrackReq):
+    """⭐ 관심목록 주간 추적 — 담을 때 상승률 대비 '지금'을 다시 재서
+    계속 오르는지/꺾였는지, 급상승으로 전환됐는지(🔔)를 알려준다."""
+    import asyncio
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    who = (req.owner or "local")[:64]
+    try:
+        items = watch_list(who)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc), "items": []}
+    if not items:
+        return {"ok": True, "items": []}
+    start, end = _date_range(12)
+    sem = asyncio.Semaphore(4)
+
+    async def one(it):
+        kw = it.get("keyword")
+        catname = it.get("category", "")
+        code = _CATS.get(catname)
+        if not kw or not code:
+            return None
+        body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                "category": str(code), "keyword": [{"name": kw, "param": [kw]}]}
+        async with sem:
+            try:
+                data = await _hub_datalab(cid, csec,
+                                          "/shopping/v1/category/keywords", body)
+            except Exception:  # noqa: BLE001
+                return None
+        res = data.get("results") or []
+        if not res:
+            return None
+        t = _trend_of(res[0].get("data") or [])
+        now = t.get("rise", 0.0)
+        added = float(it.get("rise") or 0.0)
+        diff = round(now - added, 1)
+        if diff >= 5:
+            d = "up"
+        elif diff <= -5:
+            d = "down"
+        else:
+            d = "flat"
+        return {"keyword": kw, "category": catname,
+                "added_rise": round(added, 1), "now_rise": now, "delta": diff,
+                "dir": d, "turned": bool(added < 20 and now >= 20),
+                "rollover": t.get("rollover", False),
+                "grade": it.get("grade", ""), "added_at": it.get("added_at", "")}
+
+    got = await asyncio.gather(*(one(it) for it in items[:15]))
+    out = [x for x in got if x]
+    out.sort(key=lambda x: -x["now_rise"])
+    return {"ok": True, "items": out, "alerts": [x for x in out if x["turned"]]}
 
 
 @app.get("/api/watch")

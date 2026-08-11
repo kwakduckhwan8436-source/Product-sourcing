@@ -302,6 +302,10 @@
   .dc-reasons li{margin:1px 0}
   .dc-xcheck{font-size:12.5px;border-radius:8px;padding:7px 10px;margin:0 0 8px;font-weight:600}
   .dc-conf{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+  .dc-why{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 8px;font-size:11.5px}
+  .dc-why .gw-lead{font-weight:800;color:var(--sub);margin-right:2px}
+  .dc-why .gw-p{color:#bff0d2;background:var(--go-bg);border-radius:6px;padding:2px 7px}
+  .dc-why .gw-m{color:#fbccd0;background:var(--stop-bg);border-radius:6px;padding:2px 7px}
   .dc-conf-l{font-size:12.5px;color:var(--sub);white-space:nowrap}
   .dc-conf-l b{color:var(--ink);font-size:14px}
   .dc-conf-bar{flex:1;height:8px;background:var(--panel);border-radius:5px;overflow:hidden}
@@ -309,6 +313,65 @@
   .src-link.customs{color:#c8b6ff;background:rgba(150,120,255,.12)}
   .sweep{background:rgba(216,178,60,.12);border:1px solid rgba(216,178,60,.28);
     border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:13px;color:#f0e2b8}
+  .dc-grade{font-family:var(--serif);font-size:13px;font-weight:800;border-radius:7px;
+    padding:2px 9px;margin-right:2px;vertical-align:middle}
+  .g-A{background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));color:#1a1408}
+  .g-B{background:rgba(90,160,255,.2);color:#9fc6ff}
+  .g-C{background:var(--panel);color:var(--sub);border:1px solid var(--line2)}
+  .dc-mkt{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px}
+  .m-blue{background:rgba(90,160,255,.14);color:#8fbaff}
+  .m-red{background:var(--stop-bg);color:#fbccd0}
+  .dc-mkt-row{margin:0 0 8px}
+  .dc-filter{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+  .dc-chip{font-size:12px;font-weight:700;border:1px solid var(--line2);background:var(--panel2);
+    color:var(--sub);border-radius:20px;padding:6px 12px;cursor:pointer}
+  .dc-chip.on{background:var(--brand);color:#191307;border-color:transparent}
+  .dc-chip:hover{border-color:var(--brand)}
+  .dc-margin:not(:empty){margin-top:10px}
+  .mgrow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}
+  .mgrow input{background:var(--panel);border:1px solid var(--line2);color:var(--ink);
+    border-radius:9px;padding:10px;font-size:14px;outline:none}
+  .mgrow input:focus{border-color:var(--brand)}
+  .mg-res{margin-top:8px;font-size:13px;line-height:1.6}
+  .mg-comb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-radius:10px;
+    padding:9px 11px;margin-top:6px;font-size:13.5px}
+  .mg-comb.go{background:var(--go-bg);color:#c6f2d8} .mg-comb.wait{background:var(--wait-bg);color:#f4e6bc}
+  .mg-comb.stop{background:var(--stop-bg);color:#fbccd0}
+  .mg-comb .cg{font-family:var(--serif);font-size:19px;font-weight:800}
+  .mg-comb .mg-sub{font-size:11.5px;color:var(--sub);margin-left:auto}
+  .mg-note{font-size:11px;color:var(--sub);margin-top:5px}
+  @media(max-width:640px){ .mgrow{grid-template-columns:1fr 1fr} .mgrow button{grid-column:1/3} }
+  .anchor-note{font-size:12px;border-radius:9px;padding:8px 11px;margin:6px 0 2px;line-height:1.5}
+  .anchor-note.ok{background:var(--go-bg);color:#bff0d2}
+  .anchor-note.warn{background:var(--wait-bg);color:#f4e6bc}
+  .digest{background:linear-gradient(135deg,rgba(216,178,60,.16),rgba(216,178,60,.05));
+    border:1px solid rgba(216,178,60,.35);border-radius:13px;padding:13px 14px;margin:10px 0}
+  .digest-h{font-size:14px;font-weight:800;color:var(--gold-hi);margin-bottom:9px}
+  .digest-h span{font-weight:500;color:var(--sub);font-size:12px}
+  .digest-item{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);
+    border:1px solid var(--line2);border-radius:20px;padding:6px 12px;margin:0 6px 6px 0;
+    cursor:pointer;font-size:12.5px;color:var(--ink)}
+  .digest-item:hover{border-color:var(--brand)}
+  .digest-item .dg-cat{color:var(--sub);font-size:11px}
+  .digest-item .dg-rise{color:var(--go);font-weight:700}
+  .digest-item .dg-conf{color:var(--brand-soft);font-size:11px}
+  .disccard.flash{animation:flashcard 1.2s ease}
+  @keyframes flashcard{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 2px var(--gold-hi)}}
+  .bt-box{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:13px;margin-top:10px}
+  .bt-head{font-size:14px;font-weight:800} .bt-head span{font-weight:500;color:var(--sub);font-size:12px}
+  .bt-desc{font-size:12px;color:var(--sub);line-height:1.55;margin:5px 0 9px}
+  .bt-row{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:5px 0;border-top:1px solid var(--line)}
+  .bt-sub{color:var(--sub);font-size:11.5px;text-align:right}
+  .bt-calib{font-size:12px;color:#c8b6ff;background:rgba(150,120,255,.1);
+    border-radius:8px;padding:7px 10px;margin:0 0 8px}
+  .btg-row{display:flex;gap:8px;margin:4px 0 6px}
+  .btg{flex:1;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px;text-align:center}
+  .btg-g{display:inline-block;font-size:12px;font-weight:800;border-radius:6px;padding:1px 8px;margin-bottom:4px}
+  .btg-r{font-family:var(--serif);font-size:20px}
+  .btg-n{font-size:11px;color:var(--sub)}
+  .wc-hist:not(:empty){margin:6px 0}
+  .wc-hh{font-size:11.5px;color:var(--sub)}
+  .wc-svg{display:block;width:100%;max-width:220px;height:34px;margin-top:3px}
   .xc-go{background:var(--go-bg);color:#bff0d2}
   .xc-wait{background:var(--wait-bg);color:#f4e6bc}
   .xc-neutral{background:var(--panel);color:var(--sub)}
@@ -875,16 +938,12 @@
     <div id="insOut"></div>
   </section>
 
-  <div class="panel">
-    <h2>🧰 도구</h2>
-    <div class="autorow">
-      <select id="cat"><option value="">전체 분야</option></select>
-      <button id="cal" class="ghost">1년 장사 달력</button>
-      <button id="chk" class="ghost">📋 시작 전 준비물</button>
-    </div>
-    <div class="links" style="margin-top:8px">
-      <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
-      <button id="cafe" class="ghost">📋 카페에 올릴 글로 복사</button>
+  <div class="panel" style="padding:12px 16px">
+    <button id="wlist" class="ghost">📌 관심 목록 <span id="wcnt"></span></button>
+    <button id="btest" class="ghost" style="margin-left:6px">🧪 등급 적중률 검증</button>
+    <div id="btestOut"></div>
+    <div style="display:none" aria-hidden="true">
+      <select id="cat"></select><button id="cal"></button><button id="chk"></button><button id="cafe"></button>
     </div>
   </div>
 
@@ -1111,6 +1170,17 @@ function discCardHTML(it, i, isW){
     const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
     const conf = (typeof it.confidence === 'number') ? it.confidence : null;
     const confHtml = conf!==null ? `<div class="dc-conf"><span class="dc-conf-l">신뢰도 <b>${conf}%</b></span><span class="dc-conf-bar"><i style="width:${conf}%;background:${conf>=75?'var(--go)':(conf>=50?'var(--wait)':'var(--stop)')}"></i></span></div>` : '';
+    const gr = it.grade;
+    const grHtml = gr ? `<span class="dc-grade g-${gr}">${gr}급</span>` : '';
+    const gw = it.grade_why;
+    let gwHtml = '';
+    if(gw && (gw.plus&&gw.plus.length || gw.minus&&gw.minus.length)){
+      const p = (gw.plus||[]).map(t=>`<span class="gw-p">＋${esc(t)}</span>`).join('');
+      const m = (gw.minus||[]).map(t=>`<span class="gw-m">－${esc(t)}</span>`).join('');
+      gwHtml = `<div class="dc-why"><span class="gw-lead">${gr}급 근거</span> ${p}${m}</div>`;
+    }
+    const mkt = it.market;
+    const mktHtml = mkt ? `<span class="dc-mkt m-${mkt.level}">${esc(mkt.note)}</span>` : '';
     const sea = it.season;
     const seaHtml = sea ? `<span class="dc-season${sea.hot?' hot':''}">🗓 ${esc(sea.label)}</span>` : '';
     const kwEnc = encodeURIComponent(it.keyword);
@@ -1134,14 +1204,16 @@ function discCardHTML(it, i, isW){
     ];
     const links = (isW ? wholeV : consignV)
       .map(([t,u])=>`<a class="src-link buy" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
-    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}">
+    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}" data-grade="${it.grade||''}">
       <div class="dc-line">
         <div>
           <span class="dc-rank">${i+1}</span>
+          ${grHtml}
           <span class="dc-kw">${esc(it.keyword)}</span>
           <span class="dc-cat">${esc(it.category)}</span>
           ${(it.fit||[]).map(fitBadge).join('')}
           ${it.from_related?'<span class="dc-fit fit-w">🔎 연관어</span>':''}
+          ${it.anchor_weak?'<span class="dc-fit fit-n" title="기준점 불안정 — 수준 비교 참고만">⚓?</span>':''}
         </div>
         <div>
           <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
@@ -1149,7 +1221,9 @@ function discCardHTML(it, i, isW){
         </div>
       </div>
       <div class="dc-verdict ${v[0]}">${vico} <b>${esc(v[1])}</b></div>
+      ${gwHtml}
       ${confHtml}
+      ${mktHtml?`<div class="dc-mkt-row">${mktHtml}</div>`:''}
       ${xcHtml}
       ${seaHtml}
       ${reasons?`<ul class="dc-reasons">${reasons}</ul>`:''}
@@ -1158,8 +1232,9 @@ function discCardHTML(it, i, isW){
       <div class="dc-acts">
         <button class="dc-act" data-act="target">👥 누가 사나</button>
         <button class="dc-act" data-act="dig">🧭 더 파기</button>
-        <button class="dc-act" data-act="margin">💰 마진 계산</button>
+        <button class="dc-act" data-act="margin">💰 마진·종합등급</button>
       </div>
+      <div class="dc-margin"></div>
       <div class="dc-detail"></div>
     </div>`;
 }
@@ -1185,15 +1260,111 @@ async function autoDiscover(){
   if(!cat){ // 전체 분야 자동순회 — 어느 분야가 가장 뜨거운지 요약
     const byCat = {};
     d.items.forEach(x=>{ if(x.hot) byCat[x.category]=(byCat[x.category]||0)+1; });
-    const top = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    if(top.length) sweep = `<div class="sweep">🔥 이번에 가장 뜨거운 분야: ${top.map(([c,n])=>`<b>${c}</b> ${n}개`).join(' · ')}</div>`;
+    const topc = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    if(topc.length) sweep = `<div class="sweep">🔥 이번에 가장 뜨거운 분야: ${topc.map(([c,n])=>`<b>${c}</b> ${n}개`).join(' · ')}</div>`;
   }
-  let html = sweep + `<p class="ihint" style="margin-top:10px">${modeLbl} 후보 ${d.items.length}개 · 적합 <b>${hotN}개</b> · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>`;
-  html += d.items.map((it,i)=>discCardHTML(it,i,d.mode==='wholesale')).join('');
+  DISC_LAST = {items:d.items, mode:d.mode, sweep, hotN, modeLbl, anchors:d.anchors||[]};
+  DISC_FILTER = 'all';
+  renderDiscResult();
+}
+let DISC_LAST = null, DISC_FILTER = 'all';
+function renderDiscResult(){
+  const box = $('#discOut'); if(!DISC_LAST) return;
+  const {items, mode, sweep, hotN, modeLbl} = DISC_LAST;
+  let anchorLine = '';
+  if(mode==='wholesale' && DISC_LAST.anchors && DISC_LAST.anchors.length){
+    const bad = DISC_LAST.anchors.filter(a=>!a.ok);
+    if(bad.length){
+      anchorLine = `<div class="anchor-note warn">⚓ 기준점 주의: ${bad.map(a=>`${a.category}(${a.keyword})`).join(', ')} — 이 분야는 기준이 불안정해 <b>수준 비교가 덜 정확</b>할 수 있어요(상승률·안정성 위주로 보세요).</div>`;
+    } else {
+      anchorLine = `<div class="anchor-note ok">⚓ 기준점 검증 통과 — 앵커가 안정적이라 사입 수준 비교가 신뢰할 만해요.</div>`;
+    }
+  }
+  const gradeCount = g => items.filter(x=>x.grade===g).length;
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  // 🏆 A급 다이제스트 — 최고 등급만 맨 위에 요약
+  const aItems = items.filter(x=>x.grade==='A').slice(0,8);
+  let digest = '';
+  if(aItems.length){
+    digest = `<div class="digest"><div class="digest-h">🏆 이번 ${modeLbl} A급 ${aItems.length}선 <span>— 근거 탄탄한 최우선 후보</span></div>`
+      + aItems.map(x=>`<button class="digest-item" data-jump="${esc(x.keyword)}"><b>${esc(x.keyword)}</b> <span class="dg-cat">${esc(x.category)}</span> <span class="dg-rise">▲${x.rise}%</span>${typeof x.confidence==='number'?` <span class="dg-conf">신뢰 ${x.confidence}%</span>`:''}</button>`).join('')
+      + `</div>`;
+  }
+  const f = DISC_FILTER;
+  let shown = items.filter(x=>{
+    if(f==='A') return x.grade==='A';
+    if(f==='AB') return x.grade==='A'||x.grade==='B';
+    if(f==='blue') return x.market&&x.market.level==='blue';
+    if(f==='safe') return !x.rollover && !x.spike && !(x.market&&x.market.level==='red');
+    return true;
+  });
+  const chip = (id,label) => `<button class="dc-chip${f===id?' on':''}" data-f="${id}">${label}</button>`;
+  const chips = `<div class="dc-filter">${chip('all','전체 '+items.length)}${chip('A','A급 '+gradeCount('A'))}${chip('AB','A·B급')}${chip('blue','🔵블루오션')}${chip('safe','안전(반짝·되돌림 제외)')}<button class="dc-chip rep" data-rep="1">🧾 리포트 복사</button><button class="dc-chip keepall" data-keepall="1">📌 표시된 것 담기</button></div>`;
+  let html = sweep + digest + chips + `<p class="ihint" style="margin-top:8px">${modeLbl} · ${shown.length}개 표시 · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>` + anchorLine;
+  if(!shown.length){ html += '<p class="hint">이 조건에 맞는 후보가 없어요.</p>'; }
+  else html += shown.map((it,i)=>discCardHTML(it,i,mode==='wholesale')).join('');
   box.innerHTML = html;
+  DISC_SHOWN = shown;
   const tops = box.querySelectorAll('.disccard');
   for (let i = 0; i < Math.min(3, tops.length); i++) loadTarget(tops[i]);
 }
+let DISC_SHOWN = [];
+function copyReport(items, modeLbl, btnSel){
+  items = items||[];
+  if(!items.length){ alert('복사할 후보가 없어요.'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const lines = [`[${today}] ${modeLbl} 소싱 후보 ${items.length}개 (AI 재테크 연구소 · 상품 소싱 작업대)`, ''];
+  items.slice(0,20).forEach((it,i)=>{
+    const g = it.grade?`[${it.grade}급] `:'';
+    const v = it.verdict?it.verdict[1]:'';
+    const conf = (typeof it.confidence==='number')?` · 신뢰도 ${it.confidence}%`:'';
+    lines.push(`${i+1}. ${g}${it.keyword} (${it.category}) — 상승률 ${it.rise}%${conf}`);
+    const mc = MARGIN_CACHE[it.keyword];
+    if(mc) lines.push(`   💰 마진율 ${mc.pct}% · 개당 ${mc.net.toLocaleString('ko-KR')}원 · 종합 ${mc.cg}`);
+    if(v) lines.push(`   → ${v}`);
+    if(it.xcheck&&it.xcheck.note) lines.push(`   🔗 ${it.xcheck.note}`);
+  });
+  lines.push('', '※ 상대지수·공개 트렌드 기반 참고자료입니다. 실제 매입 전 시세·경쟁을 직접 확인하세요.');
+  const text = lines.join('\n');
+  const done = ()=>{ const b=document.querySelector(btnSel); if(b){ const t=b.textContent; b.textContent='✅ 복사됨'; setTimeout(()=>b.textContent=t,1500);} };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>{ prompt('복사하세요:', text); }); }
+  else prompt('복사하세요:', text);
+}
+async function keepAll(items, btnSel){
+  items = (items||[]).slice(0,20);
+  if(!items.length){ alert('담을 후보가 없어요.'); return; }
+  const btn = document.querySelector(btnSel);
+  const orig = btn?btn.textContent:'';
+  if(btn){ btn.textContent='담는 중…'; btn.disabled=true; }
+  let ok=0;
+  for(const it of items){
+    const mc = MARGIN_CACHE[it.keyword] || {};
+    try{
+      const r = await fetch('/api/watch/add', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({keyword:it.keyword, owner:ME, payload:{
+          category:it.category, rise:it.rise, grade:it.grade||'', confidence:it.confidence||null,
+          verdict:it.verdict?it.verdict[1]:'', fit:it.fit||[],
+          margin_pct:mc.pct!=null?mc.pct:null, margin_grade:mc.cg||''}})});
+      const d = await r.json(); if(d.ok) ok++;
+    }catch(e){}
+  }
+  if(btn){ btn.textContent=`✅ ${ok}개 담음`; setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; }, 1800); }
+  if(typeof refreshWatchCount==='function') refreshWatchCount();
+}
+if ($('#discOut')) $('#discOut').addEventListener('click', (e)=>{
+  const jump = e.target.closest('.digest-item');
+  if(jump){
+    if(DISC_FILTER!=='all'){ DISC_FILTER='all'; renderDiscResult(); }
+    const kw = jump.dataset.jump;
+    const card = [...document.querySelectorAll('#discOut .disccard')].find(c=>c.dataset.kw===kw);
+    if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.classList.add('flash'); setTimeout(()=>card.classList.remove('flash'),1200); }
+    return;
+  }
+  if(e.target.closest('.dc-chip.keepall')){ keepAll(DISC_SHOWN, '#discOut .dc-chip.keepall'); return; }
+  if(e.target.closest('.dc-chip.rep')){ copyReport(DISC_SHOWN, (DISC_LAST&&DISC_LAST.mode==='wholesale')?'사입(도매)':'위탁', '#discOut .dc-chip.rep'); return; }
+  const c = e.target.closest('.dc-chip'); if(!c) return;
+  DISC_FILTER = c.dataset.f; renderDiscResult();
+});
 if ($('#discGo')) $('#discGo').addEventListener('click', autoDiscover);
 
 /* 🧭 니치 조합 발굴 */
@@ -1213,13 +1384,88 @@ async function nicheRun(){
   if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">뜨는 조합이 없어요.</p>'; return; }
   const relLine = (d.related&&d.related.length)
     ? `<p class="ihint" style="margin-top:10px">🔎 실제 연관어 자동 확장: <b>${d.related.map(w=>w.replace(/</g,'&lt;')).join(', ')}</b></p>` : '';
-  let html = `<p class="ihint" style="margin-top:10px">"${base}" 세부 조합 ${d.items.length}개 · 상승률 순</p>` + relLine;
-  html += d.items.map((it,i)=>discCardHTML(it,i,false)).join('');
+  NICHE_LAST = {items:d.items, mode:'consign', base, relLine};
+  NICHE_FILTER = 'all';
+  renderNicheResult();
+}
+let NICHE_LAST = null, NICHE_FILTER = 'all', NICHE_SHOWN = [];
+function gradeFilter(items, f){
+  return items.filter(x=>{
+    if(f==='A') return x.grade==='A';
+    if(f==='AB') return x.grade==='A'||x.grade==='B';
+    if(f==='blue') return x.market&&x.market.level==='blue';
+    if(f==='safe') return !x.rollover && !x.spike && !(x.market&&x.market.level==='red');
+    return true;
+  });
+}
+function gradeChips(items, f){
+  const gc = g => items.filter(x=>x.grade===g).length;
+  const c = (id,label)=>`<button class="dc-chip${f===id?' on':''}" data-f="${id}">${label}</button>`;
+  return `<div class="dc-filter">${c('all','전체 '+items.length)}${c('A','A급 '+gc('A'))}${c('AB','A·B급')}${c('blue','🔵블루오션')}${c('safe','안전')}<button class="dc-chip rep" data-rep="1">🧾 리포트 복사</button><button class="dc-chip keepall" data-keepall="1">📌 표시된 것 담기</button></div>`;
+}
+function renderNicheResult(){
+  const box = $('#insOut'); if(!NICHE_LAST) return;
+  const {items, mode, base, relLine} = NICHE_LAST;
+  const shown = gradeFilter(items, NICHE_FILTER);
+  let html = relLine + gradeChips(items, NICHE_FILTER)
+    + `<p class="ihint" style="margin-top:8px">"${base}" 세부 조합 · ${shown.length}개 표시 · 상승률 순</p>`;
+  if(!shown.length) html += '<p class="hint">이 조건에 맞는 조합이 없어요.</p>';
+  else html += shown.map((it,i)=>discCardHTML(it,i,mode==='wholesale')).join('');
   box.innerHTML = html;
+  NICHE_SHOWN = shown;
   const tops = box.querySelectorAll('.disccard');
   for (let i = 0; i < Math.min(2, tops.length); i++) loadTarget(tops[i]);
 }
+if ($('#insOut')) $('#insOut').addEventListener('click', (e)=>{
+  if(!NICHE_LAST) return;
+  if(e.target.closest('.dc-chip.keepall')){ keepAll(NICHE_SHOWN, '#insOut .dc-chip.keepall'); return; }
+  if(e.target.closest('.dc-chip.rep')){ copyReport(NICHE_SHOWN, '위탁', '#insOut .dc-chip.rep'); return; }
+  const c = e.target.closest('.dc-chip[data-f]'); if(!c) return;
+  NICHE_FILTER = c.dataset.f; renderNicheResult();
+});
 if ($('#insNiGo')) $('#insNiGo').addEventListener('click', nicheRun);
+
+/* 🧪 등급 적중률 검증 (백테스트) */
+async function runBacktest(){
+  const id = cid.value.trim(), sec = csec.value.trim();
+  const box = $('#btestOut');
+  if(!id || !sec){ box.innerHTML = '<div class="err">허브 열쇠를 먼저 넣어주세요.</div>'; return; }
+  box.innerHTML = '<div class="card"><span class="spin"></span>과거 A급 판정을 다시 검증하는 중…</div>';
+  let d;
+  try{
+    d = await (await fetch('/api/backtest', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:id, client_secret:sec})})).json();
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v78) 재배포 확인.</div>'; return; }
+  if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML = `<p class="hint" style="margin-top:8px">${(d.note||'검증할 기록이 없어요.')}</p>`; return; }
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const rows = d.items.map(x=>`<div class="bt-row"><span>${x.hit?'✅':'❌'} ${x.grade?`<b class="g-${x.grade}" style="border-radius:4px;padding:0 5px;font-size:11px">${x.grade}</b> `:''}${esc(x.keyword)}</span>
+    <span class="bt-sub">${x.logged_at} (${x.then_rise}%) → 지금 ${x.now_rise}%</span></div>`).join('');
+  const color = d.hit_rate>=70?'var(--go)':(d.hit_rate>=50?'var(--wait)':'var(--stop)');
+  const calib = (typeof d.a_min_conf==='number')
+    ? `<div class="bt-calib">⚖️ 자동 보정: A급 신뢰도 기준 <b>${d.a_min_conf}%</b> ${d.a_min_conf>75?'(적중률이 낮아 더 엄격하게 조정됨)':(d.a_min_conf<75?'(적중률이 높아 소폭 완화됨)':'(기본값)')}</div>` : '';
+  let grades = '';
+  if(d.by_grade && d.by_grade.length){
+    const cell = g => `<div class="btg"><div class="btg-g g-${g.grade}">${g.grade}급</div><div class="btg-r">${g.rate!=null?g.rate+'%':'-'}</div><div class="btg-n">${g.hits}/${g.total}${g.avg_now!=null?` · 평균 ${g.avg_now}%`:''}</div></div>`;
+    let verdict = '';
+    if(d.grade_valid===true) verdict = '<span style="color:var(--go)">✅ A급이 B급보다 잘 맞음 — 등급 변별력 정상</span>';
+    else if(d.grade_valid===false) verdict = '<span style="color:var(--wait)">⚠️ A급이 B급보다 안 맞음 — 기준 재점검 필요(자동 보정 중)</span>';
+    let magTxt = '';
+    if(typeof d.mag_gap==='number'){
+      magTxt = d.mag_gap>0
+        ? ` · A급이 평균 <b style="color:var(--go)">+${d.mag_gap}%p</b> 더 오름(유지폭 우위)`
+        : (d.mag_gap<0 ? ` · A급이 평균 ${d.mag_gap}%p 낮음(주의)` : ' · A·B 상승폭 비슷');
+    }
+    grades = `<div class="btg-row">${d.by_grade.map(cell).join('')}</div><div class="bt-desc" style="margin-top:2px">${verdict}${magTxt}</div>`;
+  }
+  box.innerHTML = `<div class="bt-box">
+    <div class="bt-head">🧪 전체 적중률 <b style="color:${color}">${d.hit_rate}%</b> <span>(${d.hits}/${d.total} · 7일+ 경과분)</span></div>
+    <div class="bt-desc">등급대로 판정한 종목이 이후에도 상승을 유지했는지예요. A급이 B급보다 잘 맞아야 등급이 유효.</div>
+    ${grades}
+    ${calib}
+    ${rows}</div>`;
+}
+if ($('#btest')) $('#btest').addEventListener('click', runBacktest);
 
 /* 발굴 카드 액션: 👥 누가 사나(타깃) · 💰 마진 계산 */
 async function loadTarget(card){
@@ -1241,15 +1487,54 @@ async function loadTarget(card){
   if(d.age) h += '<div class="tgh" style="margin-top:6px">연령</div>'+bar(d.age);
   det.innerHTML = h || '<p class="hint">타깃 데이터 없음</p>';
 }
+function marginGrade(pct){ return pct>=25?'상':(pct>=15?'중':'하'); }
+function combinedGrade(demand, mg){
+  const D={A:3,B:2,C:1}[demand]||1, M={상:3,중:2,하:1}[mg]||1;
+  const s=D+M;
+  if(demand==='A'&&mg==='상') return ['A+','🏆 강력 추천 — 수요·마진 다 좋음','go'];
+  if(s>=5) return ['A','✅ 추천 — 수요·마진 균형','go'];
+  if(s>=4) return ['B','🟡 조건부 — 한쪽이 아쉬움','wait'];
+  return ['C','⚠️ 신중 — 수요나 마진이 약함','stop'];
+}
+function toggleMargin(card){
+  const box = card.querySelector('.dc-margin');
+  if(!box) return;
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  box.dataset.open='1';
+  box.innerHTML = `
+    <div class="mgrow">
+      <input class="mg-sell" type="number" inputmode="numeric" placeholder="판매가 (원)">
+      <input class="mg-cost" type="number" inputmode="numeric" placeholder="매입·원가 (원)">
+      <button class="dc-act" data-act="mcalc">계산</button>
+    </div>
+    <div class="mg-out"></div>`;
+}
+let MARGIN_CACHE = {};
+function calcCardMargin(card){
+  const sell = +(card.querySelector('.mg-sell')?.value||0);
+  const cost = +(card.querySelector('.mg-cost')?.value||0);
+  const out = card.querySelector('.mg-out');
+  if(!sell || !cost){ if(out) out.innerHTML='<p class="hint">판매가·원가를 넣어주세요.</p>'; return; }
+  const fee = sell*0.06, ship = 3000;          // 기본 수수료 6% + 택배 3000 (계산기에서 조정 가능)
+  const net = sell - cost - fee - ship;
+  const pct = Math.round(net/sell*100);
+  const mg = marginGrade(pct);
+  const demand = card.dataset.grade || 'C';
+  const [cg, msg, lvl] = combinedGrade(demand, mg);
+  MARGIN_CACHE[card.dataset.kw] = {pct, mg, cg, net};   // 리포트·담기에 반영
+  out.innerHTML = `
+    <div class="mg-res">
+      <div>한 개 남는 돈 <b style="color:${net>0?'var(--go)':'var(--stop)'}">${net.toLocaleString('ko-KR')}원</b> · 마진율 <b>${pct}%</b> (마진 ${mg})</div>
+      <div class="mg-comb ${lvl}"><span class="cg">${cg}</span> ${msg} <span class="mg-sub">수요 ${demand}급 × 마진 ${mg}</span></div>
+      <div class="mg-note">기본 수수료 6%·택배 3,000원 가정. 정밀 계산은 아래 🧮 판매 마진 계산기에서.</div>
+    </div>`;
+}
 function cardActionHandler(e){
   const btn = e.target.closest('.dc-act'); if(!btn) return;
   const card = btn.closest('.disccard'); if(!card) return;
-  if(btn.dataset.act === 'margin'){
-    const mt = $('#marginTool'); if(mt){ mt.open = true; mt.scrollIntoView({behavior:'smooth', block:'start'}); }
-    return;
-  }
+  if(btn.dataset.act === 'margin'){ toggleMargin(card); return; }
+  if(btn.dataset.act === 'mcalc'){ calcCardMargin(card); return; }
   if(btn.dataset.act === 'dig'){
-    // 🧭 2차 확장 — 이 키워드를 기준으로 니치를 또 판다
     const kw = card.dataset.kw, cat = card.dataset.cat;
     const niTab = document.querySelector('.itab[data-m="ni"]');
     if(niTab) niTab.click();
@@ -1542,36 +1827,84 @@ async function refreshWatchCount() {
 refreshWatchCount();
 
 
-async function showWatch() {
+function histSpark(hist){
+  if(!hist || hist.length<2) return (hist&&hist.length===1)
+    ? `<span class="wc-hh">추이: 1회 기록됨 — 다음에 또 추적하면 그래프가 그려져요</span>` : '';
+  const vals = hist.map(h=>h.r);
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = (mx-mn)||1;
+  const W=180, H=34, n=vals.length;
+  const xy = (v,i)=>{ const x=(i/(n-1))*(W-4)+2; const y=H-2-((v-mn)/rng)*(H-6); return [x,y]; };
+  const pts = vals.map((v,i)=>xy(v,i).map(z=>z.toFixed(1)).join(',')).join(' ');
+  const last = vals[n-1], first = vals[0];
+  const col = last>first?'var(--go)':(last<first?'var(--stop)':'var(--sub)');
+  const dots = vals.map((v,i)=>{ const [x,y]=xy(v,i); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.8" fill="${col}"/>`; }).join('');
+  return `<div class="wc-hh">📊 상승률 추이 (${n}회) · ${first}% → <b style="color:${col}">${last}%</b></div>
+    <svg class="wc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/>${dots}</svg>`;
+}
+function histSparkFor(kw){
+  try{ return histSpark(JSON.parse(localStorage.getItem('th_'+ME+'_'+kw)||'[]')); }
+  catch(e){ return ''; }
+}
+async function showWatch(){
   const d = await (await fetch('/api/watch?owner=' + ME)).json();
   if (!d.ok || !d.items.length) {
-    out.innerHTML = '<div class="card"><p class="hint">아직 담은 게 없어요. 카드에서 <b>📌 관심 담기</b>를 눌러보세요.</p></div>';
+    out.innerHTML = '<div class="card"><p class="hint">아직 담은 게 없어요. 발굴 카드에서 <b>📌 담기</b>를 눌러보세요.</p></div>';
     return;
   }
-  LAST_FINDS = d.items;
-  const cards = d.items.map((f, i) => `
-    <div class="card">
-      <div class="fhead"><span class="rank">${i + 1}</span>
-        <span class="t">${f.keyword}</span>
-        <span class="tag">${f.category || ''}</span>
-        <span class="tag ${f.grade === '빈자리' ? 'go' : (f.grade === '좁음' ? 'wait' : '')}">${f.grade || ''}</span>
-      </div>
-      <div class="kpis">
-        <div class="kpi"><div class="l">경쟁</div><div class="v">${won(f.total)}개</div></div>
-        <div class="kpi"><div class="l">시장 최저가</div><div class="v">${won(f.price_min)}원</div>
-          <div class="s">${(f.naver_low_title || '').slice(0, 16)}</div></div>
-        <div class="kpi"><div class="l">떼오는 값 상한</div>
-          <div class="v" style="color:var(--go)">${won(f.need_cost)}원</div></div>
-      </div>
-      <div class="links">
-        <button onclick="showWrite(${i})">✍ 이대로 올리기</button>
-        ${f.naver_low_link ? `<a href="${f.naver_low_link}" target="_blank">이 가격 상품 보기 ↗</a>` : ''}
-        <button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button>
-      </div>
-      <div id="w${i}"></div>
-    </div>`).join('');
-  out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b></div>
-    <div class="cards">${cards}</div>`;
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const card = f => `<div class="card wc" data-kw="${esc(f.keyword)}">
+      <div class="fhead"><span class="t">${esc(f.keyword)}</span> <span class="tag">${esc(f.category||'')}</span>
+        ${f.grade?`<span class="dc-grade g-${f.grade}">${f.grade}급</span>`:''}</div>
+      <div class="wc-track hint">담을 때 상승률 ${f.rise!=null?f.rise+'%':'-'}${f.verdict?' · '+esc(f.verdict):''}</div>
+      <div class="wc-hist">${histSparkFor(f.keyword)}</div>
+      <div class="links"><button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button></div>
+    </div>`;
+  out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b>
+      <button id="wtrack" class="ghost" style="margin-left:8px">🔄 지금 다시 추적</button></div>
+    <div class="cards">${d.items.map(card).join('')}</div>`;
+  const tb = document.getElementById('wtrack');
+  if(tb) tb.addEventListener('click', trackWatch);
+}
+async function trackWatch(){
+  const id = cid.value.trim(), sec = csec.value.trim();
+  if(!id || !sec){ alert('허브 열쇠를 먼저 넣어주세요 (위쪽 열쇠 설정).'); return; }
+  const tb = document.getElementById('wtrack');
+  if(tb){ tb.textContent='추적 중…'; tb.disabled=true; }
+  let d;
+  try{
+    d = await (await fetch('/api/watch/track', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:id, client_secret:sec, owner:ME})})).json();
+  }catch(e){ if(tb){tb.textContent='🔄 지금 다시 추적';tb.disabled=false;} return; }
+  if(!d.ok){ alert(d.error||'추적 실패'); if(tb){tb.textContent='🔄 지금 다시 추적';tb.disabled=false;} return; }
+  const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const map = {}; (d.items||[]).forEach(x=>map[x.keyword]=x);
+  const today = new Date().toISOString().slice(0,10);
+  document.querySelectorAll('.card.wc').forEach(cd=>{
+    const x = map[cd.dataset.kw]; if(!x) return;
+    const dirTxt = x.dir==='up'?`📈 더 오름 (+${x.delta}%p)`:(x.dir==='down'?`📉 꺾임 (${x.delta}%p)`:'→ 비슷');
+    const el = cd.querySelector('.wc-track');
+    if(el){ el.classList.remove('hint');
+      el.innerHTML = `담을 때 ${x.added_rise}% → 지금 <b>${x.now_rise}%</b> · ${dirTxt}`
+        + (x.turned?' <span class="dischot">🔔 급상승 전환</span>':'')
+        + (x.rollover?' <span class="dc-mkt m-red" style="padding:1px 7px">되돌림</span>':''); }
+    // 히스토리 스냅샷 누적(브라우저 저장) → 추이 그래프
+    const key = 'th_'+ME+'_'+cd.dataset.kw;
+    let hist = [];
+    try{ hist = JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ hist=[]; }
+    if(!hist.length || hist[hist.length-1].t!==today){ hist.push({t:today, r:x.now_rise}); }
+    else { hist[hist.length-1].r = x.now_rise; }   // 같은 날은 갱신
+    hist = hist.slice(-12);
+    try{ localStorage.setItem(key, JSON.stringify(hist)); }catch(e){}
+    const hb = cd.querySelector('.wc-hist');
+    if(hb) hb.innerHTML = histSpark(hist);
+  });
+  if(d.alerts && d.alerts.length){
+    const found = out.querySelector('.found');
+    if(found) found.insertAdjacentHTML('afterend',
+      `<div class="anchor-note warn" style="margin:8px 0">🔔 급상승 전환 ${d.alerts.length}건: <b>${d.alerts.map(a=>esc(a.keyword)).join(', ')}</b> — 지금 주목!</div>`);
+  }
+  if(tb){ tb.textContent='✅ 추적 완료'; tb.disabled=false; }
 }
 
 async function watchDel(kw, btn) {
@@ -1608,69 +1941,6 @@ function copyForCafe() {
 }
 
 /* ---------- 2단계 · 이대로 올리기 ---------- */
-function showWrite(i) {
-  const f = LAST_FINDS[i];
-  const box = document.getElementById('w' + i);
-  if (!f || !box) return;
-  const L = f.listing || {};
-  const pol = L.polished || [];
-  const plan = L.plan || [];
-  const photos = L.photos || [];
-  if (!pol.length && !(L.titles || []).length) {
-    box.innerHTML = '<div class="act">이 키워드는 상위 제목에서 건질 게 없었어요</div>';
-    return;
-  }
-  const titleRows = (pol.length ? pol : (L.titles || []).map(t => ({
-    text: t, kind: '', length: t.length, warns: []
-  }))).map(t => `
-    <div class="titlebox">
-      <span>${t.text}<small>${t.kind ? t.kind + ' · ' : ''}${t.length}자</small>
-        ${(t.warns || []).length ? `<div class="g" style="color:var(--wait)">⚠ ${t.warns.join(' · ')}</div>` : ''}
-      </span>
-      <button class="ghost" onclick="navigator.clipboard.writeText(${JSON.stringify(t.text)});this.textContent='복사됨'">복사</button>
-    </div>`).join('');
-  const planRows = plan.map(x => `
-    <div style="margin-bottom:9px">
-      <div class="g" style="color:var(--brand-soft)">${x.head}</div>
-      <div class="dl">${x.body}</div>
-    </div>`).join('');
-  const photoRows = photos.map(x => `<div class="dl">📸 ${x}</div>`).join('');
-  const planText = plan.map(x => `[${x.head}]\n${x.body}`).join('\n\n');
-
-  box.innerHTML = `
-    <div class="write">
-      <div class="wh">🏷️ 상품명 — 3벌 중 고르세요</div>
-      <div class="g" style="margin-bottom:8px">${L.why || ''}</div>
-      <div class="bars" style="margin-bottom:8px">
-        ${(L.must || []).map(w => `<span style="color:var(--brand-soft)">필수 ${w}</span>`).join('')}
-        ${(L.gaps || []).map(w => `<span style="color:var(--go)">빈틈 ${w}</span>`).join('')}
-      </div>
-      ${titleRows}
-      <div class="g" style="margin-top:8px">
-        네이버 상품명 가이드 기준으로 다듬었어요 — 홍보문구·특수문자·중복 제외, 50자 안쪽.
-        <b>단, 상위노출을 보장하진 않습니다</b> (노출은 판매·리뷰·광고가 함께 정해요).
-      </div>
-
-      <div class="dt">
-        <div class="wh2">📄 상세페이지 뼈대 (8줄)</div>
-        ${planRows}
-        <button class="ghost" style="margin-top:6px"
-          onclick="navigator.clipboard.writeText(${JSON.stringify(planText)});this.textContent='복사됨'">상세 8줄 복사</button>
-      </div>
-
-      <div class="dt">
-        <div class="wh2">📸 찍어야 할 사진</div>
-        ${photoRows}
-      </div>
-
-      ${(L.bundles || []).length ? `<div class="dt">
-        <div class="wh2">📦 묶음 아이디어 — 최저가 비교를 탈출하는 길</div>
-        ${L.bundles.map(x => `<div class="dl">${x}</div>`).join('')}
-      </div>` : ''}
-      <div class="g" style="margin-top:8px">${L.plan_note || ''}</div>
-    </div>`;
-}
-
 /* ---------- 누가 언제 찾나 ---------- */
 
 /* ---------- 1년 장사 달력 ---------- */
