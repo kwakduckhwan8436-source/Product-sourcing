@@ -28,10 +28,26 @@ from pathlib import Path
 # 배포 환경에서는 디스크 경로가 다르다.
 # Render 무료 플랜은 디스크가 날아가므로(재배포마다 초기화) 자료를 계속
 # 쌓으려면 유료 Disk 를 붙이고 SOURCING_DB 로 그 경로를 지정해야 한다.
-_DB = Path(os.environ.get(
-    "SOURCING_DB",
-    Path(__file__).resolve().parent.parent / "market_history.sqlite"))
-_DB.parent.mkdir(parents=True, exist_ok=True)
+def _resolve_db() -> Path:
+    """SOURCING_DB 가 있으면 쓰되, 그 경로를 만들 수 없으면(디스크 미장착 등)
+    앱이 죽지 않게 로컬 파일로 자동 폴백한다."""
+    env = os.environ.get("SOURCING_DB")
+    if env:
+        p = Path(env)
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            t = p.parent / ".w_test"
+            t.write_text("ok", encoding="utf-8")
+            t.unlink(missing_ok=True)
+            return p
+        except Exception:  # noqa: BLE001
+            pass                                   # 못 쓰면 아래 로컬로
+    p = Path(__file__).resolve().parent.parent / "market_history.sqlite"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+_DB = _resolve_db()
 _MIN_GAP_DAYS = 4.0        # 이만큼은 지나야 '변화'로 본다
 _CRASH_PCT = -7.0          # 최저가가 이만큼 빠지면 붕괴 신호
 _SURGE_PCT = 40.0          # 셀러가 이만큼 늘면 몰려온 것
@@ -85,7 +101,103 @@ CREATE TABLE IF NOT EXISTS market_snap (
     demand      REAL
 );
 CREATE INDEX IF NOT EXISTS idx_snap ON market_snap(keyword, seen_at);
+CREATE TABLE IF NOT EXISTS backtest (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword     TEXT NOT NULL,
+    category    TEXT,
+    grade       TEXT,
+    rise        REAL,
+    logged_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bt ON backtest(keyword, logged_at);
+CREATE TABLE IF NOT EXISTS meta (
+    k    TEXT PRIMARY KEY,
+    val  TEXT
+);
 """
+
+
+def backtest_log(rows: list, path: str | None = None) -> int:
+    """A급 판정을 기록한다. rows=[{keyword,category,grade,rise}]. 같은 키워드는
+    하루 1회만 남긴다(중복 방지). 기록한 건수를 반환."""
+    import datetime as _dt
+    if not rows:
+        return 0
+    today = _dt.date.today().isoformat()
+    c = _conn(path)
+    n = 0
+    try:
+        for r in rows:
+            kw = (r.get("keyword") or "").strip()
+            if not kw:
+                continue
+            dup = c.execute(
+                "SELECT 1 FROM backtest WHERE keyword=? AND substr(logged_at,1,10)=?",
+                (kw, today)).fetchone()
+            if dup:
+                continue
+            c.execute(
+                "INSERT INTO backtest(keyword,category,grade,rise,logged_at) "
+                "VALUES(?,?,?,?,?)",
+                (kw, r.get("category", ""), r.get("grade", ""),
+                 float(r.get("rise") or 0), _dt.datetime.now().isoformat(timespec="seconds")))
+            n += 1
+        c.commit()
+    finally:
+        c.close()
+    return n
+
+
+def backtest_pending(days: int = 7, path: str | None = None) -> list:
+    """기록된 지 N일 이상 지난 항목(검증 대상)을 돌려준다."""
+    import datetime as _dt
+    cutoff = (_dt.datetime.now() - _dt.timedelta(days=days)).isoformat()
+    c = _conn(path)
+    try:
+        rows = c.execute(
+            "SELECT keyword,category,grade,rise,logged_at FROM backtest "
+            "WHERE logged_at <= ? ORDER BY logged_at DESC LIMIT 40",
+            (cutoff,)).fetchall()
+    finally:
+        c.close()
+    return [dict(r) for r in rows]
+
+
+def calib_get(path: str | None = None) -> int:
+    """A급 신뢰도 하한 보정치(기본 75). 백테스트 적중률로 자동 조정된다."""
+    c = _conn(path)
+    try:
+        row = c.execute("SELECT val FROM meta WHERE k='a_min_conf'").fetchone()
+        return int(row["val"]) if row else 75
+    except Exception:  # noqa: BLE001
+        return 75
+    finally:
+        c.close()
+
+
+def calib_set_from_hitrate(hit_rate: int, total: int, path: str | None = None) -> int:
+    """백테스트 적중률로 A급 신뢰도 하한을 조정한다(표본 5건+ 일 때만).
+    적중률 낮으면 기준 상향(엄격), 아주 높으면 소폭 하향. 65~85 범위."""
+    if total < 5:
+        return calib_get(path)
+    cur = calib_get(path)
+    if hit_rate < 50:
+        new = min(85, cur + 5)
+    elif hit_rate < 65:
+        new = min(85, cur + 2)
+    elif hit_rate >= 85:
+        new = max(70, cur - 2)
+    else:
+        new = cur
+    if new != cur:
+        c = _conn(path)
+        try:
+            c.execute("INSERT INTO meta(k,val) VALUES('a_min_conf',?) "
+                      "ON CONFLICT(k) DO UPDATE SET val=excluded.val", (str(new),))
+            c.commit()
+        finally:
+            c.close()
+    return new
 
 
 @dataclass(slots=True)

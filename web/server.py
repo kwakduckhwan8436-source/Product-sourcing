@@ -46,7 +46,7 @@ from discovery.tracker import (backtest_log, backtest_pending,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v83"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v87"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -491,19 +491,31 @@ def _grade_of(confidence: int, sustained: float, spike: bool, market: str,
     return "C"
 
 
-def _confidence(it: dict, x_state: str, kin_total: int, blog_total: int) -> int:
-    """신뢰도 0~100 — 데이터 충분도·교차검증·안정성·수요폭·화제성을 합산."""
-    import math
-    n = it.get("n", 0)
+def _confidence(it: dict, x_state: str, kin_total: int, blog_total: int,
+                intent: float = 0.0) -> int:
+    """신뢰도 0~100 — '실제로 갈리는' 신호 중심으로 변별력 있게 계산한다.
+    (예전엔 데이터충분도·로그압축 항이 상수처럼 붙어 전부 비슷했다)"""
+    rise = it.get("rise", 0.0)
+    sus = it.get("sustained", 0.0)
     st = it.get("stability", 0.0)
-    c = min(30.0, n / 12.0 * 30.0)                 # 데이터 충분도 (≤30)
-    c += {"both": 25.0, "search": 12.0, "click": 6.0}.get(x_state, 0.0)  # 교차검증 (≤25)
-    c += st * 20.0                                  # 안정성 (≤20)
+    c = 0.0
+    c += {"both": 28.0, "search": 16.0, "click": 9.0}.get(x_state, 0.0)  # 교차검증 0~28
+    c += sus * 20.0                                       # 지속성 0~20
+    c += max(0.0, min(rise, 40.0)) / 40.0 * 22.0          # 상승 강도 0~22 (상승률 클수록)
+    c += st * 15.0                                        # 안정성 0~15
+    c += min(1.0, max(0.0, intent)) * 15.0               # 구매의도 0~15
+    # 수요 규모는 소폭 가점(로그, 최대 6) — 지배적이지 않게
+    import math
     if kin_total and kin_total > 0:
-        c += min(15.0, math.log10(kin_total + 1) / 5.0 * 15.0)   # 수요 폭 (≤15)
-    if blog_total and blog_total > 0:
-        c += min(10.0, math.log10(blog_total + 1) / 6.0 * 10.0)  # 화제성 (≤10)
-    return round(min(100.0, c))
+        c += min(6.0, math.log10(kin_total + 1) / 5.0 * 6.0)
+    # 위험 신호 감점
+    if it.get("spike"):
+        c -= 12.0
+    if it.get("rollover"):
+        c -= 18.0
+    if it.get("n", 12) < 8:                               # 데이터 부족하면만 감점(충분하면 상수 아님)
+        c -= 10.0
+    return round(max(0.0, min(100.0, c)))
 
 
 async def _related_terms(cid: str, csec: str, base: str, limit: int = 8) -> list:
@@ -1013,8 +1025,8 @@ async def _enrich_top(cid: str, csec: str, items: list, start: str, end: str) ->
                             "note": " · ".join(bits)}
             conf = _confidence(it, x_state,
                                kin if kin and kin > 0 else 0,
-                               blog if blog and blog > 0 else 0)
-            conf = min(100, conf + round(intent * 8))
+                               blog if blog and blog > 0 else 0,
+                               intent)
             it["confidence"] = conf
             if intent >= 0.5:
                 it.setdefault("reasons", []).append(
@@ -1039,6 +1051,7 @@ class DiscoverReq(BaseModel):
     client_secret: str
     category: str = ""          # 분야명 ("" = 전체 분야 스캔)
     mode: str = "consign"       # consign(위탁) | wholesale(사입/도매)
+    wide: bool = False          # 넓게 찾기 — 실시간 연관어를 씨앗에 섞어 새 후보 발굴
 
 
 def _discover_reasons(it: dict) -> list:
@@ -1105,6 +1118,28 @@ async def discover(req: DiscoverReq):
     if not bank:
         return {"ok": False, "error": "씨앗 데이터를 불러오지 못했어요(category_seeds.json)."}
     targets = [req.category] if req.category in bank else list(bank.keys())
+    # 🔀 넓게 찾기 — 실시간 연관어를 씨앗에 섞어 '같은 것만 나오는' 문제를 푼다.
+    # (단일 분야 선택 시에만. 랜덤 씨앗에서 캐서 같은 달에도 후보가 달라진다)
+    expanded_set = set()
+    if req.wide and req.category in bank:
+        import random
+        code_w, kws_w = bank[req.category]
+        anchor_w = _ANCHORS.get(req.category) or (kws_w[0] if kws_w else "")
+        bases = [anchor_w] + random.sample(kws_w, min(3, len(kws_w)))
+        seen_w = set(kws_w)
+        for b in bases:
+            if not b:
+                continue
+            try:
+                rel = await _related_terms(cid, csec, b, limit=6)
+            except Exception:  # noqa: BLE001
+                rel = []
+            for w in rel:
+                if w not in seen_w and 2 <= len(w) <= 12:
+                    seen_w.add(w)
+                    expanded_set.add(w)
+        if expanded_set:
+            bank[req.category] = (code_w, kws_w + list(expanded_set)[:16])
     start, end = _date_range(12)
     # (분야, 코드, 앵커, 4개 배치) — 앵커를 모든 배치에 넣어 배치 간 수준 비교를 가능케 한다
     jobs = []
@@ -1219,6 +1254,8 @@ async def discover(req: DiscoverReq):
         it["season"] = _season_of(it.get("series") or [])
         if it.get("rollover"):
             it["reasons"].insert(0, "⚠️ 고점을 지나 최근 꺾이는 중 — 진입 시점 주의")
+        if it.get("keyword") in expanded_set:
+            it["from_related"] = True            # 연관어 확장으로 새로 들어온 후보
         # 사입 모드에서 기준점(앵커)이 불안정하면 '수준 비교'가 덜 정확함을 표시
         ai = anchor_info.get(it.get("category", ""))
         if mode == "wholesale" and ai and not ai["ok"]:
@@ -1237,7 +1274,7 @@ async def discover(req: DiscoverReq):
         pass
     return {"ok": True, "items": result, "range": f"{start} ~ {end}",
             "scanned": len(items), "mode": mode, "targets": targets,
-            "trend_path": trend_path,
+            "trend_path": trend_path, "expanded": len(expanded_set),
             "anchors": [{"category": c, "keyword": v["keyword"],
                          "stability": v["stability"], "ok": v["ok"]}
                         for c, v in anchor_info.items()]}
