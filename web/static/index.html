@@ -293,7 +293,16 @@
   .disccard.vblock{display:block}
   .dc-line{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .dc-line .dc-rise{text-align:right}
-  .dc-verdict{border-radius:10px;padding:9px 12px;margin:10px 0 8px;font-size:13.5px;line-height:1.5}
+  .dc-signal{display:flex;align-items:center;gap:10px;border-radius:12px;padding:11px 13px;margin:10px 0 4px;font-weight:800;font-size:15px}
+  .dc-signal .sg-dot{font-size:20px;flex:0 0 auto}
+  .dc-signal .sg-txt{font-size:13.5px;font-weight:700}
+  .sg-go{background:linear-gradient(135deg,rgba(61,220,132,.22),rgba(61,220,132,.07));border:1px solid rgba(61,220,132,.4);color:#c6f2d8}
+  .sg-wait{background:linear-gradient(135deg,rgba(240,182,56,.2),rgba(240,182,56,.06));border:1px solid rgba(240,182,56,.38);color:#f4e6bc}
+  .sg-stop{background:linear-gradient(135deg,rgba(242,97,107,.2),rgba(242,97,107,.06));border:1px solid rgba(242,97,107,.4);color:#fbccd0}
+  .persona{background:rgba(90,160,255,.1);border:1px solid rgba(90,160,255,.28);border-radius:11px;padding:11px 12px;margin:6px 0 8px}
+  .persona-h{font-size:13.5px;color:#cfe0ff} .persona-h b{color:#fff}
+  .persona-tip{font-size:12.5px;color:#bcd0ee;margin-top:5px;line-height:1.5}
+  .dc-verdict{border-radius:10px;padding:9px 12px;margin:8px 0;font-size:13.5px;line-height:1.5}
   .dc-verdict.go{background:var(--go-bg);color:#c6f2d8;border:1px solid rgba(61,220,132,.3)}
   .dc-verdict.wait{background:var(--wait-bg);color:#f4e6bc;border:1px solid rgba(240,182,56,.3)}
   .dc-verdict.stop{background:var(--stop-bg);color:#fbccd0;border:1px solid rgba(242,97,107,.3)}
@@ -340,6 +349,10 @@
   .mg-comb .cg{font-family:var(--serif);font-size:19px;font-weight:800}
   .mg-comb .mg-sub{font-size:11.5px;color:var(--sub);margin-left:auto}
   .mg-note{font-size:11px;color:var(--sub);margin-top:5px}
+  .mg-tabs{display:flex;gap:6px;margin-bottom:8px}
+  .mg-tab{font-size:12px;font-weight:700;border:1px solid var(--line2);background:var(--panel2);
+    color:var(--sub);border-radius:8px;padding:6px 12px;cursor:pointer}
+  .mg-tab.on{background:var(--brand);color:#191307;border-color:transparent}
   @media(max-width:640px){ .mgrow{grid-template-columns:1fr 1fr} .mgrow button{grid-column:1/3} }
   .anchor-note{font-size:12px;border-radius:9px;padding:8px 11px;margin:6px 0 2px;line-height:1.5}
   .anchor-note.ok{background:var(--go-bg);color:#bff0d2}
@@ -372,6 +385,14 @@
   .wc-hist:not(:empty){margin:6px 0}
   .wc-hh{font-size:11.5px;color:var(--sub)}
   .wc-svg{display:block;width:100%;max-width:220px;height:34px;margin-top:3px}
+  .wide-opt{display:flex;align-items:flex-start;gap:7px;margin-top:9px;font-size:12.5px;
+    color:var(--sub);line-height:1.45;cursor:pointer}
+  .wide-opt input{margin-top:2px;flex:0 0 auto}
+  .wide-opt b{color:var(--ink);font-weight:600}
+  .api-usage:not(:empty){margin:8px 0 2px}
+  .au-row{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--sub);flex-wrap:wrap}
+  .au-bar{flex:1;min-width:80px;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+  .au-bar i{display:block;height:100%;border-radius:3px}
   .xc-go{background:var(--go-bg);color:#bff0d2}
   .xc-wait{background:var(--wait-bg);color:#f4e6bc}
   .xc-neutral{background:var(--panel);color:var(--sub)}
@@ -739,6 +760,45 @@
     .tgl{font-size:11.5px}
     .fitrow,.dc-acts,.src-links{gap:5px}
   }
+  /* ===== v88 신규 UI 모바일 최적화 (신호등·페르소나·마진탭·다이제스트 등) ===== */
+  @media(max-width:640px){
+    .dc-signal{padding:10px 11px;gap:8px}
+    .dc-signal .sg-dot{font-size:18px}
+    .dc-signal .sg-txt{font-size:12.5px}
+    .dc-why{font-size:11px;gap:4px}
+    .dc-why .gw-p,.dc-why .gw-m{padding:2px 6px}
+    .persona{padding:10px 11px}
+    .persona-h{font-size:12.5px}
+    .persona-tip{font-size:11.5px}
+    .dc-grade{font-size:12px;padding:2px 7px}
+    .dc-mkt{font-size:11px;padding:3px 8px}
+    .dc-season{font-size:11px;padding:3px 8px}
+    .dc-filter{gap:5px}
+    .dc-chip{font-size:11.5px;padding:6px 10px}
+    .digest{padding:11px 12px}
+    .digest-h{font-size:13px}
+    .digest-item{font-size:11.5px;padding:5px 10px;margin:0 5px 5px 0}
+    .mg-tab{font-size:11.5px;padding:6px 10px}
+    .mg-comb{font-size:12.5px;padding:8px 10px}
+    .mg-comb .cg{font-size:17px}
+    .mg-res{font-size:12.5px}
+    .anchor-note{font-size:11.5px;padding:7px 10px}
+    .sweep{font-size:12px;padding:9px 11px}
+    .wide-opt{font-size:12px}
+    .wc-svg{max-width:100%}
+    .wc-hh{font-size:11px}
+    .bt-box{padding:11px}
+    .bt-head{font-size:13px}
+    .btg-row{gap:6px}
+    .btg{padding:8px 6px}
+    .btg-r{font-size:17px}
+    .bt-row{font-size:11.5px}
+    .bt-sub{font-size:10.5px}
+    /* 터치 타깃 최소 크기 확보 */
+    .dc-act,.dc-chip,.mg-tab,.src-link{min-height:34px;display:inline-flex;align-items:center}
+    input,select,button{font-size:16px}  /* iOS 자동확대 방지 */
+    .mgrow input{font-size:16px}
+  }
 </style>
 </head>
 <body>
@@ -885,9 +945,11 @@
         <button class="dmb" data-dm="wholesale" type="button">사입(도매) <small>꾸준·안정적인 것</small></button>
       </div>
       <div class="insrow" style="grid-template-columns:1fr auto;margin-top:10px">
-        <select id="discCat"><option value="">전체 분야 (느림 · 40초쯤)</option></select>
+        <select id="discCat"><option value="">전체 분야 (씨앗 353개 · 느림 1분+)</option></select>
         <button id="discGo" type="button">자동 발굴</button>
       </div>
+      <label class="wide-opt"><input type="checkbox" id="discWide"> 🔀 넓게 찾기 — <b>실시간 연관어를 씨앗에 섞어 새 후보 발굴</b> (분야 선택 시, 매번 달라짐)</label>
+      <div id="apiUsage" class="api-usage"></div>
       <div id="discOut"></div>
     </div>
     <div class="instab">
@@ -1138,7 +1200,7 @@ function initIns(){
   if($('#insKwCat')) $('#insKwCat').innerHTML = opts;
   if($('#insTgCat')) $('#insTgCat').innerHTML = opts;
   if($('#insNiCat')) $('#insNiCat').innerHTML = opts;
-  if($('#discCat')) $('#discCat').innerHTML = '<option value="">전체 분야 (느림 · 40초쯤)</option>' + opts;
+  if($('#discCat')) $('#discCat').innerHTML = '<option value="">전체 분야 (씨앗 353개 · 느림 1분+)</option>' + opts;
   document.querySelectorAll('.itab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
@@ -1159,12 +1221,53 @@ document.querySelectorAll('.dmb').forEach(b=>b.addEventListener('click',()=>{
   b.classList.add('on'); DISC_MODE = b.dataset.dm; $('#discOut').innerHTML='';
   if (typeof setMode === 'function') setMode(DISC_MODE);  // 계산기 마진율도 같이 맞춤
 }));
+function personaTip(gender, age){
+  // 성별·연령 주 고객에 맞춘 '어떻게 팔지' 한 줄 제안
+  const a = (age||'').replace(/[^0-9]/g,'');
+  const gTip = gender.indexOf('여')>=0
+    ? '비주얼·색상·연출컷 위주 상세페이지'
+    : (gender.indexOf('남')>=0 ? '스펙·성능·비교표 위주 상세페이지' : '핵심 기능 중심 상세페이지');
+  let aTip = '후기와 실사용 사진을 강조';
+  if(a==='10' || a==='' ) aTip = '트렌디한 톤·저가·SNS 노출';
+  else if(a==='20') aTip = '가성비·감성 디자인·인스타 감성 강조';
+  else if(a==='30') aTip = '실용성·품질·후기 신뢰도 강조';
+  else if(a==='40') aTip = '기능·안전·상세한 설명으로 신뢰 확보';
+  else if(a==='50' || a==='60') aTip = '편의성·큰 글씨·간편 주문·전화문의 안내';
+  return `${gTip} · ${aTip}.`;
+}
+function entrySignal(it){
+  // 흩어진 신호(등급·신뢰도·시장·계절·반짝/되돌림·판단)를 🟢/🟡/🔴 하나로 수렴
+  const conf = (typeof it.confidence==='number') ? it.confidence : null;
+  const red = it.market && it.market.level==='red';
+  const blue = it.market && it.market.level==='blue';
+  const vlv = it.verdict ? it.verdict[0] : 'wait';
+  const isW = it.fit && it.fit.indexOf('사입형')>=0;
+  // 🔴 피하기
+  if(it.rollover) return ['stop','🔴','지금은 피하기 — 고점 지나 꺾이는 중'];
+  if(red) return ['stop','🔴','지금은 피하기 — 포화(레드오션)'];
+  if(vlv==='stop') return ['stop','🔴','지금은 피하기 — 수요가 식는 중'];
+  if(conf!==null && conf<40) return ['stop','🔴','근거 부족 — 신중히'];
+  // 🟢 진입
+  if(it.grade==='A' && !it.spike){
+    const why = blue ? '수요 오르고 안 붐빔' : (isW ? '수요 높고 안정적' : '수요가 빠르게 상승');
+    return ['go','🟢',`지금 진입 — A급, ${why}`];
+  }
+  if(vlv==='go' && conf!==null && conf>=70 && !it.spike && !red)
+    return ['go','🟢',`지금 진입 — 신뢰도 ${conf}%${blue?', 블루오션':''}`];
+  // 🟡 관망
+  if(it.spike) return ['wait','🟡','관망 — 반짝 급등일 수 있어 지속성 확인'];
+  if(blue) return ['wait','🟡','관망 — 블루오션이나 확신은 아직'];
+  return ['wait','🟡',`관망 — ${conf!==null?`신뢰도 ${conf}%`:'근거 더 필요'}`];
+}
 function discCardHTML(it, i, isW){
   const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const fitBadge = f => f==='위탁형'?'<span class="dc-fit fit-c">위탁형</span>':(f==='사입형'?'<span class="dc-fit fit-w">사입형</span>':'<span class="dc-fit fit-n">관망</span>');
   const up = it.rise>0;
     const v = it.verdict || ['wait',''];
     const vico = v[0]==='go'?'✅':(v[0]==='stop'?'⚠️':'🟡');
+    // 🚦 진입 신호등 — 흩어진 신호를 하나로 수렴
+    const _sig = entrySignal(it);
+    const sigHtml = `<div class="dc-signal sg-${_sig[0]}"><span class="sg-dot">${_sig[1]}</span><span class="sg-txt">${esc(_sig[2])}</span></div>`;
     const reasons = (it.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('');
     const xc = it.xcheck;
     const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
@@ -1220,6 +1323,7 @@ function discCardHTML(it, i, isW){
           <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
         </div>
       </div>
+      ${sigHtml}
       <div class="dc-verdict ${v[0]}">${vico} <b>${esc(v[1])}</b></div>
       ${gwHtml}
       ${confHtml}
@@ -1248,7 +1352,7 @@ async function autoDiscover(){
   let d;
   try{
     const r = await fetch('/api/discover', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, mode:DISC_MODE})});
+      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, mode:DISC_MODE, wide:!!($('#discWide')&&$('#discWide').checked)})});
     d = await r.json();
   }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v62) 재배포를 확인해주세요.</div>'; return; }
   if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
@@ -1263,11 +1367,23 @@ async function autoDiscover(){
     const topc = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
     if(topc.length) sweep = `<div class="sweep">🔥 이번에 가장 뜨거운 분야: ${topc.map(([c,n])=>`<b>${c}</b> ${n}개`).join(' · ')}</div>`;
   }
-  DISC_LAST = {items:d.items, mode:d.mode, sweep, hotN, modeLbl, anchors:d.anchors||[]};
+  DISC_LAST = {items:d.items, mode:d.mode, sweep, hotN, modeLbl, anchors:d.anchors||[], expanded:d.expanded||0};
   DISC_FILTER = 'all';
   renderDiscResult();
+  refreshUsage();
 }
 let DISC_LAST = null, DISC_FILTER = 'all';
+async function refreshUsage(){
+  const box = $('#apiUsage'); if(!box) return;
+  let d; try{ d = await (await fetch('/api/usage')).json(); }catch(e){ return; }
+  if(!d || !d.ok){ box.innerHTML=''; return; }
+  const col = d.over?'var(--stop)':(d.warn?'var(--wait)':'var(--sub)');
+  const warn = d.over
+    ? ' ⚠️ 한도 초과 위험 — 이번 달 호출을 아껴주세요'
+    : (d.warn ? ' ⚠️ 한도 임박' : '');
+  box.innerHTML = `<div class="au-row"><span>📊 이번 달 API 호출 <b style="color:${col}">${d.used.toLocaleString('ko-KR')}</b> / ${d.limit.toLocaleString('ko-KR')} (${d.pct}%)${warn}</span>
+    <span class="au-bar"><i style="width:${Math.min(100,d.pct)}%;background:${col}"></i></span></div>`;
+}
 function renderDiscResult(){
   const box = $('#discOut'); if(!DISC_LAST) return;
   const {items, mode, sweep, hotN, modeLbl} = DISC_LAST;
@@ -1300,7 +1416,7 @@ function renderDiscResult(){
   });
   const chip = (id,label) => `<button class="dc-chip${f===id?' on':''}" data-f="${id}">${label}</button>`;
   const chips = `<div class="dc-filter">${chip('all','전체 '+items.length)}${chip('A','A급 '+gradeCount('A'))}${chip('AB','A·B급')}${chip('blue','🔵블루오션')}${chip('safe','안전(반짝·되돌림 제외)')}<button class="dc-chip rep" data-rep="1">🧾 리포트 복사</button><button class="dc-chip keepall" data-keepall="1">📌 표시된 것 담기</button></div>`;
-  let html = sweep + digest + chips + `<p class="ihint" style="margin-top:8px">${modeLbl} · ${shown.length}개 표시 · ${modeLbl==='위탁'?'상승':'꾸준'}순</p>` + anchorLine;
+  let html = sweep + digest + chips + `<p class="ihint" style="margin-top:8px">${modeLbl} · ${shown.length}개 표시 · ${modeLbl==='위탁'?'상승':'꾸준'}순${DISC_LAST.expanded?` · 🔀 연관어 ${DISC_LAST.expanded}개 확장`:''}</p>` + anchorLine;
   if(!shown.length){ html += '<p class="hint">이 조건에 맞는 후보가 없어요.</p>'; }
   else html += shown.map((it,i)=>discCardHTML(it,i,mode==='wholesale')).join('');
   box.innerHTML = html;
@@ -1482,7 +1598,17 @@ async function loadTarget(card){
     d = await r.json();
   }catch(err){ det.innerHTML = '<p class="hint">타깃 조회 실패</p>'; det.dataset.loaded=''; return; }
   if(!d.ok){ det.innerHTML = `<p class="hint">${(d.error||'실패').replace(/</g,'&lt;')}</p>`; det.dataset.loaded=''; return; }
-  let h = d.summary ? `<div class="dc-fit fit-c" style="margin:6px 0">👥 주 타깃 ${d.summary}</div>` : '';
+  let h = '';
+  const gTop = (d.gender&&d.gender[0])?d.gender[0]:null;
+  const aTop = (d.age&&d.age[0])?d.age[0]:null;
+  if(gTop || aTop){
+    const persona = [gTop?gTop.label:'', aTop?aTop.label:''].filter(Boolean).join(' · ');
+    const tip = personaTip(gTop?gTop.label:'', aTop?aTop.label:'');
+    h += `<div class="persona">
+      <div class="persona-h">🎯 주 고객: <b>${persona} 중심</b></div>
+      <div class="persona-tip">💡 ${tip}</div>
+    </div>`;
+  }
   if(d.gender) h += '<div class="tgh">성별</div>'+bar(d.gender);
   if(d.age) h += '<div class="tgh" style="margin-top:6px">연령</div>'+bar(d.age);
   det.innerHTML = h || '<p class="hint">타깃 데이터 없음</p>';
@@ -1502,12 +1628,51 @@ function toggleMargin(card){
   if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
   box.dataset.open='1';
   box.innerHTML = `
-    <div class="mgrow">
-      <input class="mg-sell" type="number" inputmode="numeric" placeholder="판매가 (원)">
-      <input class="mg-cost" type="number" inputmode="numeric" placeholder="매입·원가 (원)">
-      <button class="dc-act" data-act="mcalc">계산</button>
+    <div class="mg-tabs">
+      <button class="mg-tab on" data-mt="fwd">마진 계산</button>
+      <button class="mg-tab" data-mt="rev">원가 역산</button>
     </div>
-    <div class="mg-out"></div>`;
+    <div class="mg-fwd">
+      <div class="mgrow">
+        <input class="mg-sell" type="number" inputmode="numeric" placeholder="판매가 (원)">
+        <input class="mg-cost" type="number" inputmode="numeric" placeholder="매입·원가 (원)">
+        <button class="dc-act" data-act="mcalc">계산</button>
+      </div>
+      <div class="mg-out"></div>
+    </div>
+    <div class="mg-rev" style="display:none">
+      <div class="mgrow">
+        <input class="mgr-sell" type="number" inputmode="numeric" placeholder="목표 판매가 (원)">
+        <input class="mgr-margin" type="number" inputmode="numeric" placeholder="원하는 마진율 (%)">
+        <button class="dc-act" data-act="rcalc">역산</button>
+      </div>
+      <div class="mgr-out"></div>
+    </div>`;
+}
+function switchMarginTab(card, mt){
+  card.querySelectorAll('.mg-tab').forEach(b=>b.classList.toggle('on', b.dataset.mt===mt));
+  const fwd = card.querySelector('.mg-fwd'), rev = card.querySelector('.mg-rev');
+  if(fwd) fwd.style.display = mt==='fwd'?'':'none';
+  if(rev) rev.style.display = mt==='rev'?'':'none';
+}
+function calcReverseCost(card){
+  const sell = +(card.querySelector('.mgr-sell')?.value||0);
+  const margin = +(card.querySelector('.mgr-margin')?.value||0);
+  const out = card.querySelector('.mgr-out');
+  if(!sell || !margin){ if(out) out.innerHTML='<p class="hint">판매가·목표 마진율을 넣어주세요.</p>'; return; }
+  const fee = sell*0.06, ship = 3000;   // 기본 수수료 6% + 택배 3000
+  // net = sell - cost - fee - ship, net/sell = margin%  → cost = sell*(1-margin%) - fee - ship
+  const costMax = Math.floor(sell*(1-margin/100) - fee - ship);
+  if(out){
+    if(costMax<=0){
+      out.innerHTML = `<div class="mg-res"><div class="mg-comb stop"><span class="cg">✗</span> 이 판매가로는 ${margin}% 마진이 불가능해요 — 판매가를 올리거나 마진을 낮춰야 해요.</div></div>`;
+    } else {
+      out.innerHTML = `<div class="mg-res">
+        <div>목표 마진 <b>${margin}%</b>를 남기려면 <b style="color:var(--go)">${costMax.toLocaleString('ko-KR')}원 이하</b>로 떼와야 해요.</div>
+        <div class="mg-note">기본 수수료 6%·택배 3,000원 가정. 1688·도매처에서 이 값 이하 상품을 찾으세요.</div>
+      </div>`;
+    }
+  }
 }
 let MARGIN_CACHE = {};
 function calcCardMargin(card){
@@ -1530,10 +1695,13 @@ function calcCardMargin(card){
     </div>`;
 }
 function cardActionHandler(e){
+  const mtab = e.target.closest('.mg-tab');
+  if(mtab){ const card = mtab.closest('.disccard'); if(card) switchMarginTab(card, mtab.dataset.mt); return; }
   const btn = e.target.closest('.dc-act'); if(!btn) return;
   const card = btn.closest('.disccard'); if(!card) return;
   if(btn.dataset.act === 'margin'){ toggleMargin(card); return; }
   if(btn.dataset.act === 'mcalc'){ calcCardMargin(card); return; }
+  if(btn.dataset.act === 'rcalc'){ calcReverseCost(card); return; }
   if(btn.dataset.act === 'dig'){
     const kw = card.dataset.kw, cat = card.dataset.cat;
     const niTab = document.querySelector('.itab[data-m="ni"]');
@@ -2290,6 +2458,8 @@ const _STAGE = {
 })();
 
 
+/* 페이지 로드 시 이번 달 사용량 한 번 표시(키 있으면) */
+try{ if(localStorage.getItem('nid')) refreshUsage(); }catch(e){}
 /* ---------- 🗺️ 관심목록 황금존 지도 (경쟁 × 마진 산점도) ---------- */
 </script>
 </body>

@@ -37,7 +37,8 @@ from discovery.calendar import build_calendar  # noqa: E402
 from discovery.listing import build_listing  # noqa: E402
 from discovery.segments import build_report  # noqa: E402
 from discovery.title_mining import mine_titles  # noqa: E402
-from discovery.tracker import (backtest_log, backtest_pending,  # noqa: E402
+from discovery.tracker import (api_bump, api_usage,  # noqa: E402
+                               backtest_log, backtest_pending,
                                calib_get, calib_set_from_hitrate,
                                grade_verdicts, hit_rate, movement_of,
                                pool_stats, record, say_verdict,
@@ -46,7 +47,7 @@ from discovery.tracker import (backtest_log, backtest_pending,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v87"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v90"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -407,6 +408,10 @@ async def _hub_search(cid: str, csec: str, kind: str, query: str,
               "start": 1, "sort": sort, "format": "json"}
     async with httpx.AsyncClient(timeout=12.0) as c:
         r = await c.get(url, headers=headers, params=params)
+    try:
+        api_bump(1)
+    except Exception:  # noqa: BLE001
+        pass
     if r.status_code == 401:
         raise NaverHubAuth("401 인증 실패 — 허브 키가 맞는지, 앱에 '검색 API'가 선택됐는지 확인해주세요.")
     if r.status_code == 429:
@@ -548,6 +553,10 @@ async def _hub_datalab(cid: str, csec: str, path: str, body: dict) -> dict:
                "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=15.0) as c:
         r = await c.post(url, headers=headers, json=body)
+    try:
+        api_bump(1)
+    except Exception:  # noqa: BLE001
+        pass
     if r.status_code == 401:
         raise NaverHubAuth("401 인증 실패 — 허브 키가 맞는지, 앱에 '쇼핑 인사이트' API가 "
                            "선택됐는지 확인해주세요.")
@@ -1443,6 +1452,15 @@ async def backtest_api(req: BacktestReq):
     return {"ok": True, "items": out, "hit_rate": rate,
             "hits": hits, "total": len(out), "a_min_conf": a_min,
             "by_grade": by_grade, "grade_valid": valid, "mag_gap": mag}
+
+
+@app.get("/api/usage")
+async def usage_api():
+    """📊 이번 달 API 호출량 — 네이버 허브 월 한도에 가까워지면 경고."""
+    try:
+        return {"ok": True, **api_usage()}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc)}
 
 
 @app.post("/api/keytest")

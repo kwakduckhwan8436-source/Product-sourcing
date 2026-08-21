@@ -163,6 +163,50 @@ def backtest_pending(days: int = 7, path: str | None = None) -> list:
     return [dict(r) for r in rows]
 
 
+def api_bump(n: int = 1, path: str | None = None) -> None:
+    """이번 달 API 호출 수를 n 만큼 올린다(meta 에 'apicnt_YYYY-MM' 키로 누적).
+    네이버 허브 월 한도(기본 3만)를 넘기지 않게 사용량을 추적하는 용도."""
+    import datetime as _dt
+    key = "apicnt_" + _dt.date.today().strftime("%Y-%m")
+    try:
+        c = _conn(path)
+        try:
+            row = c.execute("SELECT val FROM meta WHERE k=?", (key,)).fetchone()
+            cur = int(row["val"]) if row else 0
+            c.execute("INSERT INTO meta(k,val) VALUES(?,?) "
+                      "ON CONFLICT(k) DO UPDATE SET val=excluded.val",
+                      (key, str(cur + n)))
+            c.commit()
+        finally:
+            c.close()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def api_usage(path: str | None = None) -> dict:
+    """이번 달 호출 수/한도/남은 비율을 돌려준다."""
+    import datetime as _dt
+    key = "apicnt_" + _dt.date.today().strftime("%Y-%m")
+    limit = 25000                       # 월 한도(안전 마진 두고 보수적으로)
+    used = 0
+    try:
+        c = _conn(path)
+        try:
+            row = c.execute("SELECT val FROM meta WHERE k=?", (key,)).fetchone()
+            used = int(row["val"]) if row else 0
+            lr = c.execute("SELECT val FROM meta WHERE k='api_limit'").fetchone()
+            if lr:
+                limit = int(lr["val"])
+        finally:
+            c.close()
+    except Exception:  # noqa: BLE001
+        pass
+    pct = round(used / limit * 100) if limit else 0
+    return {"month": _dt.date.today().strftime("%Y-%m"),
+            "used": used, "limit": limit, "pct": pct,
+            "warn": pct >= 80, "over": pct >= 100}
+
+
 def calib_get(path: str | None = None) -> int:
     """A급 신뢰도 하한 보정치(기본 75). 백테스트 적중률로 자동 조정된다."""
     c = _conn(path)

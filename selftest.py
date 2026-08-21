@@ -96,6 +96,27 @@ def check_import() -> int:
     return bad
 
 
+def check_tracker_sync() -> int:
+    """server.py 가 discovery.tracker 에서 import 하는 이름이 tracker.py 에
+    실제로 다 있는지 검사한다. (지난 배포 실패: backtest_log 누락으로 ImportError)
+    server 만 새로 올리고 tracker 를 옛 버전으로 두면 앱이 안 뜬다 — 그걸 사전에 잡는다."""
+    import ast
+    bad = 0
+    tsrc = (ROOT / "discovery" / "tracker.py").read_text(encoding="utf-8")
+    tdefs = {n.name for n in ast.parse(tsrc).body
+             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+    ssrc = (ROOT / "web" / "server.py").read_text(encoding="utf-8")
+    for m in re.finditer(r"from discovery\.tracker import \(([^)]*)\)", ssrc, re.S):
+        names = re.sub(r"#.*", "", m.group(1)).replace("\n", " ")
+        for name in [x.strip() for x in names.split(",") if x.strip()]:
+            if name not in tdefs:
+                bad += 1
+                print(f"  [동기화] server 가 쓰는 tracker.{name} 이(가) tracker.py 에 없음 "
+                      f"— tracker.py 를 최신으로 올려야 배포됩니다")
+    print(f"4) tracker↔server 동기화 검사 — 불일치 {bad}개")
+    return bad
+
+
 def check_ui() -> int:
     p = ROOT / "web" / "static" / "index.html"
     if not p.exists():
@@ -179,7 +200,7 @@ def check_ui() -> int:
 
 def main() -> int:
     print("=== selftest ===")
-    total = check_compile() + check_import() + check_ui()
+    total = check_compile() + check_import() + check_ui() + check_tracker_sync()
     print("=" * 30)
     if total:
         print(f"실패 {total}건 — 내보내면 안 됩니다")
