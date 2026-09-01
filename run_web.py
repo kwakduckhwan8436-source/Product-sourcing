@@ -23,6 +23,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# 서버(gunicorn/uvicorn)가 'run_web:app' 으로 찾을 때를 대비해 app 을 노출.
+# (로컬 실행은 아래 main() 을 쓰고, 이 app 은 배포 서버가 임포트할 때만 쓰인다)
+try:
+    from web.server import app  # noqa: F401  (ASGI app: `uvicorn run_web:app`)
+except Exception:  # noqa: BLE001
+    app = None
+
 
 def find_free_port(start: int = 8000, tries: int = 20) -> int:
     for p in range(start, start + tries):
