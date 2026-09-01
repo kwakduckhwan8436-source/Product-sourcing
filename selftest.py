@@ -40,6 +40,8 @@ def _mock_deps() -> None:
             def post(self, p): return lambda f: f
             def get(self, p): return lambda f: f
             def mount(self, *a, **k): pass
+            def middleware(self, *a, **k): return lambda f: f
+            def add_middleware(self, *a, **k): pass
 
         fa.FastAPI = _App
         fa.Request = type("Request", (), {})   # 실물 fastapi.Request 대체

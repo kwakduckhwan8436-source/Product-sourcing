@@ -47,7 +47,7 @@ from discovery.tracker import (api_bump, api_usage,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v107"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v108"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -100,6 +100,27 @@ def _ip_ok(ip: str) -> bool:
     return True
 
 app = FastAPI(title="위탁판매 소싱 작업대")
+
+
+# ── API 실보호 게이트 ────────────────────────────────────────────────
+# 화면만 가리면 누가 /api 를 직접 부를 수 있으니, 코드가 설정돼 있으면
+# 모든 /api 요청에 유효한 이용코드 헤더(x-access-code)를 요구한다.
+# (게이트 확인·정적·루트는 예외 — 로그인 화면과 코드 확인은 열려 있어야 함)
+@app.middleware("http")
+async def _api_access_gate(request: Request, call_next):
+    path = request.url.path
+    if _ACCESS_CODES and path.startswith("/api"):
+        _open = path.startswith("/api/gate") or path in ("/api/version", "/api/presence")
+        if not _open:
+            code = (request.headers.get("x-access-code", "") or "").strip()
+            if code not in _ACCESS_CODES:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    {"ok": False, "need_auth": True,
+                     "error": "이용코드 인증이 필요해요(카페 등급 게시판에서 확인)."},
+                    status_code=401)
+    return await call_next(request)
+# ─────────────────────────────────────────────────────────────────────
 
 _FEE_PCT = 0.25
 _MAX_FORGE = 10

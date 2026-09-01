@@ -438,7 +438,7 @@
   .tgbar{height:12px;background:var(--panel);border-radius:6px;overflow:hidden}
   .tgbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold-hi))}
   .tgp{font-size:12px;color:var(--sub);text-align:right}
-  .gate{position:fixed;inset:0;z-index:9999;background:rgba(8,11,18,.93);
+  .gate{position:fixed;inset:0;z-index:9999;background:#080b12;
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;padding:24px}
   .gatebox{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--line2);
@@ -897,7 +897,7 @@
 </style>
 </head>
 <body>
-  <div id="gate" class="gate" style="display:none">
+  <div id="gate" class="gate" style="display:flex">
     <div class="gatebox">
       <div class="gtitle">🔒 열심멤버 이상 전용</div>
       <p class="gdesc" id="gateNote"><b>AI 재테크 연구소</b> 카페의 <b>열심멤버 이상</b> 등급 게시판에 올라온 <b>이용코드</b>를 넣으면 열려요. <span style="color:var(--sub)">(보안을 위해 접속할 때마다 입력해요)</span></p>
@@ -1311,6 +1311,25 @@
 
 <script>
 const $ = s => document.querySelector(s);
+/* 모든 /api 요청에 이용코드 헤더 자동 첨부 (열심회원 인증) */
+(function(){
+  const _fetch = window.fetch.bind(window);
+  window.fetch = function(url, opts){
+    try{
+      const u = (typeof url==='string')?url:(url&&url.url)||'';
+      if(u.indexOf('/api')===0 || u.indexOf('/api')>-1 && u.indexOf('http')===-1){
+        const code = sessionStorage.getItem('gate_code')||'';
+        if(code){
+          opts = opts||{};
+          const h = new Headers(opts.headers||{});
+          h.set('x-access-code', code);
+          opts.headers = h;
+        }
+      }
+    }catch(e){}
+    return _fetch(url, opts);
+  };
+})();
 const cid = $('#cid'), csec = $('#csec');
 const out = $('#out');
 const catSel = $('#cat');
@@ -2435,11 +2454,12 @@ async function tryGate(){
 async function initGate(){
   let s={enabled:false};
   try{ s=await (await fetch('/api/gate/status')).json(); }catch(e){ s={enabled:false}; }
-  if(!s.enabled) return;                     // 게이트 꺼짐 → 누구나 사용
+  if(!s.enabled){ hideGate(); return; }      // 게이트 꺼짐 → 누구나 사용
   if(s.note){ const n=$('#gateNote'); if(n) n.innerHTML='<b>AI 재테크 연구소</b> 카페 — '+s.note+'<br>등급 게시판의 <b>이용코드</b>를 넣으면 열려요. <span style="color:var(--sub)">(보안을 위해 접속할 때마다 입력해요)</span>'; }
   const saved=sessionStorage.getItem('gate_code')||'';
   if(saved){
-    try{ if((await (await fetch('/api/gate/check?code='+encodeURIComponent(saved))).json()).valid) return; }catch(e){}
+    try{ if((await (await fetch('/api/gate/check?code='+encodeURIComponent(saved))).json()).valid){ hideGate(); return; } }catch(e){}
+    sessionStorage.removeItem('gate_code');   // 저장된 코드가 무효면 지움
   }
   showGate();
 }
