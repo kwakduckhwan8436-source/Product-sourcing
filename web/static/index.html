@@ -385,10 +385,14 @@
   .wc-hist:not(:empty){margin:6px 0}
   .wc-hh{font-size:11.5px;color:var(--sub)}
   .wc-svg{display:block;width:100%;max-width:220px;height:34px;margin-top:3px}
-  .wide-opt{display:flex;align-items:flex-start;gap:7px;margin-top:9px;font-size:12.5px;
-    color:var(--sub);line-height:1.45;cursor:pointer}
-  .wide-opt input{margin-top:2px;flex:0 0 auto}
+  .wide-opt{display:flex;align-items:flex-start;gap:8px;margin-top:9px;font-size:12.5px;
+    color:var(--sub);line-height:1.5;cursor:pointer}
+  .wide-opt input{margin-top:2px;flex:0 0 auto;width:16px;height:16px}
+  .wide-opt span{flex:1 1 auto;min-width:0;white-space:normal;word-break:keep-all}
   .wide-opt b{color:var(--ink);font-weight:600}
+  .disc-more{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
+  .disc-more .ghost{font-size:12.5px;padding:8px 12px}
+  .disc-more .ghost.sm{font-size:11.5px;padding:6px 10px;opacity:.75}
   .api-usage:not(:empty){margin:8px 0 2px}
   .au-row{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--sub);flex-wrap:wrap}
   .au-bar{flex:1;min-width:80px;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
@@ -760,6 +764,97 @@
     .tgl{font-size:11.5px}
     .fitrow,.dc-acts,.src-links{gap:5px}
   }
+  /* 🛍 오너클랜 */
+  .oc-keys{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+  .oc-keys input{padding:10px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2);color:var(--ink)}
+  .oc-sb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);white-space:nowrap}
+  .oc-note{font-size:11.5px;color:var(--sub);margin-top:8px}
+  .oc-head{font-size:15px;font-weight:800;margin:4px 0 8px}
+  .oc-sbtag{font-size:11px;background:var(--wait-bg);color:#f4e6bc;border-radius:5px;padding:2px 7px}
+  .oc-stat{font-size:12.5px;color:var(--sub);background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;margin-bottom:10px}
+  .oc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .oc-card{display:flex;flex-direction:column;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+  .oc-img{width:100%;height:130px;object-fit:cover;background:var(--panel)}
+  .oc-img.noimg{display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:11px;text-align:center}
+  .oc-body{padding:10px;display:flex;flex-direction:column;gap:5px}
+  .oc-name{font-size:12.5px;line-height:1.4;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .oc-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .oc-cat{font-size:10.5px;color:var(--sub)}
+  .oc-ok{font-size:10.5px;color:#bff0d2;background:var(--go-bg);border-radius:5px;padding:1px 6px}
+  .oc-no{font-size:10.5px;color:#fbccd0;background:var(--stop-bg);border-radius:5px;padding:1px 6px}
+  .oc-na{font-size:10.5px;color:var(--sub)}
+  .oc-price{font-family:var(--serif);font-size:16px;color:var(--gold-hi)}
+  .oc-key{font-family:inherit;font-size:10px;color:var(--sub);display:block}
+  .oc-namelink{color:var(--ink);text-decoration:none}
+  .oc-namelink:hover{color:var(--brand);text-decoration:underline}
+  .oc-codebar{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .oc-codebar b{color:var(--ink);font-family:var(--serif);letter-spacing:.3px}
+  .oc-copy{font-size:10px;padding:2px 7px;border:1px solid var(--line2);background:var(--panel);color:var(--sub);border-radius:5px;cursor:pointer}
+  .oc-copy:hover{border-color:var(--brand)}
+  .oc-room{font-size:10.5px;color:#bff0d2;background:var(--go-bg);border-radius:5px;padding:1px 6px;font-family:inherit}
+  .oc-sp{margin-top:7px;border-top:1px solid var(--line);padding-top:7px;display:flex;flex-direction:column;gap:5px}
+  .oc-sp-row{display:flex;gap:7px;font-size:11.5px;line-height:1.5}
+  .oc-sp-t{flex:0 0 40px;color:var(--sub);font-size:10.5px;padding-top:1px}
+  .oc-sp-v{flex:1;min-width:0;color:var(--ink)}
+  .oc-sp-v b{color:var(--gold-hi)}
+  .oc-sp-row.copy .oc-sp-v{color:#f4e6bc;background:var(--wait-bg);border-radius:6px;padding:5px 8px;font-style:italic}
+  .oc-sp-row.copy .oc-sp-t{color:var(--brand)}
+  .oc-weights{margin-top:9px;font-size:12.5px;color:var(--sub)}
+  .oc-weights summary{cursor:pointer;padding:6px 0}
+  .ocw-row{display:flex;align-items:center;gap:9px;margin:6px 0}
+  .ocw-row label{flex:0 0 84px;font-size:12px}
+  .ocw-row input[type=range]{flex:1}
+  .ocw-row span{flex:0 0 26px;text-align:right;font-family:var(--serif)}
+  .oc-acts{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .oc-act{font-size:11.5px;padding:6px 10px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+  .oc-act:hover{border-color:var(--brand)}
+  .oc-margin:not(:empty){margin-top:6px}
+  .ocm-out{font-size:12px;margin-top:5px}
+  .oc-empty{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:14px}
+  .oc-emptynote{font-size:12.5px;color:#f4e6bc;background:var(--wait-bg);border-radius:8px;padding:9px 11px;margin-top:8px;line-height:1.55}
+  .oc-detail:not(:empty){margin-top:7px}
+  .oc-dbox{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:10px;font-size:12px;line-height:1.6}
+  .oc-drow{margin-bottom:3px}
+  .oc-opts{margin-top:4px;border-top:1px solid var(--line);padding-top:4px}
+  .oc-opt{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--sub);padding:2px 0}
+  .oc-dcont{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-size:11.5px;color:var(--sub);line-height:1.6}
+  .oc-bestbtn{width:100%;margin-top:8px;background:linear-gradient(135deg,var(--brand),var(--gold-hi));
+    color:#191307;font-weight:800;border:none;border-radius:10px;padding:12px;cursor:pointer;font-size:13.5px}
+  .oc-card.best{position:relative}
+  .oc-rank{position:absolute;top:6px;left:6px;z-index:2;background:rgba(0,0,0,.7);color:var(--gold-hi);
+    font-weight:800;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .oc-score{font-size:12px;font-weight:800}
+  .oc-why{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+  .oc-why span{font-size:10.5px;color:#bff0d2;background:var(--go-bg);border-radius:5px;padding:1px 6px}
+  .dc-ocfind:not(:empty){margin:8px 0}
+  .oc-find{background:rgba(216,178,60,.14);border-color:rgba(216,178,60,.35)}
+  .ocf-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:4px 0;border-top:1px solid var(--line)}
+  .ocf-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ocf-price{flex:0 0 auto;font-weight:700}
+  .ocf-tip{margin-top:6px;font-size:11px}
+  .rb-box{display:flex;flex-direction:column;gap:8px}
+  .rb-row{display:flex;align-items:center;gap:11px;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:11px 13px}
+  .rb-rank{font-size:20px;font-weight:800;flex:0 0 auto;min-width:34px;text-align:center}
+  .rb-body{flex:1;min-width:0}
+  .rb-name{font-size:13.5px;font-weight:700;margin-bottom:5px}
+  .rb-rise{font-size:11.5px;font-weight:600}
+  .rb-bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+  .rb-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--gold-hi));border-radius:3px}
+  .rb-idx{flex:0 0 auto;font-family:var(--serif);font-size:18px;color:var(--gold-hi);min-width:42px;text-align:right}
+  @media(max-width:640px){
+    .oc-keys{grid-template-columns:1fr 1fr}
+    .oc-sb{grid-column:1/3}
+    .oc-grid{grid-template-columns:1fr 1fr;gap:8px}
+    .oc-img{height:110px}
+    .oc-name{font-size:11.5px}
+    .oc-price{font-size:14px}
+    .rb-rank{font-size:17px;min-width:28px}
+    .rb-idx{font-size:15px;min-width:36px}
+    .rb-name{font-size:12.5px}
+    .ocf-row{font-size:11.5px}
+    .oc-sp-row{font-size:11px}
+    .oc-sp-t{flex:0 0 34px}
+  }
   /* ===== v88 신규 UI 모바일 최적화 (신호등·페르소나·마진탭·다이제스트 등) ===== */
   @media(max-width:640px){
     .dc-signal{padding:10px 11px;gap:8px}
@@ -936,8 +1031,8 @@
     <div class="discbox">
       <div class="disctop">
         <div>
-          <div class="disctitle">🎯 자동 발굴 — 지금 뜨는 위탁 후보</div>
-          <div class="discsub">키워드를 안 넣어도 돼요. 내장 후보(218개)를 트렌드에 돌려 <b>오르는 것만</b> 자동으로 골라줘요.</div>
+          <div class="disctitle" id="discTitle">🎯 자동 발굴 — 지금 뜨는 위탁 후보</div>
+          <div class="discsub" id="discSub">키워드를 안 넣어도 돼요. 내장 후보(353개)를 트렌드에 돌려 <b>오르는 것만</b> 자동으로 골라줘요.</div>
         </div>
       </div>
       <div class="discmode">
@@ -948,7 +1043,11 @@
         <select id="discCat"><option value="">전체 분야 (씨앗 353개 · 느림 1분+)</option></select>
         <button id="discGo" type="button">자동 발굴</button>
       </div>
-      <label class="wide-opt"><input type="checkbox" id="discWide"> 🔀 넓게 찾기 — <b>실시간 연관어를 씨앗에 섞어 새 후보 발굴</b> (분야 선택 시, 매번 달라짐)</label>
+      <div class="disc-more">
+        <button id="discMore" type="button" class="ghost">🔄 다른 후보 보기 (본 것 빼고)</button>
+        <button id="discReset" type="button" class="ghost sm">처음부터</button>
+      </div>
+      <label class="wide-opt"><input type="checkbox" id="discWide"><span>🔀 넓게 찾기 — <b>실시간 연관어를 씨앗에 섞어 새 후보 발굴</b> (분야 선택 시, 매번 달라짐)</span></label>
       <div id="apiUsage" class="api-usage"></div>
       <div id="discOut"></div>
     </div>
@@ -958,6 +1057,8 @@
       <button class="itab" data-m="tg" type="button">타깃(성별·연령)</button>
       <button class="itab" data-m="tr" type="button">검색어 트렌드</button>
       <button class="itab" data-m="ni" type="button">🧭 니치 조합</button>
+      <button class="itab" data-m="rb" type="button">🥊 순위 대결</button>
+      <button class="itab" data-m="oc" type="button">🛍 오너클랜</button>
     </div>
 
     <div id="insCat" class="inspane">
@@ -995,6 +1096,40 @@
         <input id="insNiKw" type="text" placeholder="기준 키워드 1개 예: 청소기, 텀블러">
       </div>
       <button id="insNiGo" type="button">니치 조합 발굴</button>
+    </div>
+
+    <div id="insRb" class="inspane" style="display:none">
+      <p class="ihint">🥊 후보 <b>2~5개</b>를 넣으면 검색어 트렌드 <b>상대지수</b>로 순위를 매겨요. "뭘 밀지" 고민될 때.</p>
+      <div class="insrow" style="grid-template-columns:1fr auto">
+        <input id="rbKw" type="text" placeholder="쉼표로 구분 예: 린넨바지, 와이드팬츠, 슬랙스">
+        <button id="rbGo" type="button">순위 대결</button>
+      </div>
+    </div>
+
+    <div id="insOc" class="inspane" style="display:none">
+      <p class="ihint">🛍 <b>오너클랜 공식 API</b>로 실제 상품·가격·재고를 검색해요. 각자의 <b>판매사 계정</b>으로 조회하며, 아이디·비번은 <b>이 브라우저에만</b> 저장되고 서버엔 안 남아요.</p>
+      <div class="oc-keys">
+        <input id="ocId" type="text" placeholder="오너클랜 판매사 ID" autocomplete="off">
+        <input id="ocPw" type="password" placeholder="비밀번호" autocomplete="off">
+        <label class="oc-sb"><input type="checkbox" id="ocSandbox"> 샌드박스(테스트)</label>
+      </div>
+      <div class="insrow" style="grid-template-columns:1fr auto auto;margin-top:8px">
+        <input id="ocKw" type="text" placeholder="검색어 예: 무선청소기, 텀블러">
+        <select id="ocSort" style="min-width:110px">
+          <option value="default">관련도순</option>
+          <option value="priceAsc">낮은 가격순</option>
+          <option value="priceDesc">높은 가격순</option>
+        </select>
+        <button id="ocGo" type="button">검색</button>
+      </div>
+      <button id="ocBest" type="button" class="oc-bestbtn">⭐ 최적 상품 골라줘 (오너클랜 원가 + 네이버 수요 자동 매칭)</button>
+      <details class="oc-weights"><summary>⚙️ 최적매칭 기준 조정</summary>
+        <div class="ocw-row"><label>재고 중시</label><input type="range" id="ocwStock" min="0" max="60" value="30"><span id="ocwStockV">30</span></div>
+        <div class="ocw-row"><label>가격 경쟁력</label><input type="range" id="ocwPrice" min="0" max="60" value="25"><span id="ocwPriceV">25</span></div>
+        <div class="ocw-row"><label>마진 여력</label><input type="range" id="ocwMargin" min="0" max="60" value="30"><span id="ocwMarginV">30</span></div>
+        <p class="hint" style="margin:4px 0 0">마진 여력 = 권장소비자가 대비 공급가가 쌀수록 큼(상품마다 달라 순위가 바뀌어요). 슬라이더를 움직이면 <b>즉시 재정렬</b>돼요(재검색 안 함).</p>
+      </details>
+      <p class="oc-note">※ 오너클랜 판매사 회원가입 + API 신청(운영 또는 샌드박스)이 되어 있어야 조회돼요. · 오너클랜 API엔 '판매량순'이 없어 가격·최신순만 지원해요(잘 팔리는지는 👥 성별·타깃과 발굴 수요로 판단).</p>
     </div>
 
     <div id="insOut"></div>
@@ -1210,15 +1345,358 @@ function initIns(){
     $('#insTg').style.display  = m==='tg'  ? '' : 'none';
     $('#insTr').style.display  = m==='tr'  ? '' : 'none';
     $('#insNi').style.display  = m==='ni'  ? '' : 'none';
+    if($('#insRb')) $('#insRb').style.display = m==='rb' ? '' : 'none';
+    if($('#insOc')) $('#insOc').style.display = m==='oc' ? '' : 'none';
     $('#insOut').innerHTML = '';
   }));
 }
 initIns();
 
+/* 🛍 오너클랜 — 각자 판매사 계정으로 공식 API 검색 (아이디/비번은 이 브라우저에만 저장) */
+(function(){
+  const id=$('#ocId'), pw=$('#ocPw'), sb=$('#ocSandbox');
+  if(id) id.value = localStorage.getItem('oc_id')||'';
+  if(pw) pw.value = localStorage.getItem('oc_pw')||'';
+  if(sb) sb.checked = localStorage.getItem('oc_sb')==='1';
+})();
+async function ownerclanSearch(){
+  const id=$('#ocId').value.trim(), pw=$('#ocPw').value, kw=$('#ocKw').value.trim();
+  const sort=$('#ocSort').value, sandbox=$('#ocSandbox').checked;
+  const box=$('#insOut');
+  if(!id||!pw){ box.innerHTML='<div class="err">오너클랜 판매사 ID/비밀번호를 넣어주세요.</div>'; return; }
+  if(!kw){ box.innerHTML='<div class="err">검색어를 넣어주세요.</div>'; return; }
+  try{ localStorage.setItem('oc_id',id); localStorage.setItem('oc_pw',pw); localStorage.setItem('oc_sb',sandbox?'1':'0'); }catch(e){}
+  box.innerHTML = `<div class="card"><span class="spin"></span>오너클랜에서 '${esc(kw)}' 검색 중…</div>`;
+  let d;
+  try{
+    const r = await fetch('/api/ownerclan/search',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:id,password:pw,keyword:kw,sort,sandbox,first:20})});
+    if(!r.ok){
+      let hint = `서버 응답 ${r.status}`;
+      if(r.status===404) hint = '서버에 오너클랜 기능이 없어요 — 최신 버전(FULL zip) 배포가 필요해요.';
+      else if(r.status===502||r.status===503) hint = '서버가 안 떠 있어요 — 배포 실패/크래시. Render 로그를 확인해주세요(tracker.py 동기화 등).';
+      else if(r.status>=500) hint = `서버 내부 오류(${r.status}) — Render 로그 확인.`;
+      box.innerHTML = `<div class="err">${hint}</div>`; return;
+    }
+    d = await r.json();
+  }catch(e){
+    box.innerHTML = `<div class="err">서버에 연결 못 했어요(${esc(String(e.message||e))}) — 앱이 떠 있는지·배포됐는지 확인해주세요.</div>`;
+    return;
+  }
+  if(!d.ok){ box.innerHTML=`<div class="err">${esc(d.error||'검색 실패')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-empty"><p class="hint">'${esc(kw)}' 검색 결과가 없어요.</p>${d.note?`<p class="oc-emptynote">💡 ${esc(d.note)}</p>`:''}</div>`; return; }
+  const st=d.stat||{};
+  const statLine = st.count?`<div class="oc-stat">📊 ${st.count}개 · 최저 <b>${st.min.toLocaleString('ko-KR')}원</b> · 평균 ${st.avg.toLocaleString('ko-KR')}원 · 최고 ${st.max.toLocaleString('ko-KR')}원</div>`:'';
+  const stBadge = s => s==='available'?'<span class="oc-ok">판매가능</span>':(s==='soldout'?'<span class="oc-no">품절</span>':(s==='discontinued'?'<span class="oc-no">단종</span>':`<span class="oc-na">${esc(s||'')}</span>`));
+  const cards = d.items.map(it=>{
+    const price = (typeof it.price==='number')?it.price.toLocaleString('ko-KR')+'원':'-';
+    const ocurl = it.url || (it.key?`https://ownerclan.com/V2/product/view.php?selfcode=${encodeURIComponent(it.key)}`:'');
+    return `<div class="oc-card" data-kw="${esc(it.name||'')}" data-price="${it.price||0}" data-key="${esc(it.key||'')}" data-url="${esc(ocurl)}" data-cat="${esc(it.category||'')}">
+      ${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener">`:''}${it.image?`<img class="oc-img" src="${esc(it.image)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${ocurl?'</a>':''}
+      <div class="oc-body">
+        <div class="oc-name">${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.name||'(이름없음)')}${ocurl?' ↗</a>':''}</div>
+        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>
+        <div class="oc-price">${price}</div>
+        <div class="oc-codebar">코드 <b>${esc(it.key||'-')}</b> <button class="oc-copy" data-oc="copycode" title="코드 복사">복사</button></div>
+        <div class="oc-acts">
+          <button class="oc-act" data-oc="detail">🔎 상세</button>
+          <button class="oc-act" data-oc="gender">👥 성별</button>
+          <button class="oc-act" data-oc="margin">💰 마진</button>
+          <button class="oc-act" data-oc="keep">📌 담기</button>
+        </div>
+        <div class="oc-detail"></div>
+        <div class="oc-margin"></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div class="oc-head">🛍 오너클랜 '${esc(kw)}' ${sandbox?'<span class="oc-sbtag">샌드박스</span>':''}</div>${statLine}<div class="oc-grid">${cards}</div>`;
+}
+if($('#ocGo')) $('#ocGo').addEventListener('click', ownerclanSearch);
+/* ⭐ 최적 상품 골라주기 — 오너클랜 원가·재고 + 네이버 수요 자동 매칭 */
+async function ownerclanBest(){
+  const id=$('#ocId').value.trim(), pw=$('#ocPw').value, kw=$('#ocKw').value.trim();
+  const sandbox=$('#ocSandbox').checked; const box=$('#insOut');
+  if(!id||!pw){ box.innerHTML='<div class="err">오너클랜 판매사 ID/비밀번호를 넣어주세요.</div>'; return; }
+  if(!kw){ box.innerHTML='<div class="err">검색어를 넣어주세요.</div>'; return; }
+  try{ localStorage.setItem('oc_id',id); localStorage.setItem('oc_pw',pw); localStorage.setItem('oc_sb',sandbox?'1':'0'); }catch(e){}
+  const k=insKeys();   // 네이버 수요(선택) — 있으면 매칭에 반영
+  box.innerHTML=`<div class="card"><span class="spin"></span>오너클랜 원가·재고 + 네이버 수요로 '${esc(kw)}' 최적 상품 고르는 중…</div>`;
+  let d;
+  try{
+    const r=await fetch('/api/ownerclan/best',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:id,password:pw,keyword:kw,sandbox,client_id:k?k.id:'',client_secret:k?k.sec:'',
+        w_stock:+($('#ocwStock')?.value||30), w_price:+($('#ocwPrice')?.value||25), w_margin:+($('#ocwMargin')?.value||30)})});
+    if(!r.ok){ box.innerHTML=`<div class="err">서버 응답 ${r.status} — 최신 배포(FULL zip) 확인.</div>`; return; }
+    d=await r.json();
+  }catch(e){ box.innerHTML=`<div class="err">연결 실패(${esc(String(e.message||e))})</div>`; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${esc(d.error||'실패')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-empty"><p class="hint">최적 상품을 찾지 못했어요.</p>${d.note?`<p class="oc-emptynote">💡 ${esc(d.note)}</p>`:''}</div>`; return; }
+  OC_BEST_CACHE = {items:d.items.slice(), demand:d.demand||null, keyword:d.keyword, sandbox:d.sandbox, scanned:d.scanned, hasKey:!!k};
+  renderOcBest();
+  refreshUsage&&refreshUsage();
+}
+/* 가중치가 바뀌면 API 재호출 없이 캐시된 상품을 브라우저에서 다시 채점(과요청 방지) */
+let OC_BEST_CACHE = null;
+function scoreOcLocal(items, demand, wStock, wPrice, wMargin){
+  const prices=items.map(it=>it.price).filter(v=>typeof v==='number'&&v>0).sort((a,b)=>a-b);
+  const med=prices.length?prices[Math.floor(prices.length/2)]:0;
+  let dBonus=0;
+  if(demand){ dBonus=Math.max(0,Math.min(15, (demand.rise||0)/40*15)); if(demand.rollover) dBonus-=7.5; }
+  return items.map(it=>{
+    const price=(typeof it.price==='number')?it.price:null;
+    const fixed=(typeof it.fixedPrice==='number')?it.fixedPrice:null;
+    const instock=it.status==='available';
+    let s=0; const why=[];
+    if(instock){ s+=wStock; why.push('판매중'); } else { s-=wStock*0.7; why.push('품절/불가'); }
+    if(price&&med){ const ratio=Math.max(0,Math.min(1,(med*1.5-price)/(med*1.5))); s+=wPrice*ratio; if(price<=med) why.push('가격 경쟁력'); }
+    let room=null;
+    if(fixed&&price&&fixed>price){ room=(fixed-price)/fixed; s+=wMargin*room; if(room>=0.3) why.push('마진 여력 큼(권장가 대비 -'+Math.round(room*100)+'%)'); }
+    if(demand&&(demand.rise||0)>=10) why.push('네이버 수요 상승('+Math.round(demand.rise)+'%)');
+    s+=dBonus;
+    return Object.assign({}, it, {score:Math.round(Math.max(0,Math.min(100,s+15))),
+      why, margin_room:(room!=null)?Math.round(room*100):null});
+  }).sort((a,b)=>b.score-a.score);
+}
+/* 💡 소구점 자동 생성 — 마진/수요/카피/차별화 (캐시 데이터로만, API 호출 없음) */
+function ocSellingPoints(it, demand, keyword){
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const price=(typeof it.price==='number')?it.price:null;
+  const fixed=(typeof it.fixedPrice==='number')?it.fixedPrice:null;
+  const room=(fixed&&price&&fixed>price)?Math.round((fixed-price)/fixed*100):null;
+  const pts=[];
+  // ① 마진·가격 강점
+  if(room!=null){
+    const net=fixed-price;                 // 권장가에 팔 때 총이익(수수료 전)
+    pts.push({t:'마진', v:`권장가 ${won(fixed)} → 공급가 ${won(price)}, <b>여력 ${room}%</b>(개당 약 ${won(net)})`});
+  } else if(price){
+    const sell=Math.round(price/0.7/100)*100;   // 사입 30% 마진 가정 판매가
+    pts.push({t:'마진', v:`공급가 ${won(price)} · 30% 마진이면 판매가 <b>${won(sell)}</b> 선`});
+  }
+  // ② 수요·타이밍 (키워드 공통)
+  if(demand){
+    const r=Math.round(demand.rise||0);
+    let tag;
+    if(demand.rollover) tag=`⚠️ 고점 지나 꺾임 — 진입 신중`;
+    else if(r>=20) tag=`🔥 지금 급상승(+${r}%) — 진입 타이밍`;
+    else if(r>=5)  tag=`📈 성장세(+${r}%)`;
+    else if(r>-5)  tag=`➡️ 꾸준한 수요`;
+    else           tag=`📉 하락세(${r}%) — 관망`;
+    pts.push({t:'타이밍', v:tag});
+  }
+  // ④ 경쟁·차별화
+  const edge=[];
+  if(it.status==='available') edge.push('재고 있어 바로 발송');
+  else edge.push('현재 품절/불가 — 확인 필요');
+  if(it.origin) edge.push(`${esc0(it.origin)}`);
+  if(room!=null && room>=40) edge.push('가격 경쟁 여유 큼');
+  if(edge.length) pts.push({t:'차별화', v:edge.join(' · ')});
+  // ③ 판매 문구(카피) — 위 강점 조합
+  let copy='';
+  const kw=keyword||it.name||'';
+  const hot=demand&&!demand.rollover&&(demand.rise||0)>=5;
+  if(room!=null && room>=30 && hot) copy=`지금 뜨는 ${kw}, 권장가보다 ${room}% 싸게 확보 — 마진 넉넉하게`;
+  else if(room!=null && room>=30)   copy=`${kw} 권장가 대비 ${room}% 여력 — 가격으로 밀어붙이기 좋음`;
+  else if(hot)                      copy=`검색 늘고 있는 ${kw} — 초기 선점 노려볼 만`;
+  else if(it.status==='available')  copy=`재고 안정적인 ${kw} — 꾸준히 돌리기 좋은 상품`;
+  if(copy) pts.push({t:'카피', v:`"${copy}"`, copy:true});
+  return pts;
+}
+function esc0(s){ return (s||'').replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x])); }
+/* 💡 소구점 자동 생성 끝 */
+function renderOcBest(){
+  const c=OC_BEST_CACHE; if(!c) return;
+  const box=$('#insOut'); if(!box) return;
+  const wStock=+($('#ocwStock')?.value||30), wPrice=+($('#ocwPrice')?.value||25), wMargin=+($('#ocwMargin')?.value||30);
+  const items=scoreOcLocal(c.items, c.demand, wStock, wPrice, wMargin).slice(0,20);
+  const esc=s=>(s||'').replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x]));
+  let demandLine='';
+  if(c.demand){
+    const dr=Math.round(c.demand.rise||0);
+    const col=dr>=10?'var(--go)':(dr<0?'var(--stop)':'var(--sub)');
+    demandLine=`<div class="oc-stat">📈 네이버 수요: '${esc(c.keyword)}' 상승률 <b style="color:${col}">${dr}%</b>${c.demand.rollover?' · ⚠️ 고점 지나 꺾임':''} <span class="hint">(공식 검색어 트렌드)</span></div>`;
+  } else if(!c.hasKey){
+    demandLine=`<div class="oc-stat hint">네이버 허브 열쇠를 넣으면 '수요'까지 합쳐 더 정확히 골라줘요(지금은 오너클랜 원가·재고 기준).</div>`;
+  }
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const stBadge=s=>s==='available'?'<span class="oc-ok">판매가능</span>':'<span class="oc-no">'+esc(s||'')+'</span>';
+  const cards=items.map((it,i)=>{
+    const sc=it.score||0;
+    const scol=sc>=70?'var(--go)':(sc>=45?'var(--wait)':'var(--sub)');
+    const ocurl = it.url || (it.key?`https://ownerclan.com/V2/product/view.php?selfcode=${encodeURIComponent(it.key)}`:'');
+    return `<div class="oc-card best" data-kw="${esc(it.name||'')}" data-price="${it.price||0}" data-key="${esc(it.key||'')}" data-url="${esc(ocurl)}" data-cat="${esc(it.category||'')}">
+      <div class="oc-rank">${i+1}</div>
+      ${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener">`:''}${it.image?`<img class="oc-img" src="${esc(it.image)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${ocurl?'</a>':''}
+      <div class="oc-body">
+        <div class="oc-score" style="color:${scol}">기회점수 ${sc}</div>
+        <div class="oc-name">${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.name||'')}${ocurl?' ↗</a>':''}</div>
+        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>
+        <div class="oc-price">${won(it.price)}${(typeof it.margin_room==='number')?` <span class="oc-room">권장가 대비 -${it.margin_room}%</span>`:''}</div>
+        <div class="oc-codebar">코드 <b>${esc(it.key||'-')}</b> <button class="oc-copy" data-oc="copycode" title="코드 복사">복사</button></div>
+        ${(it.why&&it.why.length)?`<div class="oc-why">${it.why.map(w=>`<span>＋${esc(w)}</span>`).join('')}</div>`:''}
+        ${(()=>{ const sp=ocSellingPoints(it, c.demand, c.keyword); return sp.length?`<div class="oc-sp">${sp.map(p=>`<div class="oc-sp-row${p.copy?' copy':''}"><span class="oc-sp-t">${p.t}</span><span class="oc-sp-v">${p.v}</span></div>`).join('')}</div>`:''; })()}
+        <div class="oc-acts">
+          <button class="oc-act" data-oc="detail">🔎 상세</button>
+          <button class="oc-act" data-oc="gender">👥 성별</button>
+          <button class="oc-act" data-oc="margin">💰 마진</button>
+          <button class="oc-act" data-oc="keep">📌 담기</button>
+        </div>
+        <div class="oc-detail"></div><div class="oc-margin"></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="oc-head">⭐ '${esc(c.keyword)}' 최적 상품 ${c.sandbox?'<span class="oc-sbtag">샌드박스</span>':''}<span class="hint" style="font-weight:400"> · ${c.scanned}개 중 상위 ${items.length}</span></div>${demandLine}<div class="oc-grid">${cards}</div>`;
+}
+if($('#ocBest')) $('#ocBest').addEventListener('click', ownerclanBest);
+/* 📌 오너클랜 상품을 관심목록에 담기(실전 추적) */
+async function ownerclanKeep(card, btn){
+  const name=card.dataset.kw, key=card.dataset.key, price=+(card.dataset.price||0);
+  const url=card.dataset.url||'', cat=card.dataset.cat||'';
+  if(!name){ return; }
+  const old=btn.textContent; btn.textContent='담는 중…';
+  try{
+    const r=await fetch('/api/watch/add',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({keyword:name, owner:ME, payload:{
+        source:'ownerclan', oc_key:key, oc_price:price, oc_url:url, category:cat}})});
+    const d=await r.json();
+    btn.textContent = d.ok?'담김 ✓':'실패';
+  }catch(e){ btn.textContent='실패'; }
+  setTimeout(()=>{ btn.textContent=old; }, 1400);
+}
+/* 🥊 키워드 순위 대결 */
+async function rankBattle(){
+  const k=insKeys(); if(!k) return;
+  const raw=$('#rbKw').value||'';
+  const kws=raw.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  const box=$('#insOut');
+  if(kws.length<2){ box.innerHTML='<div class="err">비교할 키워드를 2개 이상 넣어주세요(쉼표로 구분).</div>'; return; }
+  box.innerHTML='<div class="card"><span class="spin"></span>순위 대결 중…</div>';
+  let d;
+  try{
+    d=await (await fetch('/api/rankbattle',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:k.id,client_secret:k.sec,keywords:kws})})).json();
+  }catch(e){ box.innerHTML='<div class="err">요청 실패 — 서버 재배포 확인.</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const medal=r=>r===1?'🥇':(r===2?'🥈':(r===3?'🥉':r+'위'));
+  const rows=d.items.map(it=>{
+    const rc=it.rise>=10?'var(--go)':(it.rise<0?'var(--stop)':'var(--sub)');
+    return `<div class="rb-row">
+      <div class="rb-rank">${medal(it.rank)}</div>
+      <div class="rb-body">
+        <div class="rb-name">${esc(it.keyword)} <span class="rb-rise" style="color:${rc}">▲${it.rise}%</span></div>
+        <div class="rb-bar"><i style="width:${it.pct_of_top}%"></i></div>
+      </div>
+      <div class="rb-idx">${it.latest}</div>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="oc-head">🥊 순위 대결 <span class="hint" style="font-weight:400">· 최근 상대지수 기준</span></div>
+    <div class="rb-box">${rows}</div>
+    <p class="hint" style="margin-top:8px">숫자는 상대지수(1등=100 기준). ▲는 최근 상승률. 1등이 지금 가장 검색이 많은 키워드예요.</p>`;
+}
+if($('#rbGo')) $('#rbGo').addEventListener('click', rankBattle);
+[['ocwStock','ocwStockV'],['ocwPrice','ocwPriceV'],['ocwMargin','ocwMarginV']].forEach(([a,b])=>{
+  const el=$('#'+a); if(el) el.addEventListener('input',()=>{
+    const v=$('#'+b); if(v) v.textContent=el.value;
+    if(OC_BEST_CACHE) renderOcBest();   // 캐시로 즉시 재정렬 — API 호출 없음(과요청 방지)
+  });
+});
+if($('#rbKw')) $('#rbKw').addEventListener('keydown', e=>{ if(e.key==='Enter') rankBattle(); });
+if($('#ocKw')) $('#ocKw').addEventListener('keydown', e=>{ if(e.key==='Enter') ownerclanSearch(); });
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const act=e.target.closest('.oc-act'); if(!act) return;
+  const card=act.closest('.oc-card'); if(!card) return;
+  if(act.dataset.oc==='detail'){ ownerclanDetail(card); return; }
+  if(act.dataset.oc==='copycode'){
+    const code=card.dataset.key||'';
+    navigator.clipboard?.writeText(code).then(()=>{ act.textContent='복사됨'; setTimeout(()=>act.textContent='복사',1200); });
+    return;
+  }
+  if(act.dataset.oc==='keep'){ ownerclanKeep(card, act); return; }
+  if(act.dataset.oc==='gender'){ ownerclanGender(card); return; }
+  const b=(act.dataset.oc==='margin')?act:null; if(!b) return;
+  const box=card.querySelector('.oc-margin');
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  box.dataset.open='1';
+  const cost=+(card.dataset.price||0);
+  box.innerHTML=`<div class="mgrow"><input class="ocm-sell" type="number" inputmode="numeric" placeholder="내 판매가 (원)">
+    <button class="oc-act ocm-go">계산</button></div><div class="ocm-out hint">원가 ${cost.toLocaleString('ko-KR')}원 기준</div>`;
+  const go=box.querySelector('.ocm-go'), out=box.querySelector('.ocm-out');
+  go.addEventListener('click',()=>{
+    const sell=+(box.querySelector('.ocm-sell').value||0);
+    if(!sell){ out.innerHTML='<span class="hint">판매가를 넣어주세요.</span>'; return; }
+    const fee=sell*0.06, ship=3000, net=sell-cost-fee-ship, pct=Math.round(net/sell*100);
+    out.classList.remove('hint');
+    out.innerHTML=`개당 <b style="color:${net>0?'var(--go)':'var(--stop)'}">${net.toLocaleString('ko-KR')}원</b> 남음 · 마진율 <b>${pct}%</b> <span class="hint">(수수료6%·택배3천 가정)</span>`;
+  });
+});
+/* 🔎 오너클랜 상세보기 — 공식 item 조회로 실제 등록 상품 확인 + 상세정보 */
+async function ownerclanDetail(card){
+  const box=card.querySelector('.oc-detail');
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  const id=($('#ocId')||{}).value, pw=($('#ocPw')||{}).value, sandbox=($('#ocSandbox')||{}).checked;
+  const key=card.dataset.key;
+  if(!key){ box.innerHTML='<p class="hint">상품 코드가 없어요.</p>'; return; }
+  box.dataset.open='1';
+  box.innerHTML='<div class="oc-dbox"><span class="spin"></span> 상세 불러오는 중…</div>';
+  let d;
+  try{
+    const r=await fetch('/api/ownerclan/item',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:id.trim(),password:pw,key,sandbox})});
+    d=await r.json();
+  }catch(e){ box.innerHTML='<p class="err">상세 조회 실패</p>'; return; }
+  if(!d.ok){ box.innerHTML=`<p class="err">${esc(d.error||'상세 실패')}</p>`; return; }
+  const it=d.item;
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const opts=(it.options||[]).map(o=>`<div class="oc-opt"><span>${esc(o.label)}</span><span>${won(o.price)} · 재고 ${o.qty!=null?o.qty:'-'}</span></div>`).join('');
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>실제 등록 상품 ✓</b> <span class="hint">오너클랜 API 실시간 조회</span></div>
+    ${it.category?`<div class="oc-drow">📂 ${esc(it.category)}</div>`:''}
+    <div class="oc-drow">💵 공급가 <b>${won(it.price)}</b>${it.fixedPrice?` · 권장소비자가 ${won(it.fixedPrice)}`:''}</div>
+    <div class="oc-drow">🚚 배송비 ${won(it.shippingFee)}${it.guaranteedShippingPeriod?` · 안전배송 ${it.guaranteedShippingPeriod}일`:''}</div>
+    ${it.production||it.origin?`<div class="oc-drow">🏭 ${esc(it.production||'-')}${it.origin?` · 원산지 ${esc(it.origin)}`:''}</div>`:''}
+    <div class="oc-drow">${it.returnable?'↩️ 반품가능':'⛔ 반품불가'}${it.taxFree?' · 면세':''}${it.boxQuantity?` · 묶음 ${it.boxQuantity}개`:''}</div>
+    ${opts?`<div class="oc-opts"><div class="oc-drow" style="margin-top:4px"><b>옵션·재고</b></div>${opts}</div>`:''}
+    ${it.content?`<div class="oc-dcont">${esc(it.content)}</div>`:''}
+  </div>`;
+}
+/* 👥 성별·타깃 — 오너클랜 상품명 핵심어로 네이버 타깃(성별·연령) 분석 */
+async function ownerclanGender(card){
+  const box=card.querySelector('.oc-detail');
+  const k=insKeys(); if(!k){ box.dataset.open='1'; box.innerHTML='<p class="err">네이버 허브 열쇠를 먼저 넣어주세요(성별 분석은 네이버 데이터예요).</p>'; return; }
+  // 상품명에서 핵심 검색어 뽑기(첫 2단어)
+  const name=(card.dataset.kw||'').replace(/[\[\]()]/g,' ').trim();
+  const kw=name.split(/\s+/).slice(0,2).join(' ') || name;
+  box.dataset.open='1';
+  box.innerHTML=`<div class="oc-dbox"><span class="spin"></span> '${esc(kw)}' 성별·연령 분석 중…</div>`;
+  let d;
+  try{
+    d=await (await fetch('/api/insight/target',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:k.id,client_secret:k.sec,keyword:kw})})).json();
+  }catch(e){ box.innerHTML='<p class="err">분석 실패</p>'; return; }
+  if(!d.ok){ box.innerHTML=`<p class="err">${esc(d.error||'분석 실패')}</p>`; return; }
+  const gTop=(d.gender&&d.gender[0])?d.gender[0]:null, aTop=(d.age&&d.age[0])?d.age[0]:null;
+  const persona=[gTop?gTop.label:'',aTop?aTop.label:''].filter(Boolean).join(' · ');
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>👥 '${esc(kw)}' 주 고객: ${esc(persona||'-')} 중심</b> <span class="hint">(네이버 클릭 기준)</span></div>
+    ${d.gender?'<div class="oc-drow">'+bar(d.gender)+'</div>':''}
+    ${d.age?'<div class="oc-drow">'+bar(d.age)+'</div>':''}
+    ${persona?`<div class="oc-drow persona-tip">💡 ${esc(personaTip(gTop?gTop.label:'',aTop?aTop.label:''))}</div>`:''}
+  </div>`;
+}
 let DISC_MODE = 'consign';
+function applyDiscMode(){
+  const w = DISC_MODE==='wholesale';
+  const t=$('#discTitle'), s=$('#discSub');
+  if(t) t.textContent = w ? '🎯 자동 발굴 — 지금 뜨는 사입(도매) 후보'
+                          : '🎯 자동 발굴 — 지금 뜨는 위탁 후보';
+  if(s) s.innerHTML = w
+    ? '키워드를 안 넣어도 돼요. 내장 후보(353개)를 트렌드에 돌려 <b>꾸준히 안정적인 것만</b> 자동으로 골라줘요.'
+    : '키워드를 안 넣어도 돼요. 내장 후보(353개)를 트렌드에 돌려 <b>오르는 것만</b> 자동으로 골라줘요.';
+}
 document.querySelectorAll('.dmb').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.dmb').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); DISC_MODE = b.dataset.dm; $('#discOut').innerHTML='';
+  applyDiscMode();
   if (typeof setMode === 'function') setMode(DISC_MODE);  // 계산기 마진율도 같이 맞춤
 }));
 function personaTip(gender, age){
@@ -1336,27 +1814,65 @@ function discCardHTML(it, i, isW){
       <div class="dc-acts">
         <button class="dc-act" data-act="target">👥 누가 사나</button>
         <button class="dc-act" data-act="dig">🧭 더 파기</button>
+        <button class="dc-act oc-find" data-act="ocfind">🛍 오너클랜에서 찾기</button>
         <button class="dc-act" data-act="margin">💰 마진·종합등급</button>
       </div>
+      <div class="dc-ocfind"></div>
       <div class="dc-margin"></div>
       <div class="dc-detail"></div>
     </div>`;
 }
 
-async function autoDiscover(){
+let DISC_SEEN_MEM = {};   // 메모리 백업: {key: Set} — localStorage 실패해도 세션 내 작동
+function discSeenKey(){ return 'discseen_'+ME+'_'+DISC_MODE+'_'+($('#discCat').value||'all'); }
+function getDiscSeen(){
+  const key=discSeenKey();
+  let ls=[]; try{ ls=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ ls=[]; }
+  const mem=DISC_SEEN_MEM[key]?[...DISC_SEEN_MEM[key]]:[];
+  return [...new Set([...ls, ...mem])];   // 둘 합쳐서 반환(메모리가 보증)
+}
+function addDiscSeen(kws){
+  const key=discSeenKey();
+  if(!DISC_SEEN_MEM[key]) DISC_SEEN_MEM[key]=new Set();
+  kws.forEach(k=>DISC_SEEN_MEM[key].add(k));
+  try{ localStorage.setItem(key, JSON.stringify([...DISC_SEEN_MEM[key]].slice(-400))); }catch(e){}
+}
+function clearDiscSeen(){
+  const key=discSeenKey();
+  DISC_SEEN_MEM[key]=new Set();
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+async function autoDiscover(more){
   const k = insKeys(); if(!k) return;
   const box = $('#discOut');
   const cat = $('#discCat').value;
   const modeLbl = DISC_MODE==='wholesale' ? '사입(도매)' : '위탁';
-  box.innerHTML = `<div class="card"><span class="spin"></span>${cat||'전체 분야'} · ${modeLbl} 자동 발굴 중…</div>`;
+  const exclude = more ? getDiscSeen() : [];
+  if(!more){ clearDiscSeen(); }  // 새 발굴이면 본 것 초기화(메모리+저장 둘 다)
+  box.innerHTML = `<div class="card"><span class="spin"></span>${cat||'전체 분야'} · ${modeLbl} ${more?'다른 후보 찾는 중':'자동 발굴 중'}…</div>`;
   let d;
   try{
     const r = await fetch('/api/discover', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, mode:DISC_MODE, wide:!!($('#discWide')&&$('#discWide').checked)})});
+      body: JSON.stringify({client_id:k.id, client_secret:k.sec, category:cat, mode:DISC_MODE, wide:!!($('#discWide')&&$('#discWide').checked), exclude})});
     d = await r.json();
-  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버(v62) 재배포를 확인해주세요.</div>'; return; }
+  }catch(e){ box.innerHTML = '<div class="err">요청 실패 — 서버 재배포를 확인해주세요.</div>'; return; }
   if(!d.ok){ box.innerHTML = `<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
-  if(!(d.items||[]).length){ box.innerHTML = '<p class="hint">뜨는 후보가 없어요.</p>'; return; }
+  if(!(d.items||[]).length){ box.innerHTML = more?'<p class="hint">더 볼 새 후보가 없어요. "처음부터"를 누르면 다시 봐요.</p>':'<p class="hint">뜨는 후보가 없어요.</p>'; return; }
+  // 이중 안전장치: 서버가 exclude를 무시해도(옛 배포) 화면에선 본 것을 걸러낸다
+  let itemsShown = d.items;
+  const serverExcluded = (typeof d.excluded_count==='number') ? d.excluded_count : null;
+  if(more){
+    const seenSet = new Set(exclude);
+    const filtered = d.items.filter(x=>!seenSet.has(x.keyword));
+    if(filtered.length) itemsShown = filtered;
+    // 서버가 exclude를 안 먹었고(0개 제외) 걸러도 그대로면 → 배포 경고
+    if(serverExcluded===0 && filtered.length===d.items.length){
+      box.innerHTML = '<div class="err">🔄 새 후보가 안 나와요 — 서버에 최신 버전(v99+)이 배포되지 않은 것 같아요. FULL zip으로 재배포 후 다시 시도해주세요. (지금 서버가 "본 것 빼기"를 지원 안 함)</div>';
+      return;
+    }
+  }
+  d = Object.assign({}, d, {items: itemsShown});
+  addDiscSeen(d.items.map(x=>x.keyword));   // 이번에 보여준 것 기억
   const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const fitBadge = f => f==='위탁형'?'<span class="dc-fit fit-c">위탁형</span>':(f==='사입형'?'<span class="dc-fit fit-w">사입형</span>':'<span class="dc-fit fit-n">관망</span>');
   const hotN = d.items.filter(x=>x.hot).length;
@@ -1367,7 +1883,7 @@ async function autoDiscover(){
     const topc = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
     if(topc.length) sweep = `<div class="sweep">🔥 이번에 가장 뜨거운 분야: ${topc.map(([c,n])=>`<b>${c}</b> ${n}개`).join(' · ')}</div>`;
   }
-  DISC_LAST = {items:d.items, mode:d.mode, sweep, hotN, modeLbl, anchors:d.anchors||[], expanded:d.expanded||0};
+  DISC_LAST = {items:d.items, mode:d.mode, sweep, hotN, modeLbl, anchors:d.anchors||[], expanded:d.expanded||0, excluded:(more&&serverExcluded)?serverExcluded:0};
   DISC_FILTER = 'all';
   renderDiscResult();
   refreshUsage();
@@ -1416,7 +1932,7 @@ function renderDiscResult(){
   });
   const chip = (id,label) => `<button class="dc-chip${f===id?' on':''}" data-f="${id}">${label}</button>`;
   const chips = `<div class="dc-filter">${chip('all','전체 '+items.length)}${chip('A','A급 '+gradeCount('A'))}${chip('AB','A·B급')}${chip('blue','🔵블루오션')}${chip('safe','안전(반짝·되돌림 제외)')}<button class="dc-chip rep" data-rep="1">🧾 리포트 복사</button><button class="dc-chip keepall" data-keepall="1">📌 표시된 것 담기</button></div>`;
-  let html = sweep + digest + chips + `<p class="ihint" style="margin-top:8px">${modeLbl} · ${shown.length}개 표시 · ${modeLbl==='위탁'?'상승':'꾸준'}순${DISC_LAST.expanded?` · 🔀 연관어 ${DISC_LAST.expanded}개 확장`:''}</p>` + anchorLine;
+  let html = sweep + digest + chips + `<p class="ihint" style="margin-top:8px">${modeLbl} · ${shown.length}개 표시 · ${modeLbl==='위탁'?'상승':'꾸준'}순${DISC_LAST.expanded?` · 🔀 연관어 ${DISC_LAST.expanded}개 확장`:''}${DISC_LAST.excluded?` · 🔄 본 것 ${DISC_LAST.excluded}개 제외`:''}</p>` + anchorLine;
   if(!shown.length){ html += '<p class="hint">이 조건에 맞는 후보가 없어요.</p>'; }
   else html += shown.map((it,i)=>discCardHTML(it,i,mode==='wholesale')).join('');
   box.innerHTML = html;
@@ -1481,7 +1997,9 @@ if ($('#discOut')) $('#discOut').addEventListener('click', (e)=>{
   const c = e.target.closest('.dc-chip'); if(!c) return;
   DISC_FILTER = c.dataset.f; renderDiscResult();
 });
-if ($('#discGo')) $('#discGo').addEventListener('click', autoDiscover);
+if ($('#discGo')) $('#discGo').addEventListener('click', ()=>autoDiscover(false));
+if ($('#discMore')) $('#discMore').addEventListener('click', ()=>autoDiscover(true));
+if ($('#discReset')) $('#discReset').addEventListener('click', ()=>{ clearDiscSeen(); autoDiscover(false); });
 
 /* 🧭 니치 조합 발굴 */
 async function nicheRun(){
@@ -1712,7 +2230,43 @@ function cardActionHandler(e){
     nicheRun();
     return;
   }
+  if(btn.dataset.act === 'ocfind'){ ownerclanFindFor(card); return; }
+  if(btn.dataset.act === 'target'){ loadTarget(card); return; }
   loadTarget(card);
+}
+/* 🛍 발굴 카드에서 바로 오너클랜 상품 찾기 — 수요 확인 → 실제 원가·재고 즉시 */
+async function ownerclanFindFor(card){
+  const box = card.querySelector('.dc-ocfind');
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  const id=(localStorage.getItem('oc_id')||'').trim(), pw=localStorage.getItem('oc_pw')||'';
+  const sandbox=localStorage.getItem('oc_sb')==='1';
+  const kw=card.dataset.kw;
+  if(!id||!pw){
+    box.dataset.open='1';
+    box.innerHTML='<div class="oc-dbox">🛍 오너클랜 ID/비번을 먼저 <b>🛍 오너클랜 탭</b>에서 한 번 입력해주세요(이 브라우저에 저장돼요).</div>';
+    return;
+  }
+  box.dataset.open='1';
+  box.innerHTML=`<div class="oc-dbox"><span class="spin"></span> 오너클랜에서 '${(kw||'').replace(/</g,'&lt;')}' 원가·재고 확인 중…</div>`;
+  let d;
+  try{
+    const r=await fetch('/api/ownerclan/search',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:id,password:pw,keyword:kw,sort:'priceAsc',sandbox,first:8})});
+    if(!r.ok){ box.innerHTML=`<div class="oc-dbox err">오너클랜 조회 실패(${r.status})</div>`; return; }
+    d=await r.json();
+  }catch(e){ box.innerHTML='<div class="oc-dbox err">오너클랜 연결 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="oc-dbox err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-dbox">오너클랜에 '${(kw||'').replace(/</g,'&lt;')}' 상품이 없어요${d.note?' — '+(d.note).replace(/</g,'&lt;'):''}.</div>`; return; }
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const st=d.stat||{};
+  const rows=d.items.slice(0,6).map(it=>`<div class="ocf-row">
+    <span class="ocf-name">${(it.name||'').replace(/</g,'&lt;')}</span>
+    <span class="ocf-price">${won(it.price)} ${it.status==='available'?'<b class="oc-ok">재고</b>':'<b class="oc-no">품절</b>'}</span></div>`).join('');
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>🛍 오너클랜 최저가 ${st.min?won(st.min):'-'}</b> · 평균 ${st.avg?won(st.avg):'-'} <span class="hint">(${st.count||d.items.length}개 중 저가순)</span></div>
+    ${rows}
+    <div class="ocf-tip hint">💡 이 수요(네이버) + 이 원가(오너클랜)로 마진이 나오면 진입 후보예요.</div>
+  </div>`;
 }
 if ($('#discOut')) $('#discOut').addEventListener('click', cardActionHandler);
 if ($('#insOut')) $('#insOut').addEventListener('click', cardActionHandler);
@@ -2023,9 +2577,12 @@ async function showWatch(){
   const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const card = f => `<div class="card wc" data-kw="${esc(f.keyword)}">
       <div class="fhead"><span class="t">${esc(f.keyword)}</span> <span class="tag">${esc(f.category||'')}</span>
+        ${f.source==='ownerclan'?'<span class="oc-ok">🛍 오너클랜</span>':''}
         ${f.grade?`<span class="dc-grade g-${f.grade}">${f.grade}급</span>`:''}</div>
-      <div class="wc-track hint">담을 때 상승률 ${f.rise!=null?f.rise+'%':'-'}${f.verdict?' · '+esc(f.verdict):''}</div>
-      <div class="wc-hist">${histSparkFor(f.keyword)}</div>
+      ${f.source==='ownerclan'
+        ? `<div class="wc-track">공급가 <b>${f.oc_price?(+f.oc_price).toLocaleString('ko-KR')+'원':'-'}</b>${f.oc_key?` · 코드 ${esc(f.oc_key)}`:''}${f.oc_url?` · <a href="${esc(f.oc_url)}" target="_blank" rel="noopener">상품 열기 ↗</a>`:''}</div>`
+        : `<div class="wc-track hint">담을 때 상승률 ${f.rise!=null?f.rise+'%':'-'}${f.verdict?' · '+esc(f.verdict):''}</div>
+      <div class="wc-hist">${histSparkFor(f.keyword)}</div>`}
       <div class="links"><button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button></div>
     </div>`;
   out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b>

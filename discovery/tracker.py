@@ -608,6 +608,7 @@ def watch_list(owner: str = "local", path: str | None = None) -> list:
             d = _j.loads(r["payload"])
         except Exception:  # noqa: BLE001
             d = {"keyword": r["keyword"]}
+        d["keyword"] = r["keyword"]       # 컬럼이 원천 — payload에 없어도 항상 채움
         d["memo"] = r["memo"] or ""
         d["added_at"] = r["added_at"]
         out.append(d)

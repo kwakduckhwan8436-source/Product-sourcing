@@ -151,6 +151,12 @@ class NaverClient:
                 raise NaverAuthError(
                     "403 — 이 열쇠에 '검색' API 권한이 없어요. 네이버 개발자센터 → "
                     "내 애플리케이션 → 'API 설정'에서 '검색'을 추가(체크)한 뒤 다시 시도해주세요.")
+            if resp.status_code == 404:
+                # 2025~2026 네이버가 '검색 오픈API(쇼핑 포함)'를 종료 → 엔드포인트 404.
+                raise NaverAuthError(
+                    "404 — 네이버가 이 검색 API를 종료했어요(SHUTDOWN). 네이버가 '검색 오픈API' "
+                    "서비스를 단계적으로 종료하면서 '쇼핑' 검색이 포함돼, 더 이상 이 공식 API로는 "
+                    "상품 데이터를 받을 수 없어요.")
             if resp.status_code == 429:
                 attempt += 1
                 if attempt > retries:

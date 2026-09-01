@@ -47,7 +47,7 @@ from discovery.tracker import (api_bump, api_usage,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v90"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v106"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -1061,6 +1061,7 @@ class DiscoverReq(BaseModel):
     category: str = ""          # 분야명 ("" = 전체 분야 스캔)
     mode: str = "consign"       # consign(위탁) | wholesale(사입/도매)
     wide: bool = False          # 넓게 찾기 — 실시간 연관어를 씨앗에 섞어 새 후보 발굴
+    exclude: list = []          # 이미 본 키워드 — 빼고 다음 후보를 보여준다(새로고침)
 
 
 def _discover_reasons(it: dict) -> list:
@@ -1269,6 +1270,12 @@ async def discover(req: DiscoverReq):
         ai = anchor_info.get(it.get("category", ""))
         if mode == "wholesale" and ai and not ai["ok"]:
             it["anchor_weak"] = True
+    # 🔄 이미 본 키워드는 빼고 다음 후보를 노출(몇 주째 같은 것만 나오는 문제 해결)
+    _excl = set((req.exclude or []))
+    _before = len(kept)
+    if _excl:
+        kept = [it for it in kept if it.get("keyword") not in _excl]
+    _excluded_count = _before - len(kept)
     result = kept[:40]
     # 🔗 3중 교차검증·신뢰도·등급 (자동발굴/니치 공용)
     trend_path = await _enrich_top(cid, csec, result, start, end)
@@ -1284,6 +1291,7 @@ async def discover(req: DiscoverReq):
     return {"ok": True, "items": result, "range": f"{start} ~ {end}",
             "scanned": len(items), "mode": mode, "targets": targets,
             "trend_path": trend_path, "expanded": len(expanded_set),
+            "excluded_count": _excluded_count,
             "anchors": [{"category": c, "keyword": v["keyword"],
                          "stability": v["stability"], "ok": v["ok"]}
                         for c, v in anchor_info.items()]}
@@ -1461,6 +1469,422 @@ async def usage_api():
         return {"ok": True, **api_usage()}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+class OwnerClanReq(BaseModel):
+    username: str
+    password: str
+    keyword: str = ""
+    sort: str = "default"       # default | priceAsc | priceDesc
+    min_price: int = 0
+    max_price: int = 0
+    first: int = 30
+    sandbox: bool = False
+
+
+# 오너클랜 JWT 토큰 임시 캐시(메모리) — username→(token, 만료ts). 비번은 저장 안 함.
+_OC_TOKENS: dict = {}
+
+
+def _ownerclan_item_url(key: str) -> str:
+    """오너클랜 상품 상세페이지 URL — 실제 형식은 selfcode 파라미터."""
+    from urllib.parse import quote
+    k = (key or "").strip()
+    if not k:
+        return ""
+    return f"https://ownerclan.com/V2/product/view.php?selfcode={quote(k)}"
+
+
+async def _ownerclan_token(username: str, password: str, sandbox: bool) -> str:
+    """오너클랜 공식 인증 — 아이디/비번을 POST 해서 JWT 토큰을 받는다(매뉴얼 명세).
+    토큰은 메모리에 잠깐 캐시하고 비밀번호는 저장하지 않는다."""
+    import time
+    import httpx
+    ck = f"{'sb' if sandbox else 'pr'}:{username}"
+    cached = _OC_TOKENS.get(ck)
+    if cached and cached[1] > time.time() + 60:
+        return cached[0]
+    url = ("https://auth-sandbox.ownerclan.com/auth" if sandbox
+           else "https://auth.ownerclan.com/auth")
+    body = {"service": "ownerclan", "userType": "seller",
+            "username": username, "password": password}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=25.0, write=10.0, pool=10.0)) as c:
+        r = await c.post(url, json=body)
+    if r.status_code >= 400:
+        # 오너클랜이 보낸 실제 사유를 그대로 노출(디버깅에 결정적)
+        detail = (r.text or "").strip().replace("\n", " ")[:200]
+        env = "샌드박스" if sandbox else "운영(production)"
+        raise NaverHubAuth(
+            f"오너클랜 인증 거부({r.status_code}) · 요청환경: {env}. "
+            f"오너클랜 응답: {detail or '(내용 없음)'} — "
+            f"판매사 ID/비번이 맞는지, 그리고 이 환경({env})으로 API 사용이 "
+            f"승인됐는지 확인해주세요. (샌드박스/운영은 각각 따로 신청·승인돼요)")
+    # 토큰이 raw 문자열 또는 {\"token\":..} JSON 두 형태 모두 대응
+    raw = (r.text or "").strip()
+    token = raw.strip('"')
+    if raw.startswith("{"):
+        try:
+            j = r.json()
+            token = (j.get("token") or j.get("accessToken")
+                     or j.get("jwt") or j.get("data") or "").strip()
+        except Exception:  # noqa: BLE001
+            pass
+    if not token or token.count(".") < 2:      # JWT는 점 2개(3구분)
+        raise NaverHubAuth(f"오너클랜 인증 응답에서 토큰을 찾지 못했어요. 응답: {raw[:160]}")
+    _OC_TOKENS[ck] = (token, time.time() + 3000)   # 약 50분 캐시
+    return token
+
+
+async def _ownerclan_search(token: str, req: OwnerClanReq) -> list:
+    """오너클랜 상품 검색(allItems) — 공식 GraphQL READ(GET) 호출.
+    검색+가격정렬은 오너클랜에서 무거운(Quota 강화) 쿼리라, 가격정렬은
+    서버에서 직접 처리해 타임아웃을 피한다."""
+    import asyncio
+    from urllib.parse import quote
+    import httpx
+    args = [f'first: {max(1, min(req.first, 60))}']
+    kw = (req.keyword or "").replace('"', '\\"').strip()
+    if kw:
+        args.append(f'search: "{kw}"')
+    if req.min_price and req.min_price > 0:
+        args.append(f'minPrice: {int(req.min_price)}')
+    if req.max_price and req.max_price > 0:
+        args.append(f'maxPrice: {int(req.max_price)}')
+    # 날짜 정렬만 API에 위임(가벼움). 가격 정렬은 아래에서 서버가 처리.
+    if req.sort in ("dateDesc", "dateAsc"):
+        args.append(f'sortBy: {req.sort}')
+    query = ("query { allItems(" + ", ".join(args) + ") { pageInfo { hasNextPage } "
+             "edges { node { "
+             "key name price fixedPrice images(size: medium) status model origin "
+             "category { name fullName } } } } }")
+    base = ("https://api-sandbox.ownerclan.com/v1/graphql" if req.sandbox
+            else "https://api.ownerclan.com/v1/graphql")
+    url = base + "?query=" + quote(query)
+    headers = {"Authorization": f"Bearer {token}"}
+    tmo = httpx.Timeout(connect=10.0, read=45.0, write=10.0, pool=10.0)
+    data = None
+    last_exc = None
+    for attempt in range(3):                      # 타임아웃/과요청 시 재시도(백오프)
+        try:
+            async with httpx.AsyncClient(timeout=tmo) as c:
+                r = await c.get(url, headers=headers)
+            if r.status_code == 429:
+                if attempt < 2:
+                    await asyncio.sleep(2.0 * (attempt + 1))
+                    continue
+                raise NaverHubAuth("오너클랜 요청이 잠깐 몰렸어요(Too many requests). "
+                                   "20~30초 뒤에 다시 시도해주세요.")
+            if r.status_code >= 400:
+                raise NaverHubAuth(f"오너클랜 조회 실패({r.status_code}): {(r.text or '')[:160]}")
+            data = r.json()
+            # GraphQL 본문에 과요청 에러가 담겨오는 경우도 처리
+            errs = data.get("errors") or []
+            if errs and "too many" in (errs[0].get("message", "").lower()):
+                if attempt < 2:
+                    await asyncio.sleep(2.0 * (attempt + 1))
+                    data = None
+                    continue
+                raise NaverHubAuth("오너클랜 요청이 잠깐 몰렸어요(Too many requests). "
+                                   "20~30초 뒤에 다시 시도해주세요.")
+            break
+        except (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.PoolTimeout) as e:
+            last_exc = e
+            if attempt < 2:
+                await asyncio.sleep(1.0)
+                continue
+            raise NaverHubAuth("오너클랜 서버 응답이 느려요(타임아웃). 잠시 후 다시 시도하거나, "
+                               "검색어를 더 구체적으로 좁혀보세요.")
+    if data is None:
+        raise NaverHubAuth("오너클랜 응답을 받지 못했어요(재시도 초과).")
+    if data.get("errors"):
+        msg = (data["errors"][0].get("message") if data["errors"] else "조회 오류")
+        raise NaverHubAuth(f"오너클랜 API 오류: {msg}")
+    ai = (data.get("data") or {}).get("allItems")
+    if ai is None:
+        raise NaverHubAuth("오너클랜 응답에 상품 데이터(allItems)가 없어요 — 쿼리/권한 확인 필요.")
+    edges = ai.get("edges") or []
+    out = []
+    for e in edges:
+        n = e.get("node") or {}
+        imgs = n.get("images") or []
+        out.append({
+            "key": n.get("key"), "name": n.get("name"),
+            "price": n.get("price"), "fixedPrice": n.get("fixedPrice"),
+            "status": n.get("status"),
+            "model": n.get("model"), "origin": n.get("origin"),
+            "image": imgs[0] if imgs else "",
+            "url": _ownerclan_item_url(n.get("key")),
+            "category": (n.get("category") or {}).get("fullName")
+            or (n.get("category") or {}).get("name") or "",
+        })
+    # 가격 정렬은 서버에서(무거운 API 정렬 회피). 가격 없는 항목은 뒤로.
+    if req.sort == "priceAsc":
+        out.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+    elif req.sort == "priceDesc":
+        out.sort(key=lambda x: (x["price"] is None, -(x["price"] or 0)))
+    return out
+
+
+@app.post("/api/ownerclan/search")
+async def ownerclan_search_api(req: OwnerClanReq):
+    """🛍 오너클랜 상품 검색 — 회원 각자의 판매사 계정으로 공식 API 조회.
+    비밀번호는 토큰 발급에만 쓰고 서버에 저장하지 않는다."""
+    u = (req.username or "").strip()
+    p = req.password or ""
+    if not u or not p:
+        return {"ok": False, "error": "오너클랜 판매사 ID/비밀번호를 넣어주세요."}
+    if not (req.keyword or "").strip():
+        return {"ok": False, "error": "검색어를 넣어주세요."}
+    try:
+        token = await _ownerclan_token(u, p, req.sandbox)
+        items = await _ownerclan_search(token, req)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"오너클랜 연결 오류: {type(exc).__name__}"}
+    # 결과가 없을 때 원인 안내(특히 샌드박스는 실제 상품이 거의 없음)
+    if not items:
+        if req.sandbox:
+            return {"ok": True, "items": [], "stat": {}, "keyword": req.keyword,
+                    "sandbox": True,
+                    "note": ("샌드박스(테스트) 환경에는 실제 상품이 거의 없어서 검색 결과가 "
+                             "비어 있을 수 있어요. 운영(production) API가 승인돼 있으면 "
+                             "'샌드박스' 체크를 끄고 다시 검색해보세요.")}
+        return {"ok": True, "items": [], "stat": {}, "keyword": req.keyword,
+                "sandbox": False,
+                "note": ("이 검색어로는 오너클랜에 상품이 없어요. 더 일반적인 단어"
+                         "(예: '청소기'→'무선청소기','핸디청소기')로 바꿔보세요.")}
+    # 통계
+    prices = [it["price"] for it in items if isinstance(it.get("price"), (int, float)) and it["price"] > 0]
+    stat = {}
+    if prices:
+        stat = {"min": int(min(prices)), "max": int(max(prices)),
+                "avg": int(sum(prices) / len(prices)), "count": len(items)}
+    return {"ok": True, "items": items, "stat": stat, "keyword": req.keyword,
+            "sandbox": req.sandbox}
+
+
+class OwnerClanItemReq(BaseModel):
+    username: str
+    password: str
+    key: str
+    sandbox: bool = False
+
+
+@app.post("/api/ownerclan/item")
+async def ownerclan_item_api(req: OwnerClanItemReq):
+    """🔎 오너클랜 단일 상품 상세 — 실제 등록 상품인지 확인 + 상세정보(배송비·원산지·
+    제조사·권장가·옵션/재고)를 앱 안에서 바로 보여준다."""
+    import httpx
+    from urllib.parse import quote
+    u = (req.username or "").strip()
+    p = req.password or ""
+    key = (req.key or "").strip()
+    if not u or not p or not key:
+        return {"ok": False, "error": "상품 코드를 확인해주세요."}
+    try:
+        token = await _ownerclan_token(u, p, req.sandbox)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    kk = key.replace('"', '\\"')
+    query = ('query { item(key: "' + kk + '") { key name model production origin '
+             'price fixedPrice pricePolicy shippingFee shippingType status content '
+             'taxFree returnable guaranteedShippingPeriod boxQuantity '
+             'category { fullName } images(size: medium) '
+             'options { price quantity optionAttributes { name value } } } }')
+    base = ("https://api-sandbox.ownerclan.com/v1/graphql" if req.sandbox
+            else "https://api.ownerclan.com/v1/graphql")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=40.0, write=10.0, pool=10.0)) as c:
+            r = await c.get(base + "?query=" + quote(query),
+                            headers={"Authorization": f"Bearer {token}"})
+        if r.status_code >= 400:
+            return {"ok": False, "error": f"상세 조회 실패({r.status_code})"}
+        data = r.json()
+    except httpx.ReadTimeout:
+        return {"ok": False, "error": "오너클랜 응답이 느려요(타임아웃). 잠시 후 다시 눌러주세요."}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"연결 오류: {type(exc).__name__}"}
+    if data.get("errors"):
+        return {"ok": False, "error": f"API 오류: {data['errors'][0].get('message','')}"}
+    n = (data.get("data") or {}).get("item")
+    if not n:
+        return {"ok": False, "error": "해당 상품을 찾지 못했어요(코드 확인)."}
+    # 상세설명은 HTML/길 수 있어 태그 제거 후 앞부분만
+    content = _strip_tags(n.get("content") or "")
+    content = (content[:400] + "…") if len(content) > 400 else content
+    opts = []
+    for o in (n.get("options") or [])[:20]:
+        attrs = " / ".join(f'{a.get("name")}:{a.get("value")}'
+                           for a in (o.get("optionAttributes") or []))
+        opts.append({"label": attrs or "기본", "price": o.get("price"),
+                     "qty": o.get("quantity")})
+    imgs = n.get("images") or []
+    return {"ok": True, "item": {
+        "key": n.get("key"), "name": n.get("name"), "model": n.get("model"),
+        "production": n.get("production"), "origin": n.get("origin"),
+        "price": n.get("price"), "fixedPrice": n.get("fixedPrice"),
+        "shippingFee": n.get("shippingFee"), "shippingType": n.get("shippingType"),
+        "status": n.get("status"), "content": content,
+        "taxFree": n.get("taxFree"), "returnable": n.get("returnable"),
+        "guaranteedShippingPeriod": n.get("guaranteedShippingPeriod"),
+        "boxQuantity": n.get("boxQuantity"),
+        "category": (n.get("category") or {}).get("fullName") or "",
+        "images": imgs[:5], "options": opts}}
+
+
+class OwnerClanBestReq(BaseModel):
+    username: str
+    password: str
+    keyword: str
+    client_id: str = ""         # 네이버 허브(수요 측정용, 선택)
+    client_secret: str = ""
+    sandbox: bool = False
+    w_stock: int = 30           # 재고 가중치(조정 가능)
+    w_price: int = 25           # 가격경쟁력 가중치
+    w_margin: int = 30          # 마진 여력 가중치(권장가-공급가, 상품마다 다름)
+
+
+@app.post("/api/ownerclan/best")
+async def ownerclan_best_api(req: OwnerClanBestReq):
+    """⭐ 최적 상품 골라주기 — 오너클랜 실제 원가·재고(공식 API) + 네이버 수요(공식 API)를
+    합쳐 '지금 떼다 팔기 좋은' 상품을 점수순으로. 크롤링 없이 공식 API만 사용."""
+    u = (req.username or "").strip()
+    p = req.password or ""
+    kw = (req.keyword or "").strip()
+    if not u or not p:
+        return {"ok": False, "error": "오너클랜 판매사 ID/비밀번호를 넣어주세요."}
+    if not kw:
+        return {"ok": False, "error": "검색어를 넣어주세요."}
+    # 1) 오너클랜 상품 (실제 원가·재고)
+    try:
+        token = await _ownerclan_token(u, p, req.sandbox)
+        sreq = OwnerClanReq(username=u, password=p, keyword=kw,
+                            sort="default", sandbox=req.sandbox, first=40)
+        items = await _ownerclan_search(token, sreq)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"오너클랜 연결 오류: {type(exc).__name__}"}
+    if not items:
+        return {"ok": True, "items": [], "keyword": kw, "demand": None,
+                "note": "오너클랜에 이 검색어 상품이 없어요(운영 환경·검색어 확인)."}
+    # 2) 네이버 수요 (공식 검색어 트렌드 1회 — 합법)
+    demand = None
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if cid and csec:
+        try:
+            start, end = _date_range(12)
+            body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                    "keywordGroups": [{"groupName": kw, "keywords": [kw]}]}
+            data, _ = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+            res = (data.get("results") or [])
+            if res:
+                t = _trend_of(res[0].get("data") or [])
+                demand = {"rise": t.get("rise", 0.0), "stage": t.get("stage"),
+                          "level": t.get("level"), "rollover": t.get("rollover", False)}
+        except Exception:  # noqa: BLE001
+            demand = None
+    # 3) 상품별 '기회 점수' — 재고·마진여력·가격경쟁력 (수요는 키워드 공통)
+    prices = [it["price"] for it in items
+              if isinstance(it.get("price"), (int, float)) and it["price"] > 0]
+    med = sorted(prices)[len(prices) // 2] if prices else 0
+    w_stock = max(0, min(60, req.w_stock))
+    w_price = max(0, min(60, req.w_price))
+    w_margin = max(0, min(60, req.w_margin))
+    # 수요는 키워드 공통이라 순위엔 영향 없음 — '전체 가점'으로만(모든 상품 동일)
+    demand_bonus = 0.0
+    if demand:
+        demand_bonus = max(0.0, min(15.0, demand["rise"] / 40.0 * 15.0))
+        if demand.get("rollover"):
+            demand_bonus -= 7.5
+    scored = []
+    for it in items:
+        price = it.get("price") if isinstance(it.get("price"), (int, float)) else None
+        fixed = it.get("fixedPrice") if isinstance(it.get("fixedPrice"), (int, float)) else None
+        instock = (it.get("status") == "available")
+        s = 0.0
+        reasons = []
+        # 재고(상품마다 다를 수 있음)
+        if instock:
+            s += w_stock
+            reasons.append("판매중")
+        else:
+            s -= w_stock * 0.7
+            reasons.append("품절/불가")
+        # 가격 경쟁력(중간값 이하일수록) — 상품마다 다름
+        if price and med:
+            ratio = max(0.0, min(1.0, (med * 1.5 - price) / (med * 1.5))) if med else 0
+            s += w_price * ratio
+            if price <= med:
+                reasons.append("가격 경쟁력")
+        # 마진 여력(권장소비자가 대비 공급가가 낮을수록 큼) — 상품마다 다름
+        if fixed and price and fixed > price:
+            room = (fixed - price) / fixed          # 0~1
+            s += w_margin * room
+            if room >= 0.3:
+                reasons.append(f"마진 여력 큼(권장가 대비 -{round(room*100)}%)")
+        s += demand_bonus
+        if demand and demand.get("rise", 0) >= 10:
+            reasons.append(f"네이버 수요 상승({round(demand['rise'])}%)")
+        it2 = dict(it)
+        it2["url"] = _ownerclan_item_url(it.get("key"))
+        it2["margin_room"] = round((fixed - price) / fixed * 100) if (fixed and price and fixed > price) else None
+        it2["score"] = round(max(0.0, min(100.0, s + 15.0)))
+        it2["why"] = reasons
+        scored.append(it2)
+    scored.sort(key=lambda x: -x["score"])
+    return {"ok": True, "items": scored[:20], "keyword": kw, "demand": demand,
+            "sandbox": req.sandbox, "scanned": len(items)}
+
+
+class RankBattleReq(BaseModel):
+    client_id: str
+    client_secret: str
+    keywords: list = []         # 2~5개 후보
+
+
+@app.post("/api/rankbattle")
+async def rank_battle_api(req: RankBattleReq):
+    """🥊 키워드 순위 대결 — 후보 여러 개를 검색어 트렌드 상대지수로 순위 매김.
+    한 응답에 함께 정규화돼 서로 비교 가능(공식 API)."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "허브 열쇠(Client ID/Secret)를 먼저 넣어주세요."}
+    kws = [str(k).strip() for k in (req.keywords or []) if str(k).strip()]
+    kws = list(dict.fromkeys(kws))[:5]              # 중복 제거·최대 5개
+    if len(kws) < 2:
+        return {"ok": False, "error": "비교할 키워드를 2개 이상 넣어주세요."}
+    start, end = _date_range(12)
+    body = {"startDate": start, "endDate": end, "timeUnit": "month",
+            "keywordGroups": [{"groupName": k, "keywords": [k]} for k in kws]}
+    try:
+        data, _ = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"조회 오류: {type(exc).__name__}"}
+    results = data.get("results") or []
+    rows = []
+    for r in results:
+        pts = r.get("data") or []
+        t = _trend_of(pts)
+        # 최근값(상대지수)·상승률로 순위
+        rows.append({"keyword": r.get("title") or r.get("groupName"),
+                     "latest": round(t.get("latest", 0.0), 1),
+                     "rise": t.get("rise", 0.0),
+                     "stage": t.get("stage"), "series": t.get("series", [])})
+    if not rows:
+        return {"ok": False, "error": "결과가 없어요(키워드를 바꿔보세요)."}
+    # 최근 상대지수 기준 순위(동률이면 상승률)
+    rows.sort(key=lambda x: (-x["latest"], -x["rise"]))
+    top = rows[0]["latest"] or 1
+    for i, rw in enumerate(rows):
+        rw["rank"] = i + 1
+        rw["pct_of_top"] = round(rw["latest"] / top * 100) if top else 0
+    return {"ok": True, "items": rows, "range": f"{start} ~ {end}"}
 
 
 @app.post("/api/keytest")
