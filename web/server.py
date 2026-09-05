@@ -48,7 +48,7 @@ from discovery.tracker import (api_bump, api_usage,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v134"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v135"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -3607,7 +3607,10 @@ async def sw():
 
 @app.get("/")
 async def index():
-    return FileResponse(_HERE / "static" / "index.html")
+    # 화면(index.html)은 캐시하지 않게 — 배포하면 회원 브라우저가 항상 최신을 받는다
+    return FileResponse(_HERE / "static" / "index.html", headers={
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache", "Expires": "0"})
 
 
 app.mount("/static", StaticFiles(directory=_HERE / "static"), name="static")
