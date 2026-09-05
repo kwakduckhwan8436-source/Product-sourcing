@@ -114,6 +114,13 @@ CREATE TABLE IF NOT EXISTS meta (
     k    TEXT PRIMARY KEY,
     val  TEXT
 );
+CREATE TABLE IF NOT EXISTS feedback (
+    keyword     TEXT PRIMARY KEY,
+    category    TEXT,
+    vote        INTEGER NOT NULL,       -- +1 좋음 / -1 별로
+    owner       TEXT,
+    updated_at  TEXT NOT NULL
+);
 """
 
 
@@ -205,6 +212,48 @@ def api_usage(path: str | None = None) -> dict:
     return {"month": _dt.date.today().strftime("%Y-%m"),
             "used": used, "limit": limit, "pct": pct,
             "warn": pct >= 80, "over": pct >= 100}
+
+
+def feedback_set(keyword: str, vote: int, category: str = "",
+                 owner: str = "local", path: str | None = None) -> bool:
+    """상품(키워드)에 대한 사용자 판단을 저장한다. vote: +1 좋음 / -1 별로 / 0 취소."""
+    import datetime as _dt
+    kw = (keyword or "").strip()
+    if not kw:
+        return False
+    try:
+        c = _conn(path)
+        try:
+            if vote == 0:
+                c.execute("DELETE FROM feedback WHERE keyword=?", (kw,))
+            else:
+                c.execute(
+                    "INSERT INTO feedback(keyword,category,vote,owner,updated_at) "
+                    "VALUES(?,?,?,?,?) ON CONFLICT(keyword) DO UPDATE SET "
+                    "vote=excluded.vote, category=excluded.category, updated_at=excluded.updated_at",
+                    (kw, category, 1 if vote > 0 else -1, owner,
+                     _dt.datetime.now().isoformat(timespec="seconds")))
+            c.commit()
+            return True
+        finally:
+            c.close()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def feedback_map(path: str | None = None) -> dict:
+    """{keyword: vote} 전체를 돌려준다(발굴 점수 보정·표시용)."""
+    out = {}
+    try:
+        c = _conn(path)
+        try:
+            for r in c.execute("SELECT keyword, vote FROM feedback").fetchall():
+                out[r["keyword"]] = int(r["vote"])
+        finally:
+            c.close()
+    except Exception:  # noqa: BLE001
+        pass
+    return out
 
 
 def calib_get(path: str | None = None) -> int:

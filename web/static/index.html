@@ -250,6 +250,11 @@
     display:flex;justify-content:space-between;color:var(--ink)}
   details.keys summary::-webkit-details-marker{display:none}
   .keyrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .keyfld{display:flex;flex-direction:column;gap:4px}
+  .keylb{font-size:12px;font-weight:700;color:var(--ink)}
+  .keylb-sub{font-size:10.5px;font-weight:400;color:var(--sub)}
+  .keyhint2{font-size:11.5px;color:var(--sub);margin-top:7px;line-height:1.5}
+  @media(max-width:640px){ .keyrow{grid-template-columns:1fr} }
   .guide{margin-top:10px;font-size:12px;color:var(--sub);line-height:1.8;
     background:var(--brand-bg);border-radius:10px;padding:11px 13px}
   .guide b{color:var(--brand-soft)}
@@ -293,6 +298,13 @@
   .disccard.vblock{display:block}
   .dc-line{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .dc-line .dc-rise{text-align:right}
+  .dc-accel{font-size:9.5px;padding:1px 5px;border-radius:4px;vertical-align:middle}
+  .dc-accel.hot{color:#fff;background:rgba(210,90,60,.35)}
+  .dc-accel.cold{color:#cfe0f0;background:rgba(90,130,180,.28)}
+  .dc-fb{margin-left:auto;display:inline-flex;gap:4px}
+  .dc-fbbtn{font-size:13px;padding:5px 9px;border:1px solid var(--line2);background:var(--panel2);border-radius:8px;cursor:pointer;opacity:.65}
+  .dc-fbbtn:hover{opacity:1;border-color:var(--brand)}
+  .dc-fbbtn.on{opacity:1;background:var(--brand);border-color:transparent}
   .dc-signal{display:flex;align-items:center;gap:10px;border-radius:12px;padding:11px 13px;margin:10px 0 4px;font-weight:800;font-size:15px}
   .dc-signal .sg-dot{font-size:20px;flex:0 0 auto}
   .dc-signal .sg-txt{font-size:13.5px;font-weight:700}
@@ -765,7 +777,7 @@
     .fitrow,.dc-acts,.src-links{gap:5px}
   }
   /* 🛍 오너클랜 */
-  .oc-keys{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+  .oc-keys{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
   .oc-keys input{padding:10px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2);color:var(--ink)}
   .oc-sb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);white-space:nowrap}
   .oc-note{font-size:11.5px;color:var(--sub);margin-top:8px}
@@ -785,7 +797,19 @@
   .oc-na{font-size:10.5px;color:var(--sub)}
   .oc-price{font-family:var(--serif);font-size:16px;color:var(--gold-hi)}
   .oc-key{font-family:inherit;font-size:10px;color:var(--sub);display:block}
+  .oc-market{margin-top:8px;font-size:12.5px;color:var(--sub);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .wc-dash{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:11px 13px;margin:8px 0}
+  .wc-dash-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:14px}
+  .wc-pill{font-size:11.5px;color:var(--sub);background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:2px 8px}
+  .wc-pill.hot{color:#f4e6bc;background:var(--wait-bg);border-color:rgba(216,178,60,.35)}
+  .wc-dash-hint{font-size:11.5px;color:var(--sub);margin-top:6px;line-height:1.5}
+  .wc-sec{font-size:12.5px;font-weight:700;color:var(--sub);margin:14px 0 6px}
+  .wc-refresh{font-size:12px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+  .oc-market select{padding:6px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--panel2);color:var(--ink);font-size:12.5px}
   .oc-namelink{color:var(--ink);text-decoration:none}
+  .oc-warn{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+  .oc-warn-b{font-size:10px;color:#fbccd0;background:var(--stop-bg);border:1px solid rgba(210,120,120,.35);border-radius:5px;padding:1px 6px;cursor:help}
+  .ocf-warn{color:var(--stop);cursor:help}
   .oc-namelink:hover{color:var(--brand);text-decoration:underline}
   .oc-codebar{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
   .oc-codebar b{color:var(--ink);font-family:var(--serif);letter-spacing:.3px}
@@ -820,10 +844,15 @@
   .oc-dcont{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-size:11.5px;color:var(--sub);line-height:1.6}
   .oc-bestbtn{width:100%;margin-top:8px;background:linear-gradient(135deg,var(--brand),var(--gold-hi));
     color:#191307;font-weight:800;border:none;border-radius:10px;padding:12px;cursor:pointer;font-size:13.5px}
+  .oc-bestonly{display:flex;align-items:flex-start;gap:8px;margin-top:9px;font-size:12.5px;color:var(--sub);line-height:1.5;cursor:pointer}
+  .oc-bestonly input{margin-top:2px;flex:0 0 auto;width:16px;height:16px}
+  .oc-bestonly span{flex:1;min-width:0;word-break:keep-all}
+  .oc-bestonly b{color:var(--gold-hi)}
   .oc-card.best{position:relative}
   .oc-rank{position:absolute;top:6px;left:6px;z-index:2;background:rgba(0,0,0,.7);color:var(--gold-hi);
     font-weight:800;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
   .oc-score{font-size:12px;font-weight:800}
+  .oc-catlabel{font-size:9.5px;font-weight:600;color:var(--sub);background:var(--panel);border:1px solid var(--line2);border-radius:4px;padding:1px 5px;vertical-align:middle}
   .oc-why{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
   .oc-why span{font-size:10.5px;color:#bff0d2;background:var(--go-bg);border-radius:5px;padding:1px 6px}
   .dc-ocfind:not(:empty){margin:8px 0}
@@ -832,6 +861,13 @@
   .ocf-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ocf-price{flex:0 0 auto;font-weight:700}
   .ocf-tip{margin-top:6px;font-size:11px}
+  .ocf-verdict{margin-top:8px;border-radius:9px;padding:9px 11px;border:1px solid var(--line2)}
+  .ocf-verdict.v-go{background:var(--go-bg);border-color:rgba(120,200,140,.4)}
+  .ocf-verdict.v-wait{background:var(--wait-bg);border-color:rgba(216,178,60,.35)}
+  .ocf-verdict.v-stop{background:var(--stop-bg);border-color:rgba(210,120,120,.4)}
+  .ocf-vhead{font-size:13px;margin-bottom:3px}
+  .ocf-vbody{font-size:11.5px;line-height:1.55;color:var(--ink)}
+  .ocf-vbody b{color:var(--gold-hi)}
   .rb-box{display:flex;flex-direction:column;gap:8px}
   .rb-row{display:flex;align-items:center;gap:11px;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:11px 13px}
   .rb-rank{font-size:20px;font-weight:800;flex:0 0 auto;min-width:34px;text-align:center}
@@ -841,6 +877,43 @@
   .rb-bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
   .rb-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--gold-hi));border-radius:3px}
   .rb-idx{flex:0 0 auto;font-family:var(--serif);font-size:18px;color:var(--gold-hi);min-width:42px;text-align:right}
+  .ti-sec{font-size:12.5px;font-weight:700;color:var(--sub);margin:13px 0 6px}
+  .ti-diag{font-size:12.5px;line-height:1.5;padding:8px 11px;border-radius:8px;margin-bottom:5px}
+  .ti-warn{background:var(--stop-bg);color:#fbccd0}
+  .ti-info{background:var(--wait-bg);color:#f4e6bc}
+  .ti-ok{background:var(--go-bg);color:#bff0d2}
+  .ti-toks{display:flex;flex-wrap:wrap;gap:6px}
+  .ti-tok{font-size:12px;border:1px solid var(--line2);border-radius:7px;padding:3px 9px;color:var(--ink)}
+  .ti-adds{display:flex;flex-wrap:wrap;gap:6px}
+  .ti-add{font-size:12px;color:#bff0d2;background:var(--go-bg);border-radius:7px;padding:3px 9px}
+  .ti-add b{color:var(--go)}
+  .ti-suggs{display:flex;flex-direction:column;gap:7px}
+  .ti-sugg{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:9px 11px}
+  .ti-sugg-t{flex:1;min-width:0;font-size:13px;color:var(--ink);line-height:1.4}
+  .ti-copy{flex:0 0 auto}
+  .ti-ai{margin-top:10px;border:1px solid var(--line2);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+  .ti-ai summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--ink)}
+  .ti-step{font-size:13px;font-weight:700;color:var(--ink);margin:4px 0 8px}
+  .ti-step2{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  .ti-badge{font-size:10.5px;font-weight:600;color:#bff0d2;background:var(--go-bg);border-radius:5px;padding:1px 7px;margin-left:5px}
+  .ti-aibox{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:11px 12px}
+  .ti-airow{display:flex;gap:8px}
+  .ti-airow input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);color:var(--ink)}
+  .ti-aibtn{flex:0 0 auto;background:linear-gradient(135deg,#6b8cff,#9b6bff);color:#fff;font-weight:700;border:none;border-radius:9px;padding:0 14px;cursor:pointer;font-size:13px}
+  @media(max-width:640px){ .ti-airow{flex-direction:column} .ti-aibtn{padding:11px} }
+  .dt-result{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:13px 14px;margin-top:8px}
+  .dt-text{font-size:13px;line-height:1.75;color:var(--ink)}
+  .dt-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .dt-prevlabel{font-size:12px;font-weight:700;color:var(--sub);margin:12px 0 6px}
+  .dt-preview{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:10px;max-height:520px;overflow:auto}
+  .ss-panel{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:12px 13px;margin:6px 0 4px}
+  .ss-head{font-size:13.5px;font-weight:700;margin-bottom:8px}
+  .ss-row{display:flex;align-items:baseline;gap:8px;font-size:12px;padding:4px 0;border-top:1px solid var(--line);line-height:1.5}
+  .ss-row:first-of-type{border-top:none}
+  .ss-ic{flex:0 0 auto}
+  .ss-lb{flex:0 0 82px;font-weight:600;color:var(--ink)}
+  .ss-ms{flex:1;min-width:0;color:var(--sub)}
+  .ss-no .ss-ms{color:#fbccd0}
   @media(max-width:640px){
     .oc-keys{grid-template-columns:1fr 1fr}
     .oc-sb{grid-column:1/3}
@@ -1003,9 +1076,16 @@
     <details class="keys" id="keybox">
       <summary><span>네이버 열쇠</span><span style="color:var(--sub)">설정 ▾</span></summary>
       <div class="keyrow">
-        <input id="cid" placeholder="Client ID" autocomplete="off"/>
-        <input id="csec" placeholder="Client Secret" type="password" autocomplete="off"/>
+        <div class="keyfld">
+          <label class="keylb">Client ID <span class="keylb-sub">(공개 아이디)</span></label>
+          <input id="cid" placeholder="예: AbCd1234EfGh" autocomplete="off"/>
+        </div>
+        <div class="keyfld">
+          <label class="keylb">Client Secret <span class="keylb-sub">(비밀 키)</span></label>
+          <input id="csec" placeholder="예: XyZ9876secret" type="password" autocomplete="off"/>
+        </div>
       </div>
+      <div class="keyhint2">💡 NAVER API HUB → Application에서 <b>2개를 함께</b> 발급받아요. ID는 짧고, Secret은 더 길어요.</div>
       <div style="margin-top:8px"><button id="hubtest" class="ghost" type="button">🔌 새 허브(API HUB) 연결 점검</button>
         <div id="keytestMsg" style="font-size:12.5px;margin-top:8px"></div></div>
       <div class="guide">
@@ -1109,10 +1189,17 @@
     <div id="insOc" class="inspane" style="display:none">
       <p class="ihint">🛍 <b>오너클랜 공식 API</b>로 실제 상품·가격·재고를 검색해요. 각자의 <b>판매사 계정</b>으로 조회하며, 아이디·비번은 <b>이 브라우저에만</b> 저장되고 서버엔 안 남아요.</p>
       <div class="oc-keys">
-        <input id="ocId" type="text" placeholder="오너클랜 판매사 ID" autocomplete="off">
-        <input id="ocPw" type="password" placeholder="비밀번호" autocomplete="off">
+        <div class="keyfld">
+          <label class="keylb">판매사 ID <span class="keylb-sub">(오너클랜 로그인 아이디)</span></label>
+          <input id="ocId" type="text" placeholder="오너클랜 판매사 ID" autocomplete="off">
+        </div>
+        <div class="keyfld">
+          <label class="keylb">비밀번호 <span class="keylb-sub">(로그인 비밀번호)</span></label>
+          <input id="ocPw" type="password" placeholder="비밀번호" autocomplete="off">
+        </div>
         <label class="oc-sb"><input type="checkbox" id="ocSandbox"> 샌드박스(테스트)</label>
       </div>
+      <div class="keyhint2">💡 오너클랜 <b>판매사 계정 + API 신청(운영)</b>이 승인돼 있어야 조회돼요. 웹 로그인과 같은 ID/비번을 넣으세요.</div>
       <div class="insrow" style="grid-template-columns:1fr auto auto;margin-top:8px">
         <input id="ocKw" type="text" placeholder="검색어 예: 무선청소기, 텀블러">
         <select id="ocSort" style="min-width:110px">
@@ -1123,6 +1210,7 @@
         <button id="ocGo" type="button">검색</button>
       </div>
       <button id="ocBest" type="button" class="oc-bestbtn">⭐ 최적 상품 골라줘 (오너클랜 원가 + 네이버 수요 자동 매칭)</button>
+      <label class="oc-bestonly"><input type="checkbox" id="ocBestOnly"><span>🏆 <b>베스트만 보기</b> — 재고 있고 마진·가격 좋은 상위만 (오너클랜 노출 상위 기준)</span></label>
       <details class="oc-weights"><summary>⚙️ 최적매칭 기준 조정</summary>
         <div class="ocw-row"><label>재고 중시</label><input type="range" id="ocwStock" min="0" max="60" value="30"><span id="ocwStockV">30</span></div>
         <div class="ocw-row"><label>가격 경쟁력</label><input type="range" id="ocwPrice" min="0" max="60" value="25"><span id="ocwPriceV">25</span></div>
@@ -1130,6 +1218,13 @@
         <p class="hint" style="margin:4px 0 0">마진 여력 = 권장소비자가 대비 공급가가 쌀수록 큼(상품마다 달라 순위가 바뀌어요). 슬라이더를 움직이면 <b>즉시 재정렬</b>돼요(재검색 안 함).</p>
       </details>
       <p class="oc-note">※ 오너클랜 판매사 회원가입 + API 신청(운영 또는 샌드박스)이 되어 있어야 조회돼요. · 오너클랜 API엔 '판매량순'이 없어 가격·최신순만 지원해요(잘 팔리는지는 👥 성별·타깃과 발굴 수요로 판단).</p>
+      <div class="oc-market">💳 판매 마켓 <select id="ocMarket">
+        <option value="smartstore">스마트스토어 (약 6%)</option>
+        <option value="coupang">쿠팡 (약 11%)</option>
+        <option value="gmarket">G마켓·옥션 (약 10%)</option>
+        <option value="11st">11번가 (약 12%)</option>
+        <option value="own">자사몰·기타 (약 3%)</option>
+      </select> <span class="hint">마진 계산에 이 마켓 수수료가 적용돼요</span></div>
     </div>
 
     <div id="insOut"></div>
@@ -1140,7 +1235,7 @@
     <button id="btest" class="ghost" style="margin-left:6px">🧪 등급 적중률 검증</button>
     <div id="btestOut"></div>
     <div style="display:none" aria-hidden="true">
-      <select id="cat"></select><button id="cal"></button><button id="chk"></button><button id="cafe"></button>
+      <select id="cat"></select><button id="chk"></button><button id="cafe"></button>
     </div>
   </div>
 
@@ -1191,21 +1286,27 @@
 
   <details class="tool" id="titleTool">
     <summary>
-      <span class="tico">📝</span> 스마트스토어 제목 체커
+      <span class="tico">📝</span> 제목 최적화
       <span class="arw">▾</span>
     </summary>
     <div class="toolbody">
+      <div class="ti-step">1️⃣ 지금 쓰는 제목이나 키워드를 넣으세요</div>
       <div class="toolgrid">
-        <div class="fld full"><label>상품 제목을 붙여넣으세요</label>
-          <textarea id="tTitle" placeholder="예) 무선 미니 가습기 usb 사무실 차량용 저소음 소형 탁상용 선물"></textarea></div>
+        <div class="fld full">
+          <textarea id="tiTitle" placeholder="예) 무선 미니 가습기 usb 사무실 차량용 저소음 탁상용"></textarea></div>
       </div>
-      <div class="countbar">
-        <span class="countbig" id="tCount">0<small style="font-size:13px"> 자</small></span>
-        <span class="countsub" id="tCountSub">공백 제외 0자 · 단어 0개</span>
+      <button id="tiGo" type="button" class="oc-bestbtn">🔍 분석하기 (검색량·규칙·추천 제목)</button>
+      <div id="tiOut"></div>
+      <div class="ti-step ti-step2">2️⃣ AI로 더 자연스러운 새 제목 만들기 <span class="ti-badge">무료 · 선택</span></div>
+      <div class="ti-aibox">
+        <div class="ti-airow">
+          <input id="tiGemKey" type="password" placeholder="Gemini API 키 (AIza...)" autocomplete="off">
+          <button id="tiAiGo" type="button" class="ti-aibtn">🤖 AI 제목 생성</button>
+        </div>
+        <p class="hint" style="margin:6px 0 0">키는 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>에서 무료 발급 · 이 브라우저에만 저장 · 내 PC 실행 시 가장 잘 돼요</p>
+        <div id="tiAiOut"></div>
       </div>
-      <div class="warnlist" id="tWarn"></div>
-      <p class="toolnote">네이버는 제목이 <b>간결하고 중복 없는</b> 쪽을 좋아합니다. 권장 <b>25~40자</b>,
-        같은 단어 반복·특수문자·과한 키워드 나열은 오히려 노출에 마이너스예요.</p>
+      <p class="toolnote">네이버 공식 API(검색어 트렌드·연관어)로 분석 · 상위노출 보장은 아니고 <b>검색 잘 걸리는</b> 방향으로 다듬어요.</p>
     </div>
   </details>
 
@@ -1389,7 +1490,7 @@ async function ownerclanSearch(){
   let d;
   try{
     const r = await fetch('/api/ownerclan/search',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:id,password:pw,keyword:kw,sort,sandbox,first:20})});
+      body:JSON.stringify({username:id,password:pw,keyword:kw,sort,sandbox,first:100})});
     if(!r.ok){
       let hint = `서버 응답 ${r.status}`;
       if(r.status===404) hint = '서버에 오너클랜 기능이 없어요 — 최신 버전(FULL zip) 배포가 필요해요.';
@@ -1414,7 +1515,7 @@ async function ownerclanSearch(){
       ${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener">`:''}${it.image?`<img class="oc-img" src="${esc(it.image)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${ocurl?'</a>':''}
       <div class="oc-body">
         <div class="oc-name">${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.name||'(이름없음)')}${ocurl?' ↗</a>':''}</div>
-        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>
+        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>${ocLandmineHTML(it)}
         <div class="oc-price">${price}</div>
         <div class="oc-codebar">코드 <b>${esc(it.key||'-')}</b> <button class="oc-copy" data-oc="copycode" title="코드 복사">복사</button></div>
         <div class="oc-acts">
@@ -1422,6 +1523,7 @@ async function ownerclanSearch(){
           <button class="oc-act" data-oc="gender">👥 성별</button>
           <button class="oc-act" data-oc="margin">💰 마진</button>
           <button class="oc-act" data-oc="keep">📌 담기</button>
+          <button class="oc-act oc-mkdetail" data-oc="mkdetail">🪄 상세페이지</button>
         </div>
         <div class="oc-detail"></div>
         <div class="oc-margin"></div>
@@ -1450,12 +1552,27 @@ async function ownerclanBest(){
   }catch(e){ box.innerHTML=`<div class="err">연결 실패(${esc(String(e.message||e))})</div>`; return; }
   if(!d.ok){ box.innerHTML=`<div class="err">${esc(d.error||'실패')}</div>`; return; }
   if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-empty"><p class="hint">최적 상품을 찾지 못했어요.</p>${d.note?`<p class="oc-emptynote">💡 ${esc(d.note)}</p>`:''}</div>`; return; }
-  OC_BEST_CACHE = {items:d.items.slice(), demand:d.demand||null, keyword:d.keyword, sandbox:d.sandbox, scanned:d.scanned, hasKey:!!k};
+  OC_BEST_CACHE = {items:d.items.slice(), demand:d.demand||null, keyword:d.keyword, sandbox:d.sandbox, scanned:d.scanned, hasKey:!!k, matchNote:d.match_note||''};
   renderOcBest();
   refreshUsage&&refreshUsage();
 }
 /* 가중치가 바뀌면 API 재호출 없이 캐시된 상품을 브라우저에서 다시 채점(과요청 방지) */
 let OC_BEST_CACHE = null;
+/* 카테고리별 특성 — 패션은 마진, 가전은 가격경쟁 등 기준을 다르게(정밀도) */
+function ocCatProfile(cat){
+  const c=cat||'';
+  if(/패션|의류|잡화|신발|가방|악세서리|주얼리|모자|양말/.test(c))
+    return {label:'패션', marginGood:0.40, lo:5000, hi:60000, mF:1.25, pF:0.85};
+  if(/디지털|가전|전자|컴퓨터|모바일|음향|카메라/.test(c))
+    return {label:'디지털/가전', marginGood:0.22, lo:5000, hi:100000, mF:0.85, pF:1.25};
+  if(/화장품|미용|뷰티|헤어|네일/.test(c))
+    return {label:'뷰티', marginGood:0.42, lo:3000, hi:45000, mF:1.2, pF:0.9};
+  if(/식품|건강|다이어트|간식/.test(c))
+    return {label:'식품/건강', marginGood:0.20, lo:3000, hi:35000, mF:0.8, pF:1.2};
+  if(/주방|생활|욕실|청소|수납/.test(c))
+    return {label:'생활/주방', marginGood:0.30, lo:4000, hi:45000, mF:1.0, pF:1.05};
+  return {label:'', marginGood:0.30, lo:5000, hi:50000, mF:1.0, pF:1.0};
+}
 function scoreOcLocal(items, demand, wStock, wPrice, wMargin){
   const prices=items.map(it=>it.price).filter(v=>typeof v==='number'&&v>0).sort((a,b)=>a-b);
   const med=prices.length?prices[Math.floor(prices.length/2)]:0;
@@ -1465,16 +1582,23 @@ function scoreOcLocal(items, demand, wStock, wPrice, wMargin){
     const price=(typeof it.price==='number')?it.price:null;
     const fixed=(typeof it.fixedPrice==='number')?it.fixedPrice:null;
     const instock=it.status==='available';
+    const prof=ocCatProfile(it.category);
     let s=0; const why=[];
     if(instock){ s+=wStock; why.push('판매중'); } else { s-=wStock*0.7; why.push('품절/불가'); }
-    if(price&&med){ const ratio=Math.max(0,Math.min(1,(med*1.5-price)/(med*1.5))); s+=wPrice*ratio; if(price<=med) why.push('가격 경쟁력'); }
+    if(price&&med){ const ratio=Math.max(0,Math.min(1,(med*1.5-price)/(med*1.5))); s+=wPrice*prof.pF*ratio; if(price<=med) why.push('가격 경쟁력'); }
     let room=null;
-    if(fixed&&price&&fixed>price){ room=(fixed-price)/fixed; s+=wMargin*room; if(room>=0.3) why.push('마진 여력 큼(권장가 대비 -'+Math.round(room*100)+'%)'); }
+    if(fixed&&price&&fixed>price){ room=(fixed-price)/fixed; s+=wMargin*prof.mF*room; if(room>=prof.marginGood) why.push('마진 여력 큼(권장가 대비 -'+Math.round(room*100)+'%)'); }
+    if(price&&price>=prof.lo&&price<=prof.hi){ s+=5; }
+    else if(price&&price<prof.lo){ why.push('단가 낮음(회전은 좋아도 마진 절대액 작음)'); }
     if(demand&&(demand.rise||0)>=10) why.push('네이버 수요 상승('+Math.round(demand.rise)+'%)');
+    const rel=(typeof it._rel==='number')?it._rel:1;   // 검색어 관련도(서버가 매김)
+    s+=rel*8;
+    if(rel>=2 && !why.includes('검색어 정확 매칭')) why.unshift('검색어 정확 매칭');
+    else if(rel===0) why.push('검색어와 관련 약함');
     s+=dBonus;
     return Object.assign({}, it, {score:Math.round(Math.max(0,Math.min(100,s+15))),
-      why, margin_room:(room!=null)?Math.round(room*100):null});
-  }).sort((a,b)=>b.score-a.score);
+      why, _rel:rel, margin_room:(room!=null)?Math.round(room*100):null, cat_label:prof.label});
+  }).sort((a,b)=>((b._rel||0)-(a._rel||0)) || (b.score-a.score));  // 관련도 우선, 그다음 점수
 }
 /* 💡 소구점 자동 생성 — 마진/수요/카피/차별화 (캐시 데이터로만, API 호출 없음) */
 function ocSellingPoints(it, demand, keyword){
@@ -1522,11 +1646,64 @@ function ocSellingPoints(it, demand, keyword){
 }
 function esc0(s){ return (s||'').replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x])); }
 /* 💡 소구점 자동 생성 끝 */
+/* 💳 마켓별 수수료 — 마진 계산에 실제 마켓 수수료를 반영 */
+const OC_MARKET_FEE={smartstore:{r:0.06,l:'스마트스토어'},coupang:{r:0.11,l:'쿠팡'},gmarket:{r:0.10,l:'G마켓·옥션'},'11st':{r:0.12,l:'11번가'},own:{r:0.03,l:'자사몰'}};
+function ocMarketFee(){
+  let m=''; try{ m=localStorage.getItem('oc_market')||''; }catch(e){}
+  if(!m){ const sel=$('#ocMarket'); m=sel?sel.value:'smartstore'; }
+  return OC_MARKET_FEE[m]||OC_MARKET_FEE.smartstore;
+}
+/* ⚠️ 지뢰 상품 감지 — 초보가 걸리기 쉬운 위험 신호를 상품명·카테고리·가격으로 자동 경고 */
+function ocLandmines(it){
+  const name=(it.name||''); const cat=(it.category||''); const price=(typeof it.price==='number')?it.price:0;
+  const both=(name+' '+cat);
+  const warns=[];
+  // 오탐 줄이기: '케이블/보조배터리 케이스'처럼 부속이면 전기인증 대상 아님
+  const isAccessory=/케이스|커버|스티커|악세|악세사리|부속|부자재|리필|교체용|호환|파우치|스트랩|거치대|받침|보호필름|필름/.test(both);
+  // KC 인증 — 유아·아동(부속 제외)
+  if(/유아|아기|아동|어린이|완구|장난감|젖병|유모차|카시트/.test(both) && !isAccessory)
+    warns.push({t:'KC인증', m:'유아·아동용은 KC안전인증 필요 — 미인증 판매 불법'});
+  // KC 인증 — 전기·전자(부속·케이블 단품 제외, 실제 전원 들어가는 것만)
+  else if(/충전기|배터리|전기|플러그|어댑터|콘센트|전원|가열|난방|전동|led|모터|충전식/i.test(both) && !isAccessory)
+    warns.push({t:'KC인증', m:'전기·전자용품은 KC인증(전파/전기안전) 필요할 수 있음'});
+  else if(/화장품|스킨|로션|크림|세럼|앰플|마스크팩|선크림|틴트|립스틱|에센스/.test(both))
+    warns.push({t:'화장품신고', m:'화장품은 화장품책임판매업 등록 필요'});
+  // 식품·건강 (단순 '젤리'는 문구용일 수 있어 건강기능 맥락 우선)
+  if(/식품|건강기능|영양제|비타민|다이어트보조|보조제|프로틴|콜라겐|유산균/.test(both))
+    warns.push({t:'식품', m:'식품·건강기능식품은 별도 신고·표시 의무'});
+  // 브랜드/정품 (단어 경계 — '정품'이 설명에 흔히 붙으니 명확한 브랜드명 위주)
+  if(/병행수입|명품|나이키|아디다스|애플|아이폰|갤럭시|샤넬|구찌|디올|스타벅스|다이슨|삼성정품|정품보장/.test(both))
+    warns.push({t:'상표권', m:'브랜드·정품 표기는 상표권/병행수입 문제 소지'});
+  // 부피 큰 것
+  if(/대형|특대|매트리스|소파|침대프레임|책상|행거|캣타워|텐트|화분대|수납장|선반|옷장|서랍장/.test(both))
+    warns.push({t:'배송비', m:'부피 큰 상품은 택배비가 마진 잡아먹음 — 꼭 확인'});
+  // 너무 싼 것
+  if(price>0 && price<2000)
+    warns.push({t:'저마진', m:'공급가가 너무 낮아 개당 남는 절대액이 작음(CS비용에 잡아먹힘)'});
+  // 액세서리·부속
+  if(isAccessory)
+    warns.push({t:'부속품', m:'액세서리·부속은 단가 낮고 최저가 오염 주의'});
+  return warns;
+}
+function ocLandmineHTML(it){
+  const w=ocLandmines(it); if(!w.length) return '';
+  return `<div class="oc-warn">${w.map(x=>`<span class="oc-warn-b" title="${x.m.replace(/"/g,'')}">⚠️ ${x.t}</span>`).join('')}</div>`;
+}
 function renderOcBest(){
   const c=OC_BEST_CACHE; if(!c) return;
   const box=$('#insOut'); if(!box) return;
   const wStock=+($('#ocwStock')?.value||30), wPrice=+($('#ocwPrice')?.value||25), wMargin=+($('#ocwMargin')?.value||30);
-  const items=scoreOcLocal(c.items, c.demand, wStock, wPrice, wMargin).slice(0,20);
+  let items=scoreOcLocal(c.items, c.demand, wStock, wPrice, wMargin);
+  const bestOnly = $('#ocBestOnly')?.checked;
+  let bestNote='';
+  if(bestOnly){
+    // 🏆 베스트 기준: 재고 있음 + 점수 상위 + (마진 여력 있거나 가격 경쟁력)
+    const strong = items.filter(it=>it.status==='available' && it.score>=60);
+    items = (strong.length?strong:items.filter(it=>it.status==='available')).slice(0,20);
+    bestNote=`<div class="oc-stat">🏆 <b>베스트만</b> 표시 중 — 오너클랜 노출 상위에서 <b>재고·마진·가격이 좋은 상품</b>만 골랐어요. <span class="hint">(오너클랜엔 '판매량 순위' 공식 데이터가 없어, 떼다 팔기 좋은 조건 순이에요)</span></div>`;
+  } else {
+    items = items.slice(0,40);
+  }
   const esc=s=>(s||'').replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x]));
   let demandLine='';
   if(c.demand){
@@ -1546,9 +1723,9 @@ function renderOcBest(){
       <div class="oc-rank">${i+1}</div>
       ${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener">`:''}${it.image?`<img class="oc-img" src="${esc(it.image)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${ocurl?'</a>':''}
       <div class="oc-body">
-        <div class="oc-score" style="color:${scol}">기회점수 ${sc}</div>
+        <div class="oc-score" style="color:${scol}">기회점수 ${sc}${it.cat_label?` <span class="oc-catlabel">${esc(it.cat_label)} 기준</span>`:''}</div>
         <div class="oc-name">${ocurl?`<a href="${esc(ocurl)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.name||'')}${ocurl?' ↗</a>':''}</div>
-        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>
+        <div class="oc-meta">${it.category?`<span class="oc-cat">${esc(it.category)}</span>`:''} ${stBadge(it.status)}</div>${ocLandmineHTML(it)}
         <div class="oc-price">${won(it.price)}${(typeof it.margin_room==='number')?` <span class="oc-room">권장가 대비 -${it.margin_room}%</span>`:''}</div>
         <div class="oc-codebar">코드 <b>${esc(it.key||'-')}</b> <button class="oc-copy" data-oc="copycode" title="코드 복사">복사</button></div>
         ${(it.why&&it.why.length)?`<div class="oc-why">${it.why.map(w=>`<span>＋${esc(w)}</span>`).join('')}</div>`:''}
@@ -1558,16 +1735,58 @@ function renderOcBest(){
           <button class="oc-act" data-oc="gender">👥 성별</button>
           <button class="oc-act" data-oc="margin">💰 마진</button>
           <button class="oc-act" data-oc="keep">📌 담기</button>
+          <button class="oc-act oc-mkdetail" data-oc="mkdetail">🪄 상세페이지</button>
         </div>
         <div class="oc-detail"></div><div class="oc-margin"></div>
       </div>
     </div>`;
   }).join('');
-  box.innerHTML=`<div class="oc-head">⭐ '${esc(c.keyword)}' 최적 상품 ${c.sandbox?'<span class="oc-sbtag">샌드박스</span>':''}<span class="hint" style="font-weight:400"> · ${c.scanned}개 중 상위 ${items.length}</span></div>${demandLine}<div class="oc-grid">${cards}</div>`;
+  const matchNote = c.matchNote ? `<div class="oc-stat" style="color:#f4e6bc;background:var(--wait-bg)">⚠️ ${esc(c.matchNote)}</div>` : '';
+  box.innerHTML=`<div class="oc-head">⭐ '${esc(c.keyword)}' 최적 상품 ${c.sandbox?'<span class="oc-sbtag">샌드박스</span>':''}<span class="hint" style="font-weight:400"> · ${c.scanned}개 중 상위 ${items.length}</span></div>${matchNote}${bestNote}${demandLine}<div class="oc-grid">${cards}</div>`;
 }
 if($('#ocBest')) $('#ocBest').addEventListener('click', ownerclanBest);
+(function(){ const m=$('#ocMarket'); if(!m) return;
+  try{ m.value=localStorage.getItem('oc_market')||'smartstore'; }catch(e){}
+  m.addEventListener('change',()=>{ try{ localStorage.setItem('oc_market',m.value); }catch(e){} if(OC_BEST_CACHE) renderOcBest(); });
+})();
+if($('#ocBestOnly')) $('#ocBestOnly').addEventListener('change', ()=>{ if(OC_BEST_CACHE) renderOcBest(); });
 /* 📌 오너클랜 상품을 관심목록에 담기(실전 추적) */
-async function ownerclanKeep(card, btn){
+/* 🪄 오너클랜 상품 → 상세페이지 한 번에 (정보+이미지 자동) */
+async function ownerclanMakeDetail(card){
+  const box=card.querySelector('.oc-detail');
+  const id=(localStorage.getItem('oc_id')||'').trim(), pw=localStorage.getItem('oc_pw')||'';
+  const sandbox=localStorage.getItem('oc_sb')==='1';
+  const gkey=(localStorage.getItem('gem_key')||'').trim();
+  const key=card.dataset.key;
+  if(box.dataset.mk){ box.dataset.mk=''; box.innerHTML=''; return; }
+  if(!gkey){ box.dataset.mk='1'; box.innerHTML='<div class="oc-dbox">📄 상세페이지엔 Gemini 키가 필요해요. <b>📝 제목 최적화</b> 또는 <b>📄 상세페이지 만들기</b>에서 키를 한 번 넣어주세요(브라우저에 저장돼요).</div>'; return; }
+  box.dataset.mk='1';
+  box.innerHTML='<div class="oc-dbox"><span class="spin"></span> 이 상품으로 상세페이지 만드는 중… (정보·이미지 자동, 몇 초)</div>';
+  let d;
+  try{
+    d=await (await fetch('/api/detail/from_ownerclan',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({gemini_key:gkey,username:id,password:pw,key,sandbox})})).json();
+  }catch(e){ box.innerHTML='<div class="err">요청 실패 — 서버 재배포 확인.</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  OCD_HTML[key]=d.html;
+  box.innerHTML=`<div class="dt-actions">
+      <button class="ti-aibtn ocd-copy" data-k="${esc(key)}">📋 HTML 복사</button>
+      <button class="oc-act ocd-download" data-k="${esc(key)}">💾 저장(.html)</button>
+      <span class="hint">${d.img_count?d.img_count+'장 이미지 포함':'이미지 자리'}</span>
+    </div>
+    <div class="dt-prevlabel">👁 미리보기</div>
+    <div class="dt-preview">${d.html}</div>`;
+}
+let OCD_HTML={};
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const cp=e.target.closest('.ocd-copy');
+  if(cp){ const h=OCD_HTML[cp.dataset.k]||''; navigator.clipboard?.writeText(h).then(()=>{ const o=cp.textContent; cp.textContent='복사됨 ✓'; setTimeout(()=>cp.textContent=o,1400); }); return; }
+  const dl=e.target.closest('.ocd-download');
+  if(dl){ const h=OCD_HTML[dl.dataset.k]||''; const blob=new Blob(['<!doctype html><meta charset="utf-8">\n'+h],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='상세페이지.html'; a.click(); URL.revokeObjectURL(a.href); }
+});
+/* 🪄 상세페이지 끝 */
+function ownerclanKeep(card, btn){ return _ownerclanKeep(card, btn); }
+async function _ownerclanKeep(card, btn){
   const name=card.dataset.kw, key=card.dataset.key, price=+(card.dataset.price||0);
   const url=card.dataset.url||'', cat=card.dataset.cat||'';
   if(!name){ return; }
@@ -1613,6 +1832,99 @@ async function rankBattle(){
     <p class="hint" style="margin-top:8px">숫자는 상대지수(1등=100 기준). ▲는 최근 상승률. 1등이 지금 가장 검색이 많은 키워드예요.</p>`;
 }
 if($('#rbGo')) $('#rbGo').addEventListener('click', rankBattle);
+/* 📝 제목 최적화 — 공식 API HUB(트렌드·연관어) 기준 */
+async function titleOptimize(){
+  const k=insKeys(); if(!k){ const b=$('#tiOut'); if(b) b.innerHTML='<div class="err">네이버 허브 열쇠를 먼저 넣어주세요.</div>'; return; }
+  const title=($('#tiTitle').value||'').trim();
+  const box=$('#tiOut');
+  if(!title){ box.innerHTML='<div class="err">제목을 넣어주세요.</div>'; return; }
+  box.innerHTML='<div class="card"><span class="spin"></span>제목 분석 중… (연관어·검색량 조회)</div>';
+  let d;
+  try{
+    d=await (await fetch('/api/title/optimize',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:k.id,client_secret:k.sec,title})})).json();
+  }catch(e){ box.innerHTML='<div class="err">요청 실패 — 서버 재배포 확인.</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  // 진단
+  const diag=(d.diagnostics||[]).map(x=>`<div class="ti-diag ti-${x.type}">${x.type==='warn'?'⚠️':'💡'} ${esc(x.msg)}</div>`).join('')
+    || '<div class="ti-diag ti-ok">✅ 큰 문제는 안 보여요. 아래 키워드로 더 강화해보세요.</div>';
+  // 내 제목 단어별 검색량
+  const toks=(d.tokens||[]).map(t=>{
+    const v=t.latest||0; const col=v>=30?'var(--go)':(v>=5?'var(--sub)':'var(--stop)');
+    return `<span class="ti-tok" style="border-color:${col}">${esc(t.word)} <b style="color:${col}">${v}</b></span>`;
+  }).join('');
+  // 추천 키워드
+  const adds=(d.add_keywords||[]).map(a=>`<span class="ti-add">＋${esc(a.word)}${a.latest!=null?` <b>${a.latest}</b>`:''}</span>`).join('')
+    || '<span class="hint">추천할 만한 새 연관어를 못 찾았어요.</span>';
+  // 새 제목 제안
+  const sugg=(d.suggestions||[]).map((s,i)=>`<div class="ti-sugg">
+    <span class="ti-sugg-t">${esc(s)}</span>
+    <button class="oc-act ti-copy" data-copy="${esc(s)}">복사</button></div>`).join('');
+  // 스마트스토어 규칙 체커
+  const ss=(d.smartstore||[]);
+  const ssRows=ss.map(x=>`<div class="ss-row ${x.ok?'ss-ok':'ss-no'}">
+    <span class="ss-ic">${x.ok?'✅':'❌'}</span>
+    <span class="ss-lb">${esc(x.label)}</span>
+    <span class="ss-ms">${esc(x.msg)}</span></div>`).join('');
+  const ssPass=d.smartstore_pass||0, ssTot=d.smartstore_total||ss.length;
+  const ssColor=ssPass===ssTot?'var(--go)':(ssPass>=ssTot-1?'var(--wait)':'var(--stop)');
+  const ssPanel=ss.length?`<div class="ss-panel">
+    <div class="ss-head">🟢 스마트스토어 상품명 규칙 <b style="color:${ssColor}">${ssPass}/${ssTot} 통과</b></div>
+    ${ssRows}
+    <div class="hint" style="margin-top:6px">네이버 스마트스토어 공식 상품명 가이드 기준(50자 내외·중복/특수문자/홍보문구 배제·명사 위주)이에요.</div>
+  </div>`:'';
+  box.innerHTML=`
+    <div class="oc-head">📝 제목 최적화</div>
+    ${ssPanel}
+    <div class="ti-sec">🔎 진단</div>${diag}
+    <div class="ti-sec">📊 내 제목 단어별 검색량 <span class="hint">(높을수록 많이 검색됨)</span></div>
+    <div class="ti-toks">${toks}</div>
+    <div class="ti-sec">➕ 넣으면 좋은 키워드 <span class="hint">(연관어 중 검색량 순)</span></div>
+    <div class="ti-adds">${adds}</div>
+    <div class="ti-sec">✨ 추천 새 제목 <span class="hint">(속성→핵심명사→용도 순 · 40자 이내 · 초안이에요)</span></div>
+    <div class="ti-suggs">${sugg}</div>
+    <p class="hint" style="margin-top:10px">${esc(d.note||'')}</p>`;
+}
+if($('#tiGo')) $('#tiGo').addEventListener('click', titleOptimize);
+/* 🤖 Gemini AI 새 제목 생성 (키는 브라우저에만 저장) */
+(function(){ const k=$('#tiGemKey'); if(k){ try{ k.value=localStorage.getItem('gem_key')||''; }catch(e){} } })();
+async function titleAI(){
+  const title=($('#tiTitle').value||'').trim();
+  const key=($('#tiGemKey').value||'').trim();
+  const out=$('#tiAiOut');
+  if(!title){ out.innerHTML='<div class="err">위에 제목/키워드를 먼저 넣어주세요.</div>'; return; }
+  if(!key){ out.innerHTML='<div class="err">Gemini API 키를 넣어주세요(AIza…).</div>'; return; }
+  try{ localStorage.setItem('gem_key', key); }catch(e){}
+  // 분석에서 뽑힌 추천 키워드가 있으면 근거로 같이 전달
+  let kws=[];
+  document.querySelectorAll('#tiOut .ti-add').forEach(el=>{ const t=el.textContent.replace(/[＋\d\s]/g,''); if(t) kws.push(t); });
+  out.innerHTML='<div class="oc-dbox"><span class="spin"></span> AI가 새 제목을 만드는 중… (몇 초)</div>';
+  let d;
+  try{
+    d=await (await fetch('/api/title/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({gemini_key:key,title,keywords:kws.slice(0,8)})})).json();
+  }catch(e){ out.innerHTML='<div class="err">요청 실패 — 서버 재배포 확인.</div>'; return; }
+  if(!d.ok){ out.innerHTML=`<div class="err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  out.innerHTML=`<div class="ti-sec">🤖 AI 추천 제목</div><div class="ti-suggs">`+
+    d.titles.map(t=>`<div class="ti-sugg"><span class="ti-sugg-t">${esc(t)}</span>
+      <button class="oc-act ti-copy" data-copy="${esc(t)}">복사</button></div>`).join('')+
+    `</div><p class="hint" style="margin-top:6px">AI 생성 초안이에요. 상품에 맞게 다듬어 쓰세요.</p>`;
+}
+if($('#tiAiGo')) $('#tiAiGo').addEventListener('click', titleAI);
+if($('#tiAiOut')) $('#tiAiOut').addEventListener('click', e=>{
+  const b=e.target.closest('.ti-copy'); if(!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy||'').then(()=>{ const o=b.textContent; b.textContent='복사됨'; setTimeout(()=>b.textContent=o,1200); });
+});
+if($('#tiOut')) $('#tiOut').addEventListener('click', e=>{
+  const b=e.target.closest('.ti-copy'); if(!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy||'').then(()=>{ const o=b.textContent; b.textContent='복사됨'; setTimeout(()=>b.textContent=o,1200); });
+});
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const b=e.target.closest('.ti-copy'); if(!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy||'').then(()=>{ const o=b.textContent; b.textContent='복사됨'; setTimeout(()=>b.textContent=o,1200); });
+});
 [['ocwStock','ocwStockV'],['ocwPrice','ocwPriceV'],['ocwMargin','ocwMarginV']].forEach(([a,b])=>{
   const el=$('#'+a); if(el) el.addEventListener('input',()=>{
     const v=$('#'+b); if(v) v.textContent=el.value;
@@ -1631,6 +1943,7 @@ if($('#insOut')) $('#insOut').addEventListener('click', e=>{
     return;
   }
   if(act.dataset.oc==='keep'){ ownerclanKeep(card, act); return; }
+  if(act.dataset.oc==='mkdetail'){ ownerclanMakeDetail(card); return; }
   if(act.dataset.oc==='gender'){ ownerclanGender(card); return; }
   const b=(act.dataset.oc==='margin')?act:null; if(!b) return;
   const box=card.querySelector('.oc-margin');
@@ -1643,9 +1956,9 @@ if($('#insOut')) $('#insOut').addEventListener('click', e=>{
   go.addEventListener('click',()=>{
     const sell=+(box.querySelector('.ocm-sell').value||0);
     if(!sell){ out.innerHTML='<span class="hint">판매가를 넣어주세요.</span>'; return; }
-    const fee=sell*0.06, ship=3000, net=sell-cost-fee-ship, pct=Math.round(net/sell*100);
+    const mk=ocMarketFee(); const fee=sell*mk.r, ship=3000, net=sell-cost-fee-ship, pct=Math.round(net/sell*100);
     out.classList.remove('hint');
-    out.innerHTML=`개당 <b style="color:${net>0?'var(--go)':'var(--stop)'}">${net.toLocaleString('ko-KR')}원</b> 남음 · 마진율 <b>${pct}%</b> <span class="hint">(수수료6%·택배3천 가정)</span>`;
+    out.innerHTML=`개당 <b style="color:${net>0?'var(--go)':'var(--stop)'}">${net.toLocaleString('ko-KR')}원</b> 남음 · 마진율 <b>${pct}%</b> <span class="hint">(${mk.l} 수수료 ${Math.round(mk.r*100)}%·택배3천 가정)</span>`;
   });
 });
 /* 🔎 오너클랜 상세보기 — 공식 item 조회로 실제 등록 상품 확인 + 상세정보 */
@@ -1767,7 +2080,7 @@ function discCardHTML(it, i, isW){
     const sigHtml = `<div class="dc-signal sg-${_sig[0]}"><span class="sg-dot">${_sig[1]}</span><span class="sg-txt">${esc(_sig[2])}</span></div>`;
     const reasons = (it.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join('');
     const xc = it.xcheck;
-    const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">🔗 ${esc(xc.note)}</div>` : '';
+    const xcHtml = xc ? `<div class="dc-xcheck xc-${xc.level}">${xc.verified?'✅ 교차검증 통과':'🔗'} ${esc(xc.note)}</div>` : '';
     const conf = (typeof it.confidence === 'number') ? it.confidence : null;
     const confHtml = conf!==null ? `<div class="dc-conf"><span class="dc-conf-l">신뢰도 <b>${conf}%</b></span><span class="dc-conf-bar"><i style="width:${conf}%;background:${conf>=75?'var(--go)':(conf>=50?'var(--wait)':'var(--stop)')}"></i></span></div>` : '';
     const gr = it.grade;
@@ -1804,7 +2117,7 @@ function discCardHTML(it, i, isW){
     ];
     const links = (isW ? wholeV : consignV)
       .map(([t,u])=>`<a class="src-link buy" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
-    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}" data-grade="${it.grade||''}">
+    return `<div class="disccard vblock" data-kw="${esc(it.keyword)}" data-cat="${esc(it.category)}" data-grade="${it.grade||''}" data-rise="${(it.rise!=null?it.rise:'')}">
       <div class="dc-line">
         <div>
           <span class="dc-rank">${i+1}</span>
@@ -1816,7 +2129,7 @@ function discCardHTML(it, i, isW){
           ${it.anchor_weak?'<span class="dc-fit fit-n" title="기준점 불안정 — 수준 비교 참고만">⚓?</span>':''}
         </div>
         <div>
-          <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%</div>
+          <div class="dc-rise" style="color:${up?'var(--go)':(it.rise<0?'var(--stop)':'var(--wait)')}">${up?'▲':(it.rise<0?'▼':'—')} ${Math.abs(it.rise)}%${it.accel==='up'?' <span class="dc-accel hot" title="최근 2개월 더 빨라지는 중">🔥가속</span>':(it.accel==='down'?' <span class="dc-accel cold" title="최근 상승세가 식는 중">🧊둔화</span>':'')}</div>
           <div class="ic-sub">수준 ${it.level} · 안정 ${Math.round((it.stability||0)*100)}%</div>
         </div>
       </div>
@@ -1835,6 +2148,10 @@ function discCardHTML(it, i, isW){
         <button class="dc-act" data-act="dig">🧭 더 파기</button>
         <button class="dc-act oc-find" data-act="ocfind">🛍 오너클랜에서 찾기</button>
         <button class="dc-act" data-act="margin">💰 마진·종합등급</button>
+        <span class="dc-fb">
+          <button class="dc-fbbtn ${it.feedback===1?'on':''}" data-act="fbup" title="좋은 추천 — 다음에 더 위로">👍</button>
+          <button class="dc-fbbtn ${it.feedback===-1?'on':''}" data-act="fbdown" title="별로 — 다음에 덜 보이게">👎</button>
+        </span>
       </div>
       <div class="dc-ocfind"></div>
       <div class="dc-margin"></div>
@@ -2250,11 +2567,27 @@ function cardActionHandler(e){
     return;
   }
   if(btn.dataset.act === 'ocfind'){ ownerclanFindFor(card); return; }
+  if(btn.dataset.act === 'fbup' || btn.dataset.act === 'fbdown'){ sendFeedback(card, btn); return; }
   if(btn.dataset.act === 'target'){ loadTarget(card); return; }
   loadTarget(card);
 }
 /* 🛍 발굴 카드에서 바로 오너클랜 상품 찾기 — 수요 확인 → 실제 원가·재고 즉시 */
-async function ownerclanFindFor(card){
+/* 👍/👎 발굴 피드백 — 다음 발굴 순위에 반영 */
+async function sendFeedback(card, btn){
+  const kw=card.dataset.kw, cat=card.dataset.cat||'';
+  const want = btn.dataset.act==='fbup' ? 1 : -1;
+  const wrap = btn.parentElement;
+  const already = btn.classList.contains('on');
+  const vote = already ? 0 : want;   // 다시 누르면 취소
+  wrap.querySelectorAll('.dc-fbbtn').forEach(b=>b.classList.remove('on'));
+  if(vote!==0) btn.classList.add('on');
+  try{
+    await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({keyword:kw, vote, category:cat, owner:ME})});
+  }catch(e){}
+}
+function ownerclanFindFor(card){ return _ownerclanFindFor(card); }
+async function _ownerclanFindFor(card){
   const box = card.querySelector('.dc-ocfind');
   if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
   const id=(localStorage.getItem('oc_id')||'').trim(), pw=localStorage.getItem('oc_pw')||'';
@@ -2278,13 +2611,56 @@ async function ownerclanFindFor(card){
   if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-dbox">오너클랜에 '${(kw||'').replace(/</g,'&lt;')}' 상품이 없어요${d.note?' — '+(d.note).replace(/</g,'&lt;'):''}.</div>`; return; }
   const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
   const st=d.stat||{};
-  const rows=d.items.slice(0,6).map(it=>`<div class="ocf-row">
-    <span class="ocf-name">${(it.name||'').replace(/</g,'&lt;')}</span>
-    <span class="ocf-price">${won(it.price)} ${it.status==='available'?'<b class="oc-ok">재고</b>':'<b class="oc-no">품절</b>'}</span></div>`).join('');
+  const rows=d.items.slice(0,6).map(it=>{
+    const lm=ocLandmines(it);
+    const wtag=lm.length?` <span class="ocf-warn" title="${lm.map(x=>x.t).join(', ')}">⚠️</span>`:'';
+    return `<div class="ocf-row">
+    <span class="ocf-name">${(it.name||'').replace(/</g,'&lt;')}${wtag}</span>
+    <span class="ocf-price">${won(it.price)} ${it.status==='available'?'<b class="oc-ok">재고</b>':'<b class="oc-no">품절</b>'}</span></div>`;
+  }).join('');
+  // ── 마진 판정 (정밀) ── 재고 있는 상품들의 마진 '분포'로 판정 (운 좋은 1개 편향 제거)
+  const mk=ocMarketFee();
+  const cand=d.items.filter(it=>it.status==='available' && typeof it.price==='number' && it.price>0
+                               && typeof it.fixedPrice==='number' && it.fixedPrice>it.price);
+  const grade=card.dataset.grade||'', rise=parseFloat(card.dataset.rise);
+  const demandGood = grade==='A' || (isFinite(rise)&&rise>=10);
+  let verdict='';
+  if(cand.length){
+    // 각 상품의 순마진율 계산(실제 배송비 반영, 없으면 3000 가정)
+    const rowsM=cand.map(it=>{
+      const sell=it.fixedPrice, cost=it.price;
+      const ship=(typeof it.shippingFee==='number'&&it.shippingFee>=0)?it.shippingFee:3000;
+      const net=sell-cost-sell*mk.r-ship;
+      return {net, pct:Math.round(net/sell*100), sell, cost, ship};
+    }).sort((a,b)=>a.pct-b.pct);
+    const mid=rowsM[Math.floor(rowsM.length/2)];        // 중앙값(대표)
+    const lo=rowsM[0], hi=rowsM[rowsM.length-1];         // 최저~최고
+    const passN=rowsM.filter(x=>x.pct>=25).length;       // 25%+ 몇 개
+    const passRatio=passN/rowsM.length;
+    // 마진 판정: 중앙값이 25%+ 이고 절반 이상이 통과해야 '좋음'
+    const marginGood = mid.pct>=25 && passRatio>=0.5;
+    const marginOk = mid.pct>=15;                        // 15~25는 빠듯
+    let light, head;
+    if(demandGood && marginGood){ light='🟢'; head='진입 가치 높음'; }
+    else if(marginGood){ light='🟡'; head='마진은 좋음 (수요 확인 필요)'; }
+    else if(demandGood && marginOk){ light='🟡'; head='수요는 좋음 (마진 빠듯)'; }
+    else if(marginGood===false && mid.pct<15){ light='🔴'; head='마진 부족 — 신중'; }
+    else { light='🟡'; head='애매 — 더 확인'; }
+    const shipNote = cand.some(it=>typeof it.shippingFee==='number') ? '실제 배송비 반영' : '택배 3천 가정';
+    verdict=`<div class="ocf-verdict v-${light==='🟢'?'go':(light==='🔴'?'stop':'wait')}">
+      <div class="ocf-vhead">${light} <b>${head}</b></div>
+      <div class="ocf-vbody">재고 <b>${rowsM.length}개</b> 기준 · 마진율 <b>중앙값 ${mid.pct}%</b> (범위 ${lo.pct}~${hi.pct}%) · <b>${passN}개</b>가 25%↑<br>
+      대표: 권장가 ${won(mid.sell)} − 원가 ${won(mid.cost)} − ${mk.l} ${Math.round(mk.r*100)}% − 배송 ${won(mid.ship)} = 개당 <b>${won(Math.round(mid.net))}</b><br>
+      <span class="hint">수요: ${grade?grade+'급 ':''}${isFinite(rise)?'상승률 '+Math.round(rise)+'%':''} · ${shipNote} · 권장가 기준(실판매가는 네이버쇼핑 확인 권장)</span></div>
+    </div>`;
+  } else {
+    verdict=`<div class="ocf-verdict v-wait"><div class="ocf-vhead">🟡 <b>마진 판정 보류</b></div>
+      <div class="ocf-vbody hint">권장소비자가가 등록된 재고 상품이 없어 자동 마진 계산이 어려워요. 네이버쇼핑 실판매가와 최저가(${st.min?won(st.min):'-'})를 비교해보세요.</div></div>`;
+  }
   box.innerHTML=`<div class="oc-dbox">
     <div class="oc-drow"><b>🛍 오너클랜 최저가 ${st.min?won(st.min):'-'}</b> · 평균 ${st.avg?won(st.avg):'-'} <span class="hint">(${st.count||d.items.length}개 중 저가순)</span></div>
     ${rows}
-    <div class="ocf-tip hint">💡 이 수요(네이버) + 이 원가(오너클랜)로 마진이 나오면 진입 후보예요.</div>
+    ${verdict}
   </div>`;
 }
 if ($('#discOut')) $('#discOut').addEventListener('click', cardActionHandler);
@@ -2407,32 +2783,9 @@ if ($('#hubtest')) $('#hubtest').addEventListener('click', async () => {
   }
 });
 
-function needKey() {
-  if (cid.value.trim() && csec.value.trim()) return false;
-  out.innerHTML = '<div class="err">네이버 열쇠를 먼저 넣어주세요. 위쪽 \'네이버 열쇠\' 를 열면 받는 방법이 있습니다.</div>';
-  $('#keybox').open = true;
-  return true;
-}
 function loading(msg) {
   out.innerHTML = '<div class="card"><span class="spin"></span>' + msg + '</div>';
 }
-async function post(url, body, ms) {
-  // 오래 걸리면 브라우저가 조용히 끊고 'Failed to fetch' 만 남긴다.
-  // 우리가 먼저 끊고 사람이 읽을 말로 알려준다.
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), ms || 90000);
-  try {
-    const r = await fetch(url, {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(Object.assign({
-        client_id: cid.value.trim(), client_secret: csec.value.trim()
-      }, body)),
-      signal: ac.signal
-    });
-    return await r.json();
-  } finally { clearTimeout(timer); }
-}
-
 /* ---------- 버전 (예전 서버가 도는지 확인) ---------- */
 fetch('/api/version').then(r => r.json()).then(d => {
   $('#ver').textContent = d.version || '';
@@ -2605,11 +2958,66 @@ async function showWatch(){
       <div class="wc-hist">${histSparkFor(f.keyword)}</div>`}
       <div class="links"><button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button></div>
     </div>`;
+  // ── 대시보드 요약 ──
+  const ocN = d.items.filter(x=>x.source==='ownerclan').length;
+  const kwN = d.items.length - ocN;
+  const aGrade = d.items.filter(x=>x.grade==='A').length;
+  const ocItems = d.items.filter(x=>x.source==='ownerclan');
+  const kwItems = d.items.filter(x=>x.source!=='ownerclan');
+  const summary = `<div class="wc-dash">
+    <div class="wc-dash-row"><b>📌 관심 목록 ${d.count}개</b>
+      ${ocN?`<span class="wc-pill">🛍 오너클랜 ${ocN}</span>`:''}
+      ${kwN?`<span class="wc-pill">🔍 키워드 ${kwN}</span>`:''}
+      ${aGrade?`<span class="wc-pill hot">🏆 A급 ${aGrade}</span>`:''}</div>
+    <div class="wc-dash-hint">🔄 다시 추적을 누르면 키워드 수요 변화를 새로 확인해요. 오너클랜 상품은 링크로 실시간 가격·재고를 확인하세요.</div>
+  </div>`;
+  const section = (title, arr, extra) => arr.length ? `<div class="wc-sec">${title} <span class="hint">${arr.length}개</span>${extra||''}</div><div class="cards">${arr.map(card).join('')}</div>` : '';
+  const ocBtn = ocN ? ' <button id="ocRefresh" class="ghost sm" style="margin-left:6px">🔄 가격·재고 갱신</button>' : '';
   out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b>
       <button id="wtrack" class="ghost" style="margin-left:8px">🔄 지금 다시 추적</button></div>
-    <div class="cards">${d.items.map(card).join('')}</div>`;
+    ${summary}
+    ${section('🔍 키워드 (수요 추적)', kwItems)}
+    ${section('🛍 오너클랜 상품 (원가·재고)', ocItems, ocBtn)}`;
   const tb = document.getElementById('wtrack');
   if(tb) tb.addEventListener('click', trackWatch);
+  const rb = document.getElementById('ocRefresh');
+  if(rb) rb.addEventListener('click', ()=>refreshOcWatch(ocItems));
+}
+/* 📌 관심목록 오너클랜 상품 일괄 가격·재고 갱신 (itemsByKeys) */
+async function refreshOcWatch(ocItems){
+  const id=(localStorage.getItem('oc_id')||'').trim(), pw=localStorage.getItem('oc_pw')||'';
+  const sandbox=localStorage.getItem('oc_sb')==='1';
+  const rb=document.getElementById('ocRefresh');
+  if(!id||!pw){ if(rb) rb.textContent='오너클랜 로그인 필요'; return; }
+  const keys=ocItems.map(x=>x.oc_key).filter(Boolean);
+  if(!keys.length) return;
+  if(rb){ rb.textContent='갱신 중…'; rb.disabled=true; }
+  let d;
+  try{
+    d=await (await fetch('/api/ownerclan/refresh',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:id,password:pw,keys,sandbox})})).json();
+  }catch(e){ if(rb){rb.textContent='실패';rb.disabled=false;} return; }
+  if(!d.ok){ if(rb){rb.textContent=(d.error||'실패').slice(0,20);rb.disabled=false;} return; }
+  // 각 오너클랜 카드에 현재가·상태 비교 반영
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  document.querySelectorAll('.wc').forEach(card=>{
+    const kwName=card.dataset.kw;
+    const it=ocItems.find(x=>x.keyword===kwName);
+    if(!it||!it.oc_key) return;
+    const cur=d.items[it.oc_key];
+    if(!cur) return;
+    const old=+(it.oc_price||0);
+    let msg='';
+    if(cur.status!=='available'){ msg=`<b class="oc-no">품절/불가</b>`; }
+    else if(cur.price!=null && old){
+      const diff=cur.price-old;
+      const col=diff>0?'var(--stop)':(diff<0?'var(--go)':'var(--sub)');
+      msg=`현재 <b>${won(cur.price)}</b> ${diff!==0?`<span style="color:${col}">(${diff>0?'+':''}${won(diff).replace('원','')}원)</span>`:'<span class="hint">변동없음</span>'} <b class="oc-ok">재고</b>`;
+    } else { msg=`현재 <b>${won(cur.price)}</b>`; }
+    const tr=card.querySelector('.wc-track');
+    if(tr) tr.innerHTML += `<div class="wc-refresh">🔄 ${msg}</div>`;
+  });
+  if(rb){ rb.textContent='갱신 완료 ✓'; }
 }
 async function trackWatch(){
   const id = cid.value.trim(), sec = csec.value.trim();
@@ -2688,39 +3096,11 @@ function copyForCafe() {
 /* ---------- 2단계 · 이대로 올리기 ---------- */
 /* ---------- 누가 언제 찾나 ---------- */
 
-/* ---------- 1년 장사 달력 ---------- */
-async function showCalendar() {
-  if (needKey()) return;
-  const cat = catSel.value || '생활/건강';
-  loading(cat + ' 1년치를 훑는 중… 데이터랩이 느려 30초쯤 걸려요');
-  try {
-    const d = await post('/api/calendar', {category: cat});
-    if (!d.ok) { out.innerHTML = `<div class="err">${d.error}</div>`; return; }
-    const rows = Object.entries(d.months || {}).map(([m, items]) => `
-      <div class="entry">
-        <div><b>${m}월</b><div class="g">${items.map(i => i.keyword + ' (' + i.ratio + '배)').join(' · ')}</div></div>
-        <div class="g">준비 ${items[0].rise_month}월~</div>
-        <span class="badge">${items.length}개</span>
-      </div>`).join('');
-    out.innerHTML = `<div class="cards"><div class="card">
-      <div class="fhead"><span class="t">${d.category} 1년 장사 달력</span></div>
-      <div class="act">${d.note}</div>
-      ${(d.now_prep || []).length ? `<div class="buy" style="margin-top:12px">
-        지금 준비할 것: <b>${d.now_prep.map(i => i.keyword).join(', ')}</b>
-        <div class="g" style="margin-top:4px">재고가 없는 위탁이라 미리 올려둬도 손해가 없어요</div>
-      </div>` : ''}
-      <div style="margin-top:12px">${rows || '<p class="hint">시즌 타는 게 없어요</p>'}</div>
-      ${(d.flat || []).length ? `<div class="g" style="margin-top:10px">연중 고름: ${d.flat.join(', ')}</div>` : ''}
-      <div class="g" style="margin-top:8px">데이터랩 ${d.calls}회 · 1년치만 본 결과예요</div>
-    </div></div>`;
-  } catch (e) { out.innerHTML = `<div class="err">${e.message}</div>`; }
-}
 
 /* ---------- 직접 확인 ---------- */
 /* ---------- 가격 진단 (삽질을 끝내는 도구) ---------- */
 /* ---------- 판정 근거 검사 ---------- */
 /* ---------- 버튼 연결 ---------- */
-$('#cal').addEventListener('click', showCalendar);
 $('#wlist').addEventListener('click', showWatch);
 $('#cafe').addEventListener('click', copyForCafe);
 $('#chk').addEventListener('click', showChecklist);
@@ -2824,48 +3204,6 @@ const _bind = (idList, fn) => idList.forEach(id => {
   if(!el) return;
   el.addEventListener('input', fn); el.addEventListener('change', fn);
 });
-
-/* ---------- 스마트스토어 제목 체커 ---------- */
-(function(){
-  if(!document.getElementById('tTitle')) return;
-  const box = $('#tTitle');
-  function run(){
-    const raw = box.value || '';
-    const len = [...raw.trim()].length;
-    const noSpace = [...raw.replace(/\s+/g,'')].length;
-    const words = raw.trim().split(/\s+/).filter(Boolean);
-    const big = $('#tCount'); big.className = 'countbig';
-    const sizeCls = len===0 ? '' : len<=40 ? 'ok' : len<=50 ? 'mid' : 'bad';
-    if (sizeCls) big.classList.add(sizeCls);
-    big.innerHTML = len + '<small style="font-size:13px"> 자</small>';
-    $('#tCountSub').textContent = `공백 제외 ${noSpace}자 · 단어 ${words.length}개`;
-
-    const out = [];
-    if(len===0){
-      out.push(['tip','✍️','<b>제목을 붙여넣어 보세요.</b> 길이·중복·특수문자를 바로 짚어드려요.']);
-    } else {
-      if(len>=25 && len<=40) out.push(['ok','✅','<b>길이가 딱 좋아요.</b> 검색에서 잘리지 않고 잘 보입니다.']);
-      else if(len<25) out.push(['tip','📏','<b>조금 짧아요.</b> 핵심 키워드 1~2개(용도·크기·대상)를 더 넣어도 좋아요.']);
-      else if(len<=50) out.push(['tip','📏','<b>조금 길어요.</b> 덜 중요한 단어를 하나 빼면 더 깔끔합니다.']);
-      else out.push(['no','✂️','<b>너무 길어요.</b> 목록에서 뒤가 잘립니다. 40자 안쪽으로 줄이세요.']);
-
-      const norm = words.map(w=>w.toLowerCase().replace(/[^\w가-힣]/g,'')).filter(w=>w.length>=2);
-      const cnt = {}; norm.forEach(w=>cnt[w]=(cnt[w]||0)+1);
-      const dups = Object.keys(cnt).filter(w=>cnt[w]>=2);
-      if(dups.length) out.push(['no','🔁',`<b>같은 단어가 반복돼요:</b> ${dups.join(', ')} — 하나만 남기세요. 반복은 노출에 마이너스예요.`]);
-
-      const sp = raw.match(/[\[\]{}()<>★☆♥♡~!@#$%^&*_=|\\";:]/g);
-      if(sp){ const u=[...new Set(sp)].join(' '); out.push(['tip','🚫',`<b>특수문자(${u})</b>는 빼는 게 좋아요. 네이버가 권장하지 않습니다.`]); }
-
-      if(words.length>=13) out.push(['tip','🧹','<b>키워드가 많아요.</b> 정말 검색될 말만 남기고 나열은 줄이는 게 유리해요.']);
-      if(dups.length===0 && !sp && len>=25 && len<=40 && words.length<13)
-        out.push(['ok','👍','<b>중복·특수문자 없이 깔끔해요.</b> 이대로 올려도 좋습니다.']);
-    }
-    $('#tWarn').innerHTML = out.map(([c,i,t])=>
-      `<div class="warn ${c}"><span class="wi">${i}</span><span>${t}</span></div>`).join('');
-  }
-  box.addEventListener('input', run); run();
-})();
 
 /* ---------- 택배비·광고비 손익분기 ---------- */
 (function(){

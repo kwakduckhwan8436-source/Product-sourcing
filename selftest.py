@@ -139,7 +139,7 @@ def check_ui() -> int:
         if f"function {fn}" not in js:
             bad += 1
             print(f"  [화면] onclick 이 부르는 {fn}() 정의 없음")
-    for bid in ("cal", "wlist", "cafe", "chk"):
+    for bid in ("wlist", "cafe", "chk"):
         if f"$('#{bid}').addEventListener" not in js:
             bad += 1
             print(f"  [화면] #{bid} 버튼에 리스너 없음")

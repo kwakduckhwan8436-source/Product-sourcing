@@ -40,6 +40,7 @@ from discovery.title_mining import mine_titles  # noqa: E402
 from discovery.tracker import (api_bump, api_usage,  # noqa: E402
                                backtest_log, backtest_pending,
                                calib_get, calib_set_from_hitrate,
+                               feedback_map, feedback_set,
                                grade_verdicts, hit_rate, movement_of,
                                pool_stats, record, say_verdict,
                                tracked_keywords, watch_add,
@@ -47,7 +48,7 @@ from discovery.tracker import (api_bump, api_usage,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v108"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v134"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -525,7 +526,7 @@ def _confidence(it: dict, x_state: str, kin_total: int, blog_total: int,
     sus = it.get("sustained", 0.0)
     st = it.get("stability", 0.0)
     c = 0.0
-    c += {"both": 28.0, "search": 16.0, "click": 9.0}.get(x_state, 0.0)  # 교차검증 0~28
+    c += {"verified": 34.0, "both": 26.0, "search": 16.0, "click": 9.0}.get(x_state, 0.0)  # 교차검증 0~34
     c += sus * 20.0                                       # 지속성 0~20
     c += max(0.0, min(rise, 40.0)) / 40.0 * 22.0          # 상승 강도 0~22 (상승률 클수록)
     c += st * 15.0                                        # 안정성 0~15
@@ -676,12 +677,31 @@ def _trend_of(points: list) -> dict:
     rollover = bool(peak_i2 <= len(vals) - 3
                     and vals[-1] < vals[-2] < vals[-3]
                     and peak / max(vals[-1], 1.0) >= 1.2)
+    # 최근 가속(정밀): 같은 크기 창끼리 성장률 비교 — 최근이 이전보다 빠르면 '가속'
+    rise_recent = 0.0
+    accel = "flat"
+    if len(vals) >= 6:
+        last2 = sum(vals[-2:]) / 2.0
+        mid2 = sum(vals[-4:-2]) / 2.0
+        early2 = sum(vals[-6:-4]) / 2.0
+        g_recent = (last2 - mid2) / max(1.0, mid2) * 100      # 최근 성장률
+        g_earlier = (mid2 - early2) / max(1.0, early2) * 100  # 이전 성장률
+        rise_recent = round(g_recent, 1)
+        if g_recent >= g_earlier + 10 and g_recent > 0:
+            accel = "up"          # 점점 더 빨라지는 중
+        elif g_recent <= g_earlier - 10:
+            accel = "down"        # 식는 중
+    elif len(vals) >= 4:
+        last2 = sum(vals[-2:]) / 2.0
+        prev2 = sum(vals[-4:-2]) / 2.0
+        rise_recent = round((last2 - prev2) / max(1.0, prev2) * 100, 1)
     return {"latest": round(vals[-1], 1), "rise": rise, "stage": stage,
             "peak_pct": round(vals[-1] / peak * 100),
             "series": [round(v, 1) for v in vals],
             "level": round(level, 1), "stability": stability,
             "momentum": momentum, "n": len(vals),
-            "sustained": sustained, "spike": spike, "rollover": rollover}
+            "sustained": sustained, "spike": spike, "rollover": rollover,
+            "rise_recent": rise_recent, "accel": accel}
 
 
 def _season_of(series: list) -> dict:
@@ -1035,8 +1055,23 @@ async def _enrich_top(cid: str, csec: str, items: list, start: str, end: str) ->
             sr = srise.get(kw)
             cr = it.get("rise", 0.0)
             kin, intent, blog = totals.get(kw, (None, 0.0, None))
+            has_chatter = bool((kin and kin > 0) or (blog and blog > 0))
+            is_spike = bool(it.get("spike"))
+            is_roll = bool(it.get("rollover"))
             if sr is not None and sr >= 5 and cr >= 5:
-                x_state, xnote = "both", f"검색량 {sr:.0f}%↑ · 클릭도 ↑ (둘 다 오름)"
+                if is_spike or is_roll:
+                    # 반짝 급등/되돌림이면 '둘 다 올라도' 신뢰를 낮춘다
+                    x_state = "search"
+                    xnote = (f"검색량 {sr:.0f}%↑·클릭↑ 이나 "
+                             + ("반짝 급등 주의" if is_spike else "고점 지나 꺾임 주의"))
+                elif has_chatter:
+                    # 검색·클릭 + 실제 언급(지식iN/블로그)까지 = 교차검증 통과
+                    x_state = "verified"
+                    xnote = f"검색 {sr:.0f}%↑·클릭↑·실수요 언급까지 (교차검증 ✓)"
+                else:
+                    # 검색·클릭은 오르나 언급이 전혀 없음 = 노이즈 가능성
+                    x_state = "both"
+                    xnote = f"검색량 {sr:.0f}%↑ · 클릭도 ↑ (단, 언급 적음)"
             elif sr is not None and sr >= 5:
                 x_state, xnote = "search", f"검색량 {sr:.0f}%↑ (클릭은 완만)"
             elif cr >= 5:
@@ -1050,8 +1085,9 @@ async def _enrich_top(cid: str, csec: str, items: list, start: str, end: str) ->
                 bits.append(f"구매의도 높음({int(intent*100)}%)")
             if blog and blog > 0:
                 bits.append(f"블로그 {blog:,}건")
-            it["xcheck"] = {"level": ("go" if x_state == "both" else
+            it["xcheck"] = {"level": ("go" if x_state in ("verified", "both") else
                                       "wait" if x_state in ("search", "click") else "neutral"),
+                            "verified": x_state == "verified",
                             "note": " · ".join(bits)}
             conf = _confidence(it, x_state,
                                kin if kin and kin > 0 else 0,
@@ -1275,6 +1311,17 @@ async def discover(req: DiscoverReq):
         if kw not in best or it.get(key, 0) > best[kw].get(key, 0):
             best[kw] = it
     kept = list(best.values())
+    # 정밀도) 사용자 피드백 반영 — 👍는 위로, 👎는 아래로 (쓸수록 정확)
+    try:
+        fbmap = feedback_map()
+    except Exception:  # noqa: BLE001
+        fbmap = {}
+    for it in kept:
+        v = fbmap.get(it.get("keyword", ""), 0)
+        it["feedback"] = v
+        if v:
+            for kk in ("consign_score", "wholesale_score"):
+                it[kk] = max(0, min(100, it.get(kk, 0) + (12 if v > 0 else -25)))
     # 점수 → 모멘텀(동점 시 최근 방향) 순
     kept.sort(key=lambda x: (-x.get(key, 0), -x.get("momentum", 0)))
     for it in kept:
@@ -1563,7 +1610,7 @@ async def _ownerclan_search(token: str, req: OwnerClanReq) -> list:
     import asyncio
     from urllib.parse import quote
     import httpx
-    args = [f'first: {max(1, min(req.first, 60))}']
+    args = [f"first: {max(1, min(req.first, 100))}"]
     kw = (req.keyword or "").replace('"', '\\"').strip()
     if kw:
         args.append(f'search: "{kw}"')
@@ -1576,7 +1623,7 @@ async def _ownerclan_search(token: str, req: OwnerClanReq) -> list:
         args.append(f'sortBy: {req.sort}')
     query = ("query { allItems(" + ", ".join(args) + ") { pageInfo { hasNextPage } "
              "edges { node { "
-             "key name price fixedPrice images(size: medium) status model origin "
+             "key name price fixedPrice shippingFee images(size: medium) status model origin "
              "category { name fullName } } } } }")
     base = ("https://api-sandbox.ownerclan.com/v1/graphql" if req.sandbox
             else "https://api.ownerclan.com/v1/graphql")
@@ -1625,16 +1672,33 @@ async def _ownerclan_search(token: str, req: OwnerClanReq) -> list:
         raise NaverHubAuth("오너클랜 응답에 상품 데이터(allItems)가 없어요 — 쿼리/권한 확인 필요.")
     edges = ai.get("edges") or []
     out = []
+    seen_keys = set()
     for e in edges:
         n = e.get("node") or {}
+        key = n.get("key")
+        nm = (n.get("name") or "").strip()
         imgs = n.get("images") or []
+        price = n.get("price")
+        # 빈/불완전 상품만 제외(진짜 쓸모없는 것): 이름 없음·이미지 없음·가격 0
+        if not nm or len(nm) < 2:
+            continue
+        if not imgs:
+            continue
+        if not isinstance(price, (int, float)) or price <= 0:
+            continue
+        # 중복은 '같은 상품코드'만 제거(색상·옵션 다른 건 살려서 다양성 유지)
+        if key and key in seen_keys:
+            continue
+        if key:
+            seen_keys.add(key)
         out.append({
-            "key": n.get("key"), "name": n.get("name"),
-            "price": n.get("price"), "fixedPrice": n.get("fixedPrice"),
+            "key": key, "name": nm,
+            "price": price, "fixedPrice": n.get("fixedPrice"),
+            "shippingFee": n.get("shippingFee"),
             "status": n.get("status"),
             "model": n.get("model"), "origin": n.get("origin"),
             "image": imgs[0] if imgs else "",
-            "url": _ownerclan_item_url(n.get("key")),
+            "url": _ownerclan_item_url(key),
             "category": (n.get("category") or {}).get("fullName")
             or (n.get("category") or {}).get("name") or "",
         })
@@ -1781,7 +1845,7 @@ async def ownerclan_best_api(req: OwnerClanBestReq):
     try:
         token = await _ownerclan_token(u, p, req.sandbox)
         sreq = OwnerClanReq(username=u, password=p, keyword=kw,
-                            sort="default", sandbox=req.sandbox, first=40)
+                            sort="default", sandbox=req.sandbox, first=100)
         items = await _ownerclan_search(token, sreq)
     except NaverHubAuth as exc:
         return {"ok": False, "error": str(exc)}
@@ -1790,6 +1854,71 @@ async def ownerclan_best_api(req: OwnerClanBestReq):
     if not items:
         return {"ok": True, "items": [], "keyword": kw, "demand": None,
                 "note": "오너클랜에 이 검색어 상품이 없어요(운영 환경·검색어 확인)."}
+    # 관련도 필터(정밀): 상품명에 검색어 토큰이 얼마나 들어갔는지로 관련도를 매긴다.
+    kw_tokens = [t for t in re.findall(r"[가-힣A-Za-z0-9]{2,}", kw) if t not in _STOP_WORDS]
+    if not kw_tokens:
+        kw_tokens = [kw]
+    # 붙여 쓴 검색어(예: '무선청소기') 대응 — 3글자+ 부분문자열도 관련어로 취급
+    kw_subs = set(kw_tokens)
+    for t in kw_tokens + [kw]:
+        for L in range(3, min(len(t), 6) + 1):
+            for i in range(0, len(t) - L + 1):
+                kw_subs.add(t[i:i + L])
+
+    def _relevance(it):
+        """검색어의 '모든 단어가 얼마나 들어갔는지'(커버리지)로 관련도를 매긴다.
+        오너클랜은 여러 단어를 OR로 검색하므로, 한 단어만 맞은 엉뚱한 상품
+        (예: '화장대 쓰레기통'에 쓰레기통만 있는 것)을 커버리지로 걸러낸다."""
+        nm = (it.get("name") or "")
+        if not nm:
+            return 0
+        words = nm.split()
+        nwords = len(words)
+        toks = kw_tokens if kw_tokens else [kw]
+        # 각 검색어 토큰이 상품명에 있는지 + 가장 앞선 매칭 위치
+        present = [t for t in toks if t in nm]
+        coverage = len(present) / len(toks)            # 0~1: 검색어를 얼마나 담았나
+        first_pos = None
+        for i, wd in enumerate(words):
+            if any(t in wd for t in toks):
+                first_pos = i
+                break
+        if first_pos is None:
+            # 단어 경계로는 못 찾음 — 부분문자열만 있으면 아주 약하게
+            return 1 if (coverage >= 0.99 and any(s in nm for s in kw_subs)) else 0
+        front = first_pos <= 1
+        first_half = first_pos < max(2, nwords // 2)
+        stuffed = nwords >= 8 and not first_half        # 긴 이름 + 뒤쪽 = 끼워넣기
+        # ── 판정 ──
+        if coverage >= 0.999:                           # 검색어 '모든' 단어 포함
+            if nwords >= 8 and not first_half:
+                return 0                                # 아주 긴 이름 + 뒤쪽 = 끼워넣기
+            if front:
+                return 3                                # 앞쪽 = 진짜 그 상품
+            if first_half:
+                return 2                                # 앞 절반
+            return 1                                    # 뒤쪽에만 = 끼워넣기 의심(약함)
+        if coverage >= 0.5:                             # 절반만 포함(단어 일부 빠짐)
+            # 단일 검색어(토큰 1개)면 0.5가 곧 100%라 이 분기 안 옴.
+            # 다단어인데 일부만 맞음 = 엉뚱할 위험 → 앞쪽이어도 약하게만
+            return 1 if (front and not stuffed) else 0
+        return 0                                        # 대부분 안 맞음 = 다른 상품
+
+    for it in items:
+        it["_rel"] = _relevance(it)
+    strong = [it for it in items if it["_rel"] >= 2]     # 검색어 전부 포함(진짜 매칭)
+    mid = [it for it in items if it["_rel"] == 1]
+    match_note = None
+    if len(strong) >= 3:
+        items = strong
+    elif len(strong) >= 1:
+        items = strong + mid
+        match_note = "일부는 검색어 일부만 일치해요 — 상품명·이미지를 꼭 확인하세요."
+    else:
+        # 검색어를 다 담은 상품이 없음 = 그런 조합 상품이 오너클랜에 거의 없다는 뜻
+        items = (strong + mid) or items
+        match_note = ("'" + kw + "' 전체를 담은 상품이 거의 없어요. 두 단어를 한 상품에서 "
+                      "찾기 어려우면 한 단어로(예: '화장대'만) 검색해보세요. 상품명·이미지도 꼭 확인하세요.")
     # 2) 네이버 수요 (공식 검색어 트렌드 1회 — 합법)
     demand = None
     cid = (req.client_id or "").strip()
@@ -1849,15 +1978,22 @@ async def ownerclan_best_api(req: OwnerClanBestReq):
         s += demand_bonus
         if demand and demand.get("rise", 0) >= 10:
             reasons.append(f"네이버 수요 상승({round(demand['rise'])}%)")
+        rel = it.get("_rel", 0)
+        s += rel * 8                                  # 검색어 관련도 가점(정밀 매칭)
+        if rel >= 2:
+            reasons.append("검색어 정확 매칭")
+        elif rel == 0:
+            reasons.append("검색어와 관련 약함")
         it2 = dict(it)
         it2["url"] = _ownerclan_item_url(it.get("key"))
         it2["margin_room"] = round((fixed - price) / fixed * 100) if (fixed and price and fixed > price) else None
         it2["score"] = round(max(0.0, min(100.0, s + 15.0)))
         it2["why"] = reasons
         scored.append(it2)
-    scored.sort(key=lambda x: -x["score"])
-    return {"ok": True, "items": scored[:20], "keyword": kw, "demand": demand,
-            "sandbox": req.sandbox, "scanned": len(items)}
+    # 관련도 1순위, 그다음 점수 — 엉뚱한 상품이 위로 오지 않게
+    scored.sort(key=lambda x: (-(x.get("_rel", 0)), -x["score"]))
+    return {"ok": True, "items": scored[:40], "keyword": kw, "demand": demand,
+            "sandbox": req.sandbox, "scanned": len(items), "match_note": match_note}
 
 
 class RankBattleReq(BaseModel):
@@ -1906,6 +2042,694 @@ async def rank_battle_api(req: RankBattleReq):
         rw["rank"] = i + 1
         rw["pct_of_top"] = round(rw["latest"] / top * 100) if top else 0
     return {"ok": True, "items": rows, "range": f"{start} ~ {end}"}
+
+
+class TitleOptReq(BaseModel):
+    client_id: str
+    client_secret: str
+    title: str
+
+
+@app.post("/api/title/optimize")
+async def title_optimize_api(req: TitleOptReq):
+    """제목 최적화 — 공식 API HUB(검색어 트렌드 + 연관어)만으로 제목을 진단하고
+    검색량 많은 키워드로 재구성 제안. 상위노출 보장이 아니라 '검색 잘 걸리는' 재구성."""
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    title = (req.title or "").strip()
+    if not cid or not csec:
+        return {"ok": False, "error": "네이버 허브 열쇠를 먼저 넣어주세요."}
+    if not title:
+        return {"ok": False, "error": "제목을 넣어주세요."}
+
+    # 1) 제목에서 한글/영숫자 토큰 추출(2~) → 불용어 제거
+    raw_tokens = re.findall(r"[가-힣A-Za-z0-9]{2,}", title)
+    tokens, seen = [], set()
+    for t in raw_tokens:
+        if t in _STOP_WORDS:
+            continue
+        if t not in seen:
+            seen.add(t)
+            tokens.append(t)
+    if not tokens:
+        return {"ok": False, "error": "제목에서 분석할 단어를 찾지 못했어요."}
+
+    # 2) 핵심어 기준 연관어 채굴 — 대표어 + 두 번째로 긴 단어까지 합쳐 재료를 넉넉히
+    core = max(tokens, key=len)
+    related = []
+    try:
+        related = await _related_terms(cid, csec, core, limit=16)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception:  # noqa: BLE001
+        related = []
+    # 두 번째 핵심어로도 연관어를 더 모아 결합(제목을 더 풍성하게)
+    others = sorted([t for t in tokens if t != core], key=len, reverse=True)
+    if others:
+        try:
+            more = await _related_terms(cid, csec, others[0], limit=10)
+            for w in more:
+                if w not in related:
+                    related.append(w)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # 3) 제목 단어 + 연관어의 검색량(상대지수)을 한 번에 측정(트렌드, 최대 5개 그룹)
+    cand = tokens[:5]
+    demand = {}
+    try:
+        start, end = _date_range(12)
+        groups = [{"groupName": w, "keywords": [w]} for w in cand]
+        body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                "keywordGroups": groups}
+        data, _ = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+        for r in (data.get("results") or []):
+            nm = r.get("title") or r.get("groupName")
+            t = _trend_of(r.get("data") or [])
+            demand[nm] = {"latest": round(t.get("latest", 0.0), 1),
+                          "rise": t.get("rise", 0.0)}
+    except Exception:  # noqa: BLE001
+        demand = {}
+
+    # 연관어도 검색량 측정(상위 10개, 5개씩 2묶음 — 재료 확보)
+    rel_demand = {}
+    if related:
+        try:
+            for grp_start in (0, 5):
+                chunk = related[grp_start:grp_start + 5]
+                if not chunk:
+                    break
+                rg = [{"groupName": w, "keywords": [w]} for w in chunk]
+                body2 = {"startDate": start, "endDate": end, "timeUnit": "month",
+                         "keywordGroups": rg}
+                data2, _ = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body2)
+                for r in (data2.get("results") or []):
+                    nm = r.get("title") or r.get("groupName")
+                    t = _trend_of(r.get("data") or [])
+                    rel_demand[nm] = round(t.get("latest", 0.0), 1)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # 4) 진단
+    diag = []
+    n_len = len(title)
+    if n_len > 50:
+        diag.append({"type": "warn", "msg": f"제목이 {n_len}자로 길어요. 네이버쇼핑은 "
+                     "핵심 키워드 위주 40~50자가 무난해요."})
+    elif n_len < 15:
+        diag.append({"type": "warn", "msg": f"제목이 {n_len}자로 짧아요. 검색 걸릴 키워드를 "
+                     "더 넣을 여지가 있어요."})
+    # 중복 단어
+    dup = [w for w in set(raw_tokens) if raw_tokens.count(w) > 1]
+    if dup:
+        diag.append({"type": "warn", "msg": f"반복된 단어: {', '.join(dup[:5])} — "
+                     "네이버는 중복을 가중해주지 않아요. 빼고 다른 키워드를 넣으세요."})
+    # 특수문자/브랜드성 과다
+    if re.search(r"[!~★☆♥▶◀#\[\]{}]", title):
+        diag.append({"type": "warn", "msg": "특수문자(★, !, [] 등)는 검색에 도움 안 되고 "
+                     "일부는 어뷰징으로 볼 수 있어요. 빼는 걸 권해요."})
+    # 검색량 낮은 단어 지적
+    weak = [w for w in cand if demand.get(w, {}).get("latest", 0) < 5]
+    if weak:
+        diag.append({"type": "info", "msg": f"검색량이 약한 단어: {', '.join(weak[:5])} — "
+                     "꼭 필요한 게 아니면 검색량 높은 단어로 바꿔보세요."})
+
+    # 4-2) 스마트스토어 상품명 규칙 체커 (공식 가이드 기준)
+    ss = []
+    # 글자 수: 50자 내외 권장, 100자 초과 불가
+    if n_len > 100:
+        ss.append({"ok": False, "label": "글자 수",
+                   "msg": f"{n_len}자 — 100자 초과는 등록 불가예요. 줄이세요."})
+    elif n_len > 50:
+        ss.append({"ok": False, "label": "글자 수",
+                   "msg": f"{n_len}자 — 50자 내외 권장(최대 100자). 핵심만 남기세요."})
+    else:
+        ss.append({"ok": True, "label": "글자 수", "msg": f"{n_len}자 — 권장(50자 내외) 안이에요."})
+    # 중복 단어 금지
+    if dup:
+        ss.append({"ok": False, "label": "단어 중복",
+                   "msg": f"{', '.join(dup[:5])} 반복 — 중복은 가중 안 돼요. 한 번만."})
+    else:
+        ss.append({"ok": True, "label": "단어 중복", "msg": "중복 단어 없어요."})
+    # 특수문자 금지
+    sc = re.findall(r"[!~★☆♥▶◀◆■●#\[\]{}@%&*]", title)
+    if sc:
+        ss.append({"ok": False, "label": "특수문자",
+                   "msg": f"{' '.join(sorted(set(sc)))} 사용 — 특수문자·기호는 빼세요."})
+    else:
+        ss.append({"ok": True, "label": "특수문자", "msg": "특수문자 없어요."})
+    # 판매처/쇼핑몰명 금지(대표적 표현 감지)
+    shopwords = re.findall(r"(공식|본사|정품샵|스토어|셀러|직영|무료배송|당일발송|최저가|이벤트|할인|사은품|1\+1)", title)
+    if shopwords:
+        ss.append({"ok": False, "label": "홍보문구·판매처",
+                   "msg": f"{', '.join(sorted(set(shopwords)))} — 홍보문구·판매처명은 "
+                          "상품명에 넣지 않아요(별도 노출)."})
+    else:
+        ss.append({"ok": True, "label": "홍보문구·판매처", "msg": "홍보문구 없어요."})
+    # 조사·수식어 최소화(간단 감지)
+    josa = re.findall(r"(은|는|이|가|을|를|의|와|과|으로|하는|한|해서|용의)\b", title)
+    if len(josa) >= 2:
+        ss.append({"ok": False, "label": "조사·수식어",
+                   "msg": "조사·수식어가 많아요 — 명사 위주로 간결하게."})
+    else:
+        ss.append({"ok": True, "label": "조사·수식어", "msg": "명사 위주로 간결해요."})
+    ss_pass = sum(1 for x in ss if x["ok"])
+
+    # 5) 추천 키워드 — A) 엉뚱한 단어(브랜드·지역·불용어·검색량0) 강하게 걸러냄
+    _BRAND_RE = re.compile(r"(나이키|아디다스|애플|아이폰|갤럭시|삼성|엘지|lg|샤넬|구찌|"
+                           r"디올|스타벅스|다이슨|무신사|쿠팡|네이버|지그재그|에이블리)", re.I)
+    _REGION_RE = re.compile(r"(서울|부산|대구|인천|광주|대전|울산|경기|강남|명동|홍대|"
+                            r"동대문|남대문|중국|일본|미국|해외|국산|수입)")
+    core_ch = set(core)
+    add_kw = []
+    for w in related:
+        if w in title or w in _STOP_WORDS:
+            continue
+        if len(w) < 2 or len(w) > 10:
+            continue
+        if _BRAND_RE.search(w) or _REGION_RE.search(w):   # 브랜드·지역 제외
+            continue
+        if re.search(r"\d{2,}", w):                        # 숫자 범벅 제외
+            continue
+        lv = rel_demand.get(w)
+        if lv is not None and lv < 1:                      # 검색량 0인 건 제외
+            continue
+        # 핵심어와 글자가 하나도 안 겹치고 너무 동떨어진 건 후순위(약한 관련성)
+        add_kw.append({"word": w, "latest": lv,
+                       "rel": 1 if (set(w) & core_ch) else 0})
+    # 검색량 우선, 관련성 보조로 정렬
+    add_kw.sort(key=lambda x: (x["latest"] is None, -(x["latest"] or 0), -x["rel"]))
+    add_kw = [{"word": a["word"], "latest": a["latest"]} for a in add_kw[:10]]
+
+    # 6) 새 제목 제안 — B) 스마트스토어 권장 순서로 자연스럽게 조합
+    #    [속성/수식어] + [핵심 명사] + [용도/대상] 순, 중복·특수문자 없이, 25~40자 목표
+    _ATTR = ("무선", "미니", "대용량", "소형", "대형", "휴대용", "접이식", "저소음",
+             "고속", "다용도", "프리미엄", "슬림", "초경량", "방수", "usb", "충전식")
+    _USE = ("사무실", "차량용", "가정용", "업소용", "캠핑", "주방", "욕실", "책상",
+            "탁상용", "선물", "여행", "실내", "야외", "휴대")
+    # 검색량순 핵심어 — 측정된 5개는 검색량순, 나머지 사용자 단어도 뒤에 다 포함
+    ranked = sorted(cand, key=lambda w: -(demand.get(w, {}).get("latest", 0)))
+    ranked = ranked + [t for t in tokens if t not in ranked]   # 사용자 단어 전부 살림
+    add_words = [a["word"] for a in add_kw]
+    pool = list(dict.fromkeys(ranked + add_words))         # 제목단어(전부) + 추천어
+    attrs = [w for w in pool if w in _ATTR]
+    uses = [w for w in pool if w in _USE]
+    nouns = [w for w in pool if w not in _ATTR and w not in _USE]
+
+    def _compose(words, cap=50):
+        seen2, out = set(), []
+        total = 0
+        for w in words:
+            if not w or w in seen2:
+                continue
+            add_len = len(w) + (1 if out else 0)
+            if total + add_len > cap:
+                break
+            out.append(w)
+            seen2.add(w)
+            total += add_len
+        return " ".join(out)
+
+    # 스마트스토어 정석 구조: [속성] + 대표명사 + [세부속성] + [용도/대상]
+    #  (예: '여름용 냉감 이불 쿨링소재 싱글' / '무선 로봇청소기 강력흡입 가정용')
+    all_words = list(dict.fromkeys(nouns + attrs + uses + add_words))
+    main = nouns[0] if nouns else (ranked[0] if ranked else pool[0])
+    other_nouns = [w for w in nouns if w != main]
+    add_nouns = [w for w in add_words if w not in _ATTR and w not in _USE and w != main]
+    # 안1(정석): 대표속성1 + 대표명사 + 속성 + 용도 — 가장 자연스러운 기본형
+    order1 = attrs[:1] + [main] + attrs[1:3] + other_nouns[:1] + uses[:2]
+    # 안2(검색 강조): 대표명사 + 추천명사 + 속성 + 용도
+    order2 = [main] + add_nouns[:2] + attrs[:2] + uses[:1]
+    # 안3(풍성): 대표속성 + 대표명사 + 세부속성/추천 + 용도, 최대 채움
+    order3 = attrs[:1] + [main] + add_nouns[:1] + attrs[1:2] + other_nouns[:1] + uses[:1] + add_nouns[1:2]
+    s1 = _compose(list(dict.fromkeys(order1 + all_words)))
+    s2 = _compose(list(dict.fromkeys(order2 + all_words)))
+    s3 = _compose(list(dict.fromkeys(order3 + all_words)))
+    suggestions = []
+    for s in (s1, s2, s3):
+        s = s.strip()
+        # 최소 3단어 이상 + 원본과 다를 때만 채택
+        if s and len(s.split()) >= 3 and s not in suggestions and s != title:
+            suggestions.append(s)
+    # 그래도 비면(재료 부족) 최소한 재배열이라도 제공
+    if not suggestions and pool:
+        fallback = _compose(list(dict.fromkeys([main] + ranked + add_words + pool)))
+        if fallback and fallback != title:
+            suggestions.append(fallback)
+
+    return {"ok": True, "title": title, "core": core,
+            "tokens": [{"word": w, **demand.get(w, {})} for w in cand],
+            "add_keywords": add_kw, "diagnostics": diag,
+            "smartstore": ss, "smartstore_pass": ss_pass, "smartstore_total": len(ss),
+            "suggestions": suggestions,
+            "note": "네이버 검색어 트렌드·연관어(공식 API) 기준이에요. "
+                    "상위노출을 보장하진 않아요."}
+
+
+class FeedbackReq(BaseModel):
+    keyword: str
+    vote: int = 0            # +1 좋음 / -1 별로 / 0 취소
+    category: str = ""
+    owner: str = "local"
+
+
+@app.post("/api/feedback")
+async def feedback_api(req: FeedbackReq):
+    """발굴 결과에 대한 👍/👎 — 다음 발굴부터 순위에 반영(쓸수록 정확)."""
+    ok = feedback_set(req.keyword, req.vote, req.category, req.owner or "local")
+    return {"ok": ok}
+
+
+class TitleAIReq(BaseModel):
+    gemini_key: str
+    title: str
+    keywords: list = []       # 검색량 높은 키워드(선택) — 근거로 제공
+    category: str = ""
+
+
+@app.post("/api/title/ai")
+async def title_ai_api(req: TitleAIReq):
+    """제목 최적화(AI) — 사용자가 넣은 Gemini API 키로 자연스러운 새 제목 생성.
+    키는 이 요청에만 쓰고 서버에 저장하지 않는다(무료 티어 gemini-2.5-flash)."""
+    import httpx
+    key = (req.gemini_key or "").strip()
+    title = (req.title or "").strip()
+    if not key:
+        return {"ok": False, "error": "Gemini API 키를 넣어주세요(AIza…로 시작)."}
+    if not key.startswith("AIza"):
+        return {"ok": False, "error": "Gemini 키 형식이 아니에요(보통 AIza로 시작해요)."}
+    if not title:
+        return {"ok": False, "error": "제목/키워드를 넣어주세요."}
+    kw_line = ", ".join([str(k) for k in (req.keywords or []) if str(k)])[:300]
+    prompt = (
+        "너는 한국 이커머스(네이버 스마트스토어·쿠팡) 상품명 SEO 전문가야.\n"
+        "아래 입력을 '참고'만 하고, 이 상품에 딱 맞는 '완전히 새로운' 상품명 3개를 지어줘.\n"
+        "입력 단어를 그대로 재배열하지 말고, 이 상품이 무엇인지 파악해서 "
+        "실제 구매자가 검색할 법한 키워드로 새로 구성해.\n\n"
+        f"[상품 정보/현재 제목]\n{title}\n\n"
+        + (f"[검색량 높은 참고 키워드]\n{kw_line}\n\n" if kw_line else "")
+        + (f"[카테고리]\n{req.category}\n\n" if req.category else "")
+        + "[네이버·쿠팡 상품명 정책 — 꼭 지켜라]\n"
+        "- 길이 25~45자, 띄어쓰기로 키워드 구분\n"
+        "- 구조: (대표 핵심키워드) + (세부속성: 크기·색상·소재·수량) + (용도·대상)\n"
+        "- 대표 핵심키워드(무슨 상품인지)를 맨 앞에\n"
+        "- 구체적 세부키워드(롱테일) 포함: 막연한 '청소기'보다 '차량용 무선 청소기'\n"
+        "- 금지: 브랜드·타사명, 특수문자/이모지, 홍보문구(최저가·무료배송·정품·1+1·이벤트), "
+        "같은 단어 반복, 수량단위 남발\n"
+        "- 과장·허위(최고/1위/의학효과) 금지\n"
+        "- 사람이 읽어도 자연스럽게(단어 나열 티 안 나게)\n\n"
+        "[출력] 서로 강조점이 다른 3개:\n"
+        "1번: 대표키워드+핵심속성 중심\n"
+        "2번: 용도·사용상황·대상 중심\n"
+        "3번: 경쟁 덜한 세부(롱테일) 키워드 중심\n\n"
+        "[중요] 입력을 그대로 재배열하지 마라. 예시:\n"
+        "입력: '미니 휴지통 탁상용 화장대 쓰레기통'\n"
+        "나쁜 예(재배열): '미니 화장대 쓰레기통 탁상용 휴지통'\n"
+        "좋은 예(새 구성): '탁상용 미니 휴지통 원룸 사무실 책상 소형 쓰레기통', "
+        "'침실 화장대 휴지통 좁은공간 인테리어 미니 휴지통', "
+        "'차량용 다용도 미니 휴지통 뚜껑형 탁상 정리함'\n"
+        "→ 이렇게 새 세부키워드(원룸·책상·뚜껑형·인테리어 등)를 더해 다르게 만들어라.\n\n"
+        "설명·번호·따옴표·기호 없이 제목 3개만 줄바꿈으로 출력."
+    )
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           "gemini-2.5-flash:generateContent")
+    body = {"contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 1.0, "maxOutputTokens": 8192,
+                                 "thinkingConfig": {"thinkingBudget": 0}}}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            r = await c.post(url, headers={"x-goog-api-key": key,
+                                           "Content-Type": "application/json"},
+                             json=body)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"Gemini 연결 오류: {type(exc).__name__}"}
+    if r.status_code == 400:
+        return {"ok": False, "error": "요청 오류(키가 틀렸거나 만료). 키를 확인해주세요."}
+    if r.status_code == 403:
+        return {"ok": False, "error": "권한 오류(403) — 키 제한 설정이나 서버 IP 문제일 수 있어요. "
+                                      "로컬(내 PC)에서 실행 중이면 대부분 잘 돼요."}
+    if r.status_code == 429:
+        return {"ok": False, "error": "무료 한도 초과(429) — 잠시 후 다시(분당 요청 제한)."}
+    if r.status_code >= 400:
+        return {"ok": False, "error": f"Gemini 오류({r.status_code})."}
+    try:
+        data = r.json()
+        parts = (((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+        text = "\n".join(p.get("text", "") for p in parts).strip()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "Gemini 응답을 해석하지 못했어요."}
+    # 3줄 파싱
+    lines = []
+    for ln in text.splitlines():
+        s = ln.strip().lstrip("0123456789.-)· \t").strip().strip('"').strip("'")
+        if s and len(s) >= 4:
+            lines.append(s)
+    lines = lines[:3]
+    if not lines:
+        return {"ok": False, "error": "AI가 제목을 만들지 못했어요. 다시 시도해주세요."}
+    return {"ok": True, "titles": lines}
+
+
+class OwnerClanRefreshReq(BaseModel):
+    username: str
+    password: str
+    keys: list = []           # 관심목록에 담긴 오너클랜 상품코드들
+    sandbox: bool = False
+
+
+@app.post("/api/ownerclan/refresh")
+async def ownerclan_refresh_api(req: OwnerClanRefreshReq):
+    """📌 관심목록 오너클랜 상품 일괄 갱신 — itemsByKeys 로 여러 상품의
+    현재 가격·재고·상태를 한 번에 조회(담을 때와 비교용)."""
+    import httpx
+    from urllib.parse import quote
+    u = (req.username or "").strip()
+    p = req.password or ""
+    keys = [str(k).strip() for k in (req.keys or []) if str(k).strip()][:40]
+    if not u or not p:
+        return {"ok": False, "error": "오너클랜 ID/비밀번호가 필요해요."}
+    if not keys:
+        return {"ok": False, "error": "갱신할 상품이 없어요."}
+    try:
+        token = await _ownerclan_token(u, p, req.sandbox)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    keys_str = ", ".join('"' + k.replace('"', '') + '"' for k in keys)
+    query = ("query { itemsByKeys(keys: [" + keys_str + "]) { "
+             "key name price fixedPrice status } }")
+    base = ("https://api-sandbox.ownerclan.com/v1/graphql" if req.sandbox
+            else "https://api.ownerclan.com/v1/graphql")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            r = await c.get(base + "?query=" + quote(query),
+                            headers={"Authorization": f"Bearer {token}"})
+        if r.status_code == 429:
+            return {"ok": False, "error": "오너클랜 요청이 몰렸어요 — 20~30초 후 다시."}
+        if r.status_code >= 400:
+            return {"ok": False, "error": f"갱신 실패({r.status_code})."}
+        data = r.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"연결 오류: {type(exc).__name__}"}
+    if data.get("errors"):
+        return {"ok": False, "error": f"API 오류: {data['errors'][0].get('message','')}"}
+    rows = (data.get("data") or {}).get("itemsByKeys") or []
+    out = {}
+    for n in rows:
+        if not n:
+            continue
+        out[n.get("key")] = {"price": n.get("price"), "fixedPrice": n.get("fixedPrice"),
+                             "status": n.get("status"), "name": n.get("name")}
+    return {"ok": True, "items": out}
+
+
+class DetailAIReq(BaseModel):
+    gemini_key: str
+    product: str              # 상품명/핵심 정보
+    features: str = ""        # 특징·장점(선택)
+    target: str = ""          # 타깃 고객(선택)
+    images: list = []         # 내 상품 이미지 URL들(선택)
+
+
+@app.post("/api/detail/ai")
+async def detail_ai_api(req: DetailAIReq):
+    """상세페이지 생성 — 내 상품 정보로 HTML 상세페이지를 만든다(남의 것 스크래핑 아님).
+    문구는 Gemini로, 이미지는 사용자가 준 URL을 배치. 결과는 붙여넣기 가능한 HTML."""
+    import html as _html
+    import httpx
+    key = (req.gemini_key or "").strip()
+    product = (req.product or "").strip()
+    if not key or not key.startswith("AIza"):
+        return {"ok": False, "error": "Gemini API 키를 넣어주세요(AIza…로 시작)."}
+    if not product:
+        return {"ok": False, "error": "상품명·핵심 정보를 넣어주세요."}
+    imgs = [str(u).strip() for u in (req.images or []) if str(u).strip().startswith("http")][:6]
+    prompt = (
+        "너는 한국 스마트스토어 상세페이지 카피라이터야. 아래 '내 상품 정보'만으로 "
+        "구매를 유도하는 상세페이지 문구를 새로 써줘(남의 글 베끼지 말고 처음부터).\n\n"
+        f"[상품]\n{product}\n"
+        + (f"[특징·장점]\n{req.features}\n" if req.features.strip() else "")
+        + (f"[타깃 고객]\n{req.target}\n" if req.target.strip() else "")
+        + "\n[출력 형식] 정확히 아래 순서로, 각 줄 앞에 태그를 붙여 출력(마크다운·기호 금지):\n"
+        "HEAD: (시선 끄는 한 줄 헤드라인)\n"
+        "SUB: (공감 서브카피 한 줄)\n"
+        "POINT: (핵심 장점 1 — 한 줄)\n"
+        "POINT: (핵심 장점 2 — 한 줄)\n"
+        "POINT: (핵심 장점 3 — 한 줄)\n"
+        "SCENE: (사용 상황·추천 대상 2~3줄을 한 줄로)\n"
+        "CLOSE: (구매를 부르는 마무리 한 줄)\n"
+        "과장·허위광고(최고/1위/의학효과 단정) 금지, 솔직하게."
+    )
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           "gemini-2.5-flash:generateContent")
+    body = {"contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.85, "maxOutputTokens": 8192, "thinkingConfig": {"thinkingBudget": 0}}}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            r = await c.post(url, headers={"x-goog-api-key": key,
+                                           "Content-Type": "application/json"}, json=body)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"Gemini 연결 오류: {type(exc).__name__}"}
+    if r.status_code == 429:
+        return {"ok": False, "error": "무료 한도 초과(429) — 잠시 후 다시."}
+    if r.status_code == 403:
+        return {"ok": False, "error": "권한 오류(403) — 로컬(내 PC)에서 실행하면 대부분 잘 돼요."}
+    if r.status_code >= 400:
+        return {"ok": False, "error": f"Gemini 오류({r.status_code}) — 키 확인."}
+    try:
+        data = r.json()
+        parts = (((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+        text = "\n".join(p.get("text", "") for p in parts).strip()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "Gemini 응답 해석 실패."}
+    if not text:
+        return {"ok": False, "error": "문구를 만들지 못했어요. 다시 시도해주세요."}
+    # 파싱
+    head, sub, close, scene = "", "", "", ""
+    points = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s.startswith("HEAD:"):
+            head = s[5:].strip()
+        elif s.startswith("SUB:"):
+            sub = s[4:].strip()
+        elif s.startswith("POINT:"):
+            points.append(s[6:].strip())
+        elif s.startswith("SCENE:"):
+            scene = s[6:].strip()
+        elif s.startswith("CLOSE:"):
+            close = s[6:].strip()
+    if not head:
+        head = product
+    e = _html.escape
+
+    def _img(i):
+        if i < len(imgs):
+            return (f'<img src="{e(imgs[i])}" alt="{e(product)}" '
+                    f'style="width:100%;max-width:800px;display:block;margin:0 auto;border-radius:8px">')
+        return ('<div style="width:100%;max-width:800px;margin:0 auto;height:360px;'
+                'background:#f2f3f5;border:2px dashed #cfd4da;border-radius:8px;'
+                'display:flex;align-items:center;justify-content:center;color:#98a0aa;'
+                'font-size:15px">여기에 상품 사진을 넣으세요</div>')
+
+    pts_html = "".join(
+        f'<div style="display:flex;gap:12px;align-items:flex-start;margin:16px 0">'
+        f'<div style="flex:0 0 34px;height:34px;background:#2b7fff;color:#fff;border-radius:50%;'
+        f'display:flex;align-items:center;justify-content:center;font-weight:700">{i+1}</div>'
+        f'<div style="flex:1;font-size:16px;line-height:1.6;padding-top:4px">{e(p)}</div></div>'
+        for i, p in enumerate(points))
+
+    detail_html = f"""<div style="max-width:860px;margin:0 auto;font-family:'맑은 고딕',sans-serif;color:#222;padding:8px">
+  <h1 style="font-size:28px;font-weight:800;text-align:center;line-height:1.4;margin:24px 0 8px">{e(head)}</h1>
+  <p style="font-size:17px;color:#666;text-align:center;margin:0 0 28px">{e(sub)}</p>
+  {_img(0)}
+  <div style="margin:36px 0">
+    <h2 style="font-size:22px;font-weight:800;border-left:5px solid #2b7fff;padding-left:12px;margin-bottom:8px">이런 점이 좋아요</h2>
+    {pts_html}
+  </div>
+  {_img(1)}
+  <div style="background:#f7f9fc;border-radius:12px;padding:24px;margin:36px 0">
+    <h2 style="font-size:20px;font-weight:800;margin:0 0 10px">이럴 때 좋아요</h2>
+    <p style="font-size:16px;line-height:1.7;margin:0">{e(scene)}</p>
+  </div>
+  {_img(2)}
+  <p style="font-size:19px;font-weight:700;text-align:center;color:#2b7fff;margin:36px 0 24px">{e(close)}</p>
+</div>"""
+    return {"ok": True, "html": detail_html,
+            "sections": {"head": head, "sub": sub, "points": points,
+                         "scene": scene, "close": close},
+            "img_count": len(imgs)}
+
+
+class DetailFromOcReq(BaseModel):
+    gemini_key: str
+    username: str
+    password: str
+    key: str                 # 오너클랜 상품코드
+    sandbox: bool = False
+    target: str = ""         # 타깃(선택)
+
+
+@app.post("/api/detail/from_ownerclan")
+async def detail_from_ownerclan_api(req: DetailFromOcReq):
+    """🪄 오너클랜 상품 → 상세페이지 한 번에.
+    오너클랜에서 상품 정보·이미지를 가져와서(공식 API), 문구는 Gemini로 만들고,
+    이미지까지 배치한 HTML 상세페이지를 반환한다."""
+    import html as _html
+    import httpx
+    from urllib.parse import quote
+    gkey = (req.gemini_key or "").strip()
+    if not gkey or not gkey.startswith("AIza"):
+        return {"ok": False, "error": "Gemini API 키를 넣어주세요(AIza…)."}
+    u = (req.username or "").strip()
+    p = req.password or ""
+    k = (req.key or "").strip()
+    if not u or not p or not k:
+        return {"ok": False, "error": "오너클랜 로그인/상품코드가 필요해요."}
+    # 1) 오너클랜에서 상품 정보 + 이미지 가져오기(공식 API)
+    try:
+        token = await _ownerclan_token(u, p, req.sandbox)
+    except NaverHubAuth as exc:
+        return {"ok": False, "error": str(exc)}
+    kk = k.replace('"', '')
+    q = ('query { item(key: "' + kk + '") { key name model origin price fixedPrice '
+         'shippingFee content category { fullName } images(size: large) '
+         'options { optionAttributes { name value } } } }')
+    base = ("https://api-sandbox.ownerclan.com/v1/graphql" if req.sandbox
+            else "https://api.ownerclan.com/v1/graphql")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            r = await c.get(base + "?query=" + quote(q),
+                            headers={"Authorization": f"Bearer {token}"})
+        if r.status_code >= 400:
+            return {"ok": False, "error": f"오너클랜 상품 조회 실패({r.status_code})."}
+        od = r.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"오너클랜 연결 오류: {type(exc).__name__}"}
+    n = (od.get("data") or {}).get("item")
+    if not n:
+        return {"ok": False, "error": "오너클랜에서 상품을 찾지 못했어요(코드 확인)."}
+    name = n.get("name") or ""
+    imgs = [u2 for u2 in (n.get("images") or []) if isinstance(u2, str) and u2.startswith("http")][:4]
+    cat = (n.get("category") or {}).get("fullName") or ""
+    content_txt = _strip_tags(n.get("content") or "")[:600]
+    opt_txt = ", ".join(
+        " ".join(f'{a.get("value","")}' for a in (o.get("optionAttributes") or []))
+        for o in (n.get("options") or [])[:8])
+    # 2) Gemini 로 문구 생성 (더 풍부하게)
+    prompt = (
+        "너는 한국 스마트스토어 상세페이지 카피라이터야. 아래 오너클랜 상품 정보를 바탕으로 "
+        "구매를 유도하는 상세페이지 문구를 새로 써줘(베끼지 말고 새로, 구체적이고 풍부하게).\n\n"
+        f"[상품명]\n{name}\n"
+        + (f"[카테고리]\n{cat}\n" if cat else "")
+        + (f"[원산지]\n{n.get('origin','')}\n" if n.get('origin') else "")
+        + (f"[옵션]\n{opt_txt}\n" if opt_txt else "")
+        + (f"[상품설명 참고]\n{content_txt}\n" if content_txt else "")
+        + (f"[타깃 고객]\n{req.target}\n" if req.target.strip() else "")
+        + "\n[출력 형식] 정확히 아래 태그로(마크다운·기호 금지, 각 항목 구체적으로):\n"
+        "HEAD: (제품 핵심을 담은 강력한 헤드라인 한 줄)\n"
+        "SUB: (구매 고민에 공감하는 서브카피 한 줄)\n"
+        "POINT: (핵심 장점1 — 구체적 근거 포함 1~2문장)\n"
+        "POINT: (핵심 장점2 — 구체적 근거 포함 1~2문장)\n"
+        "POINT: (핵심 장점3 — 구체적 근거 포함 1~2문장)\n"
+        "POINT: (핵심 장점4 — 구체적 근거 포함 1~2문장)\n"
+        "SPEC: (제품 사양·구성을 콤마로 구분해 한 줄: 재질·크기·색상·구성품 등)\n"
+        "SCENE: (사용 상황·추천 대상 2~3문장을 한 줄로)\n"
+        "TIP: (활용 팁이나 관리법 한 줄)\n"
+        "CLOSE: (구매를 부르는 마무리 한 줄)\n"
+        "과장·허위(최고/1위/의학효과) 금지, 솔직하고 신뢰가게."
+    )
+    gurl = ("https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-2.5-flash:generateContent")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            gr = await c.post(gurl, headers={"x-goog-api-key": gkey,
+                                             "Content-Type": "application/json"},
+                              json={"contents": [{"parts": [{"text": prompt}]}],
+                                    "generationConfig": {"temperature": 0.85, "maxOutputTokens": 8192, "thinkingConfig": {"thinkingBudget": 0}}})
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"Gemini 연결 오류: {type(exc).__name__}"}
+    if gr.status_code == 429:
+        return {"ok": False, "error": "Gemini 무료 한도 초과(429) — 잠시 후 다시."}
+    if gr.status_code == 403:
+        return {"ok": False, "error": "Gemini 403 — 로컬(내 PC)에서 실행하면 대부분 잘 돼요."}
+    if gr.status_code >= 400:
+        return {"ok": False, "error": f"Gemini 오류({gr.status_code}) — 키 확인."}
+    try:
+        gd = gr.json()
+        parts = (((gd.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+        text = "\n".join(pt.get("text", "") for pt in parts).strip()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "Gemini 응답 해석 실패."}
+    head = sub = scene = close = spec = tip = ""
+    points = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s.startswith("HEAD:"): head = s[5:].strip()
+        elif s.startswith("SUB:"): sub = s[4:].strip()
+        elif s.startswith("POINT:"): points.append(s[6:].strip())
+        elif s.startswith("SPEC:"): spec = s[5:].strip()
+        elif s.startswith("SCENE:"): scene = s[6:].strip()
+        elif s.startswith("TIP:"): tip = s[4:].strip()
+        elif s.startswith("CLOSE:"): close = s[6:].strip()
+    if not head:
+        head = name
+    e = _html.escape
+    origin = n.get("origin") or ""
+
+    def _img(i):
+        if i < len(imgs):
+            return (f'<img src="{e(imgs[i])}" alt="{e(name)}" '
+                    f'style="width:100%;max-width:800px;display:block;margin:0 auto;border-radius:8px">')
+        return ('<div style="width:100%;max-width:800px;margin:0 auto;height:340px;'
+                'background:#f2f3f5;border:2px dashed #cfd4da;border-radius:8px;display:flex;'
+                'align-items:center;justify-content:center;color:#98a0aa">상품 사진 자리</div>')
+
+    pts_html = "".join(
+        f'<div style="display:flex;gap:12px;align-items:flex-start;margin:18px 0">'
+        f'<div style="flex:0 0 36px;height:36px;background:#2b7fff;color:#fff;border-radius:50%;'
+        f'display:flex;align-items:center;justify-content:center;font-weight:700">{i+1}</div>'
+        f'<div style="flex:1;font-size:16px;line-height:1.65;padding-top:5px">{e(p)}</div></div>'
+        for i, p in enumerate(points))
+    spec_rows = ""
+    if spec:
+        for kv in spec.split(","):
+            kv = kv.strip()
+            if kv:
+                spec_rows += (f'<tr><td style="padding:9px 12px;background:#f7f9fc;font-weight:600;'
+                              f'width:40px;border-bottom:1px solid #eee">•</td>'
+                              f'<td style="padding:9px 12px;border-bottom:1px solid #eee">{e(kv)}</td></tr>')
+    if origin:
+        spec_rows += (f'<tr><td style="padding:9px 12px;background:#f7f9fc;font-weight:600;'
+                      f'border-bottom:1px solid #eee">원산지</td>'
+                      f'<td style="padding:9px 12px;border-bottom:1px solid #eee">{e(origin)}</td></tr>')
+    spec_html = (f'<div style="margin:36px 0"><h2 style="font-size:20px;font-weight:800;margin:0 0 12px">'
+                 f'제품 정보</h2><table style="width:100%;border-collapse:collapse;font-size:15px;'
+                 f'border:1px solid #eee;border-radius:8px;overflow:hidden">{spec_rows}</table></div>'
+                 if spec_rows else "")
+    tip_html = (f'<div style="border:1px solid #ffe08a;background:#fffbe6;border-radius:10px;'
+                f'padding:16px 18px;margin:28px 0;font-size:15px;line-height:1.6">'
+                f'<b>💡 활용 팁</b><br>{e(tip)}</div>' if tip else "")
+
+    detail_html = f"""<div style="max-width:860px;margin:0 auto;font-family:'맑은 고딕',sans-serif;color:#222;padding:8px">
+  <h1 style="font-size:29px;font-weight:800;text-align:center;line-height:1.4;margin:24px 0 8px">{e(head)}</h1>
+  <p style="font-size:17px;color:#666;text-align:center;margin:0 0 28px">{e(sub)}</p>
+  {_img(0)}
+  <div style="margin:40px 0">
+    <h2 style="font-size:23px;font-weight:800;border-left:5px solid #2b7fff;padding-left:12px;margin-bottom:8px">이런 점이 좋아요</h2>
+    {pts_html}
+  </div>
+  {_img(1)}
+  {spec_html}
+  <div style="background:#f7f9fc;border-radius:12px;padding:26px;margin:36px 0">
+    <h2 style="font-size:20px;font-weight:800;margin:0 0 10px">이럴 때 좋아요</h2>
+    <p style="font-size:16px;line-height:1.75;margin:0">{e(scene)}</p>
+  </div>
+  {_img(2)}
+  {tip_html}
+  {_img(3)}
+  <p style="font-size:20px;font-weight:700;text-align:center;color:#2b7fff;margin:40px 0 24px">{e(close)}</p>
+</div>"""
+    return {"ok": True, "html": detail_html, "name": name, "img_count": len(imgs)}
 
 
 @app.post("/api/keytest")
