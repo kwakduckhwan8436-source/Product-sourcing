@@ -3086,9 +3086,23 @@ if ($('#hubtest')) $('#hubtest').addEventListener('click', async () => {
 function loading(msg) {
   out.innerHTML = '<div class="card"><span class="spin"></span>' + msg + '</div>';
 }
-/* ---------- 버전 (예전 서버가 도는지 확인) ---------- */
-fetch('/api/version').then(r => r.json()).then(d => {
-  $('#ver').textContent = d.version || '';
+/* ---------- 버전 (예전 서버가 도는지 확인) + 새 버전이면 자동 새로고침 ---------- */
+const HTML_BUILD = "v142";   // 이 화면(index.html)이 만들어진 버전
+fetch('/api/version', {cache:'no-store'}).then(r => r.json()).then(d => {
+  const sv = d.version || '';
+  $('#ver').textContent = sv;
+  // 서버가 더 최신인데 화면이 옛것이면 = 캐시된 옛 HTML → 한 번만 강제 새로고침
+  if(sv && sv !== HTML_BUILD){
+    try{
+      if(sessionStorage.getItem('reloaded_for')!==sv){
+        sessionStorage.setItem('reloaded_for', sv);
+        location.reload(true);
+      } else {
+        // 이미 새로고침했는데도 안 바뀌면 안내만(무한루프 방지)
+        $('#ver').textContent = sv + ' (새로고침 필요: Ctrl+Shift+R)';
+      }
+    }catch(e){ location.reload(true); }
+  }
 }).catch(() => { $('#ver').textContent = '구버전'; });
 
 /* ---------- 이용코드 게이트 (카페 등급 회원 전용) ---------- */
