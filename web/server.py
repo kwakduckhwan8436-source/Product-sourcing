@@ -48,7 +48,7 @@ from discovery.tracker import (api_bump, api_usage,  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _SCAN_TIMEOUT = 70.0   # 한 요청이 이보다 오래 붙들면 브라우저가 끊는다
-APP_VERSION = "v136"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
+APP_VERSION = "v141"   # 화면에 찍어서 '예전 서버가 도는지' 눈으로 알게 한다
 
 # ── 실시간 접속자 (인메모리) ──────────────────────────────────
 # 무료 플랜은 재시작/슬립 때 이 값이 초기화됩니다(누적=오늘 기준으로 취급).
@@ -1708,6 +1708,468 @@ async def _ownerclan_search(token: str, req: OwnerClanReq) -> list:
     elif req.sort == "priceDesc":
         out.sort(key=lambda x: (x["price"] is None, -(x["price"] or 0)))
     return out
+
+
+class DomeggookReq(BaseModel):
+    api_key: str
+    keyword: str = ""
+    market: str = "dome"      # dome(도매꾹) | supply(도매매)
+    sort: str = "rd"          # rd랭킹·ha인기·aa낮은가격·ad높은가격·da최근
+    min_price: int = 0
+    max_price: int = 0
+    page: int = 1
+    size: int = 40
+    free_ship: bool = False   # 무료배송만
+    kr_only: bool = False     # 국산만
+
+
+@app.post("/api/domeggook/search")
+async def domeggook_search_api(req: DomeggookReq):
+    """도매꾹·도매매 공식 오픈API 상품리스트 조회(getItemList). 크롤링 아님, 공식 API."""
+    import httpx
+    from urllib.parse import urlencode
+    key = (req.api_key or "").strip()
+    kw = (req.keyword or "").strip()
+    if not key:
+        return {"ok": False, "error": "도매꾹 API 키(aid)를 넣어주세요."}
+    if not kw:
+        return {"ok": False, "error": "검색어를 넣어주세요."}
+    params = {
+        "ver": "4.1", "mode": "getItemList", "aid": key,
+        "market": "supply" if req.market == "supply" else "dome",
+        "om": "json", "kw": kw,
+        "sz": max(1, min(req.size, 100)), "pg": max(1, req.page),
+        "so": req.sort if req.sort in ("se", "rd", "ha", "aa", "ad", "sd", "qa", "qd", "da") else "rd",
+    }
+    if req.min_price and req.min_price > 0:
+        params["mnp"] = int(req.min_price)
+    if req.max_price and req.max_price > 0:
+        params["mxp"] = int(req.max_price)
+    if req.free_ship:
+        params["who"] = "S"
+    if req.kr_only:
+        params["org"] = "kr"
+    url = "https://domeggook.com/ssl/api/?" + urlencode(params)
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10)) as c:
+            r = await c.get(url)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"도매꾹 연결 오류: {type(exc).__name__}"}
+    if r.status_code >= 400:
+        return {"ok": False, "error": f"도매꾹 조회 실패({r.status_code}) — API 키 확인."}
+    try:
+        data = r.json()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "도매꾹 응답 해석 실패(키 오류일 수 있어요)."}
+    # 에러 응답(도메꾹은 errors 노드로 줄 수 있음)
+    root = data.get("domeggook") or data
+    if isinstance(root, dict) and root.get("errors"):
+        return {"ok": False, "error": f"도매꾹 API 오류: {root['errors']}"}
+    header = root.get("header") or {}
+    lst = ((root.get("list") or {}).get("item")) or []
+    if isinstance(lst, dict):        # 결과 1개면 dict로 옴
+        lst = [lst]
+    out = []
+    seen = set()
+    for it in lst:
+        if not isinstance(it, dict):
+            continue
+        no = str(it.get("no") or "").strip()
+        title = (it.get("title") or "").strip()
+        price = it.get("price")
+        thumb = (it.get("thumb") or "").strip()
+        if not no or len(title) < 2:
+            continue
+        try:
+            price = int(price)
+        except Exception:  # noqa: BLE001
+            price = None
+        # 정밀도: 가격 없거나 0, 이미지 없는 빈 상품 제외
+        if not price or price <= 0:
+            continue
+        if not thumb:
+            continue
+        if no in seen:
+            continue
+        seen.add(no)
+        deli = it.get("deli") or {}
+        out.append({
+            "no": no, "title": title, "price": price,
+            "thumb": thumb,
+            "url": (it.get("url") or "").strip(),
+            "seller": it.get("id") or "", "unitQty": it.get("unitQty"),
+            "deli_who": deli.get("who"), "deli_fee": deli.get("fee"),
+            "comOnly": it.get("comOnly"),
+        })
+    prices = [x["price"] for x in out if isinstance(x.get("price"), int) and x["price"] > 0]
+    stat = {}
+    if prices:
+        stat = {"min": min(prices), "max": max(prices),
+                "avg": int(sum(prices) / len(prices)), "count": len(out)}
+    return {"ok": True, "items": out, "stat": stat, "keyword": kw,
+            "total": header.get("numberOfItems"), "market": params["market"]}
+
+
+class DomeggookItemReq(BaseModel):
+    api_key: str
+    no: str
+
+
+class DomeggookBestReq(BaseModel):
+    api_key: str
+    keyword: str
+    market: str = "dome"
+    client_id: str = ""       # 네이버 허브(수요, 선택)
+    client_secret: str = ""
+
+
+@app.post("/api/domeggook/best")
+async def domeggook_best_api(req: DomeggookBestReq):
+    """⭐ 도매꾹 최적상품 — 인기순(ha, 도매꾹 공식) + 네이버 수요 + 가격/배송으로 기회점수.
+    오너클랜과 달리 '인기순'이 공식 지원돼 실제 잘나가는 상품 기반으로 고른다."""
+    import httpx
+    from urllib.parse import urlencode
+    key = (req.api_key or "").strip()
+    kw = (req.keyword or "").strip()
+    if not key:
+        return {"ok": False, "error": "도매꾹 API 키를 넣어주세요."}
+    if not kw:
+        return {"ok": False, "error": "검색어를 넣어주세요."}
+    # 1) 인기순으로 상품 가져오기(도매꾹 강점)
+    params = {"ver": "4.1", "mode": "getItemList", "aid": key,
+              "market": "supply" if req.market == "supply" else "dome",
+              "om": "json", "kw": kw, "sz": 60, "pg": 1, "so": "ha"}
+    url = "https://domeggook.com/ssl/api/?" + urlencode(params)
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10)) as c:
+            r = await c.get(url)
+        if r.status_code >= 400:
+            return {"ok": False, "error": f"도매꾹 조회 실패({r.status_code})."}
+        data = r.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"도매꾹 연결 오류: {type(exc).__name__}"}
+    root = data.get("domeggook") or data
+    if isinstance(root, dict) and root.get("errors"):
+        return {"ok": False, "error": f"도매꾹 API 오류: {root['errors']}"}
+    lst = ((root.get("list") or {}).get("item")) or []
+    if isinstance(lst, dict):
+        lst = [lst]
+    items = []
+    seen = set()
+    for rank, it in enumerate(lst):
+        if not isinstance(it, dict):
+            continue
+        no = str(it.get("no") or "").strip()
+        title = (it.get("title") or "").strip()
+        thumb = (it.get("thumb") or "").strip()
+        try:
+            price = int(it.get("price"))
+        except Exception:  # noqa: BLE001
+            price = None
+        if not no or len(title) < 2 or not price or price <= 0 or not thumb:
+            continue
+        if no in seen:
+            continue
+        seen.add(no)
+        deli = it.get("deli") or {}
+        items.append({"no": no, "title": title, "price": price, "thumb": thumb,
+                      "url": (it.get("url") or "").strip(),
+                      "deli_who": deli.get("who"), "deli_fee": deli.get("fee"),
+                      "unitQty": it.get("unitQty"), "comOnly": it.get("comOnly"),
+                      "pop_rank": rank})       # 인기순 순위(0=최상위)
+    if not items:
+        return {"ok": True, "items": [], "keyword": kw,
+                "note": "인기 상품을 찾지 못했어요(검색어 확인)."}
+    # 2) 네이버 수요(공식 검색어 트렌드 1회)
+    demand = None
+    cid = (req.client_id or "").strip()
+    csec = (req.client_secret or "").strip()
+    if cid and csec:
+        try:
+            start, end = _date_range(12)
+            body = {"startDate": start, "endDate": end, "timeUnit": "month",
+                    "keywordGroups": [{"groupName": kw, "keywords": [kw]}]}
+            ddata, _ = await _hub_datalab_probe(cid, csec, _TREND_PATHS, body)
+            res = (ddata.get("results") or [])
+            if res:
+                t = _trend_of(res[0].get("data") or [])
+                demand = {"rise": t.get("rise", 0.0), "rollover": t.get("rollover", False)}
+        except Exception:  # noqa: BLE001
+            demand = None
+    # 3) 기회점수: 인기순위(도매꾹) + 가격 경쟁력 + 무료배송 + 수요가점(공통)
+    prices = [x["price"] for x in items if x["price"]]
+    med = sorted(prices)[len(prices) // 2] if prices else 0
+    demand_bonus = 0.0
+    if demand:
+        demand_bonus = max(0.0, min(20.0, demand["rise"] / 40.0 * 20.0))
+        if demand.get("rollover"):
+            demand_bonus -= 10.0
+    scored = []
+    for it in items:
+        s = 0.0
+        reasons = []
+        # 인기순위: 상위일수록 높은 점수(0위=40 → 하위로 갈수록 감소)
+        pop = max(0.0, 40.0 - it["pop_rank"] * 0.8)
+        s += pop
+        if it["pop_rank"] < 10:
+            reasons.append(f"인기 상위 {it['pop_rank']+1}위")
+        # 가격 경쟁력
+        if it["price"] and med:
+            if it["price"] <= med:
+                s += 20.0
+                reasons.append("가격 경쟁력")
+            else:
+                s += 6.0
+        # 무료배송
+        if it.get("deli_who") == "S":
+            s += 8.0
+            reasons.append("무료배송")
+        s += demand_bonus
+        if demand and demand.get("rise", 0) >= 10:
+            reasons.append(f"네이버 수요 상승({round(demand['rise'])}%)")
+        it2 = dict(it)
+        it2["score"] = round(max(0.0, min(100.0, s + 15.0)))
+        it2["why"] = reasons
+        scored.append(it2)
+    scored.sort(key=lambda x: -x["score"])
+    return {"ok": True, "items": scored[:40], "keyword": kw, "demand": demand,
+            "market": params["market"], "scanned": len(items)}
+
+
+class DetailFromDgReq(BaseModel):
+    gemini_key: str
+    api_key: str
+    no: str
+    target: str = ""
+
+
+@app.post("/api/detail/from_domeggook")
+async def detail_from_domeggook_api(req: DetailFromDgReq):
+    """🪄 도매꾹 상품 → 상세페이지 한 번에. 도매꾹에서 정보·이미지를 가져와 Gemini로 문구 생성."""
+    import html as _html
+    import httpx
+    from urllib.parse import urlencode
+    gkey = (req.gemini_key or "").strip()
+    akey = (req.api_key or "").strip()
+    no = str(req.no or "").strip()
+    if not gkey or not gkey.startswith("AIza"):
+        return {"ok": False, "error": "Gemini API 키를 넣어주세요(AIza…)."}
+    if not akey or not no:
+        return {"ok": False, "error": "도매꾹 키·상품번호가 필요해요."}
+    # 1) 도매꾹 상세 조회
+    params = {"ver": "4.5", "mode": "getItemView", "aid": akey, "no": no, "om": "json"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=25, write=10, pool=10)) as c:
+            r = await c.get("https://domeggook.com/ssl/api/?" + urlencode(params))
+        if r.status_code >= 400:
+            return {"ok": False, "error": f"도매꾹 상품 조회 실패({r.status_code})."}
+        dd = r.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"도매꾹 연결 오류: {type(exc).__name__}"}
+    root = dd.get("domeggook") or dd
+    basis = root.get("basis") or {}
+
+    def _cd(v):
+        if isinstance(v, dict):
+            return str(v.get("#cdata") or v.get("cdata") or v.get("$") or "")
+        return "" if v is None else str(v)
+    name = _cd(basis.get("title")) or _cd(root.get("title"))
+    if not name:
+        return {"ok": False, "error": "도매꾹에서 상품을 찾지 못했어요."}
+    imgs_raw = root.get("thumb") or basis.get("thumb") or []
+    if isinstance(imgs_raw, str):
+        imgs_raw = [imgs_raw]
+    imgs = [_cd(x) for x in imgs_raw if _cd(x).startswith("http")][:4]
+    kwnode = (basis.get("keywords") or {}).get("kw") if isinstance(basis.get("keywords"), dict) else None
+    kws = []
+    if isinstance(kwnode, list):
+        kws = [_cd(k) for k in kwnode if _cd(k)]
+    elif kwnode:
+        kws = [_cd(kwnode)]
+    # 2) Gemini 문구 생성
+    prompt = (
+        "너는 한국 스마트스토어 상세페이지 카피라이터야. 아래 도매꾹 상품 정보로 "
+        "구매 유도 상세페이지 문구를 새로 써줘(베끼지 말고 새로, 구체적으로).\n\n"
+        f"[상품명]\n{name}\n"
+        + (f"[관련 키워드]\n{', '.join(kws[:8])}\n" if kws else "")
+        + (f"[타깃 고객]\n{req.target}\n" if req.target.strip() else "")
+        + "\n[출력 형식] 정확히 아래 태그로(마크다운·기호 금지):\n"
+        "HEAD: (헤드라인)\nSUB: (공감 서브카피)\n"
+        "POINT: (장점1)\nPOINT: (장점2)\nPOINT: (장점3)\nPOINT: (장점4)\n"
+        "SPEC: (사양·구성 콤마로)\nSCENE: (사용상황·대상)\nTIP: (활용팁)\nCLOSE: (마무리)\n"
+        "과장·허위 금지, 솔직하게."
+    )
+    gurl = ("https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-2.5-flash:generateContent")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=40, write=10, pool=10)) as c:
+            gr = await c.post(gurl, headers={"x-goog-api-key": gkey, "Content-Type": "application/json"},
+                              json={"contents": [{"parts": [{"text": prompt}]}],
+                                    "generationConfig": {"temperature": 0.85, "maxOutputTokens": 8192,
+                                                         "thinkingConfig": {"thinkingBudget": 0}}})
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"Gemini 연결 오류: {type(exc).__name__}"}
+    if gr.status_code == 429:
+        return {"ok": False, "error": "Gemini 무료 한도 초과(429) — 잠시 후 다시."}
+    if gr.status_code == 403:
+        return {"ok": False, "error": "Gemini 403 — 로컬에서 실행하면 대부분 잘 돼요."}
+    if gr.status_code >= 400:
+        return {"ok": False, "error": f"Gemini 오류({gr.status_code})."}
+    try:
+        gd = gr.json()
+        parts = (((gd.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+        text = "\n".join(pt.get("text", "") for pt in parts).strip()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "Gemini 응답 해석 실패."}
+    head = sub = scene = close = spec = tip = ""
+    points = []
+    for ln in text.splitlines():
+        s = ln.strip()
+        if s.startswith("HEAD:"): head = s[5:].strip()
+        elif s.startswith("SUB:"): sub = s[4:].strip()
+        elif s.startswith("POINT:"): points.append(s[6:].strip())
+        elif s.startswith("SPEC:"): spec = s[5:].strip()
+        elif s.startswith("SCENE:"): scene = s[6:].strip()
+        elif s.startswith("TIP:"): tip = s[4:].strip()
+        elif s.startswith("CLOSE:"): close = s[6:].strip()
+    if not head:
+        head = name
+    e = _html.escape
+
+    def _img(i):
+        if i < len(imgs):
+            return (f'<img src="{e(imgs[i])}" alt="{e(name)}" '
+                    f'style="width:100%;max-width:800px;display:block;margin:0 auto;border-radius:8px">')
+        return ('<div style="width:100%;max-width:800px;margin:0 auto;height:340px;'
+                'background:#f2f3f5;border:2px dashed #cfd4da;border-radius:8px;display:flex;'
+                'align-items:center;justify-content:center;color:#98a0aa">상품 사진 자리</div>')
+    pts_html = "".join(
+        f'<div style="display:flex;gap:12px;align-items:flex-start;margin:18px 0">'
+        f'<div style="flex:0 0 36px;height:36px;background:#2b7fff;color:#fff;border-radius:50%;'
+        f'display:flex;align-items:center;justify-content:center;font-weight:700">{i+1}</div>'
+        f'<div style="flex:1;font-size:16px;line-height:1.65;padding-top:5px">{e(p)}</div></div>'
+        for i, p in enumerate(points))
+    spec_rows = ""
+    if spec:
+        for kv in spec.split(","):
+            kv = kv.strip()
+            if kv:
+                spec_rows += (f'<tr><td style="padding:9px 12px;background:#f7f9fc;font-weight:600;'
+                              f'width:40px;border-bottom:1px solid #eee">•</td>'
+                              f'<td style="padding:9px 12px;border-bottom:1px solid #eee">{e(kv)}</td></tr>')
+    spec_html = (f'<div style="margin:36px 0"><h2 style="font-size:20px;font-weight:800;margin:0 0 12px">'
+                 f'제품 정보</h2><table style="width:100%;border-collapse:collapse;font-size:15px;'
+                 f'border:1px solid #eee;border-radius:8px;overflow:hidden">{spec_rows}</table></div>'
+                 if spec_rows else "")
+    tip_html = (f'<div style="border:1px solid #ffe08a;background:#fffbe6;border-radius:10px;'
+                f'padding:16px 18px;margin:28px 0;font-size:15px;line-height:1.6">'
+                f'<b>💡 활용 팁</b><br>{e(tip)}</div>' if tip else "")
+    detail_html = f"""<div style="max-width:860px;margin:0 auto;font-family:'맑은 고딕',sans-serif;color:#222;padding:8px">
+  <h1 style="font-size:29px;font-weight:800;text-align:center;line-height:1.4;margin:24px 0 8px">{e(head)}</h1>
+  <p style="font-size:17px;color:#666;text-align:center;margin:0 0 28px">{e(sub)}</p>
+  {_img(0)}
+  <div style="margin:40px 0">
+    <h2 style="font-size:23px;font-weight:800;border-left:5px solid #2b7fff;padding-left:12px;margin-bottom:8px">이런 점이 좋아요</h2>
+    {pts_html}
+  </div>
+  {_img(1)}
+  {spec_html}
+  <div style="background:#f7f9fc;border-radius:12px;padding:26px;margin:36px 0">
+    <h2 style="font-size:20px;font-weight:800;margin:0 0 10px">이럴 때 좋아요</h2>
+    <p style="font-size:16px;line-height:1.75;margin:0">{e(scene)}</p>
+  </div>
+  {_img(2)}
+  {tip_html}
+  {_img(3)}
+  <p style="font-size:20px;font-weight:700;text-align:center;color:#2b7fff;margin:40px 0 24px">{e(close)}</p>
+</div>"""
+    return {"ok": True, "html": detail_html, "name": name, "img_count": len(imgs)}
+
+
+@app.post("/api/domeggook/item")
+async def domeggook_item_api(req: DomeggookItemReq):
+    """도매꾹 상품상세정보(getItemView) — 상품번호로 옵션·배송·판매자 등 상세 조회."""
+    import httpx
+    from urllib.parse import urlencode
+    key = (req.api_key or "").strip()
+    no = str(req.no or "").strip()
+    if not key or not no:
+        return {"ok": False, "error": "API 키·상품번호가 필요해요."}
+    params = {"ver": "4.5", "mode": "getItemView", "aid": key, "no": no, "om": "json"}
+    url = "https://domeggook.com/ssl/api/?" + urlencode(params)
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=25, write=10, pool=10)) as c:
+            r = await c.get(url)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"연결 오류: {type(exc).__name__}"}
+    if r.status_code >= 400:
+        return {"ok": False, "error": f"상세 조회 실패({r.status_code})."}
+    try:
+        data = r.json()
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "응답 해석 실패."}
+    root = data.get("domeggook") or data
+    if isinstance(root, dict) and root.get("errors"):
+        return {"ok": False, "error": f"도매꾹 API 오류: {root['errors']}"}
+    basis = root.get("basis") or {}
+    price_node = root.get("price") or {}
+    deli = root.get("deli") or {}
+    seller = root.get("seller") or {}
+
+    def _cd(v):   # CDATA/그냥 문자열/dict 모두 문자열로
+        if isinstance(v, dict):
+            return str(v.get("#cdata") or v.get("cdata") or v.get("$") or "")
+        return "" if v is None else str(v)
+
+    title = _cd(basis.get("title")) or _cd(root.get("title"))
+    status = _cd(basis.get("status"))
+    tax = _cd(basis.get("tax"))
+    section = _cd(basis.get("section"))
+    date_reg = _cd(basis.get("dateReg"))
+    # 키워드
+    kws = []
+    kwnode = (basis.get("keywords") or {}).get("kw") if isinstance(basis.get("keywords"), dict) else None
+    if isinstance(kwnode, list):
+        kws = [_cd(k) for k in kwnode if _cd(k)]
+    elif kwnode:
+        kws = [_cd(kwnode)]
+    # 수량별 단가 파싱: "1+9850|11+9800|301+9750" → [{qty:1,price:9850},...]
+    tiers = []
+    raw_price = _cd(price_node.get("dome")) or _cd(price_node.get("supply")) or _cd(price_node.get("price"))
+    for seg in raw_price.split("|"):
+        seg = seg.strip()
+        if "+" in seg:
+            a, b = seg.split("+", 1)
+            try:
+                tiers.append({"qty": int(a), "price": int(b)})
+            except Exception:  # noqa: BLE001
+                pass
+    base_price = tiers[0]["price"] if tiers else None
+    sample_price = None
+    try:
+        sample_price = int(_cd(price_node.get("sample")))
+    except Exception:  # noqa: BLE001
+        sample_price = None
+    # 이미지
+    imgs = root.get("thumb") or basis.get("thumb") or []
+    if isinstance(imgs, str):
+        imgs = [imgs]
+    imgs = [_cd(x) for x in imgs if _cd(x).startswith("http")][:5]
+    detail = {
+        "no": no, "title": title, "status": status, "tax": tax,
+        "section": section, "date_reg": date_reg, "keywords": kws[:8],
+        "price": base_price, "tiers": tiers[:8], "sample": sample_price,
+        "origin": _cd(basis.get("origin")),
+        "unitQty": _cd(basis.get("unitQty")) or _cd(root.get("unitQty")),
+        "seller_id": _cd(seller.get("id")), "seller_nick": _cd(seller.get("nick")),
+        "seller_grade": _cd(seller.get("grade")),
+        "deli_who": _cd(deli.get("who")), "deli_fee": _cd(deli.get("fee")),
+        "deli_merge": _cd(deli.get("merge")),
+        "nego": _cd(basis.get("nego")),
+        "url": _cd(basis.get("url")) or _cd(root.get("url")),
+        "thumbs": imgs,
+    }
+    return {"ok": True, "item": detail}
 
 
 @app.post("/api/ownerclan/search")

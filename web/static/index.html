@@ -851,6 +851,9 @@
   .oc-opts{margin-top:4px;border-top:1px solid var(--line);padding-top:4px}
   .oc-opt{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--sub);padding:2px 0}
   .oc-dcont{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-size:11.5px;color:var(--sub);line-height:1.6}
+  .dg-tiers{display:flex;flex-direction:column;gap:2px;margin:3px 0}
+  .dg-tier{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub);padding:2px 8px;background:var(--panel);border-radius:5px}
+  .dg-tier span:last-child{font-weight:700;color:var(--gold-hi)}
   .oc-bestbtn{width:100%;margin-top:8px;background:linear-gradient(135deg,var(--brand),var(--gold-hi));
     color:#191307;font-weight:800;border:none;border-radius:10px;padding:12px;cursor:pointer;font-size:13.5px}
   .oc-bestonly{display:flex;align-items:flex-start;gap:8px;margin-top:9px;font-size:12.5px;color:var(--sub);line-height:1.5;cursor:pointer}
@@ -1148,6 +1151,7 @@
       <button class="itab" data-m="ni" type="button">🧭 니치 조합</button>
       <button class="itab" data-m="rb" type="button">🥊 순위 대결</button>
       <button class="itab" data-m="oc" type="button">🛍 오너클랜</button>
+      <button class="itab" data-m="dg" type="button">📦 도매꾹</button>
     </div>
 
     <div id="insCat" class="inspane">
@@ -1234,6 +1238,40 @@
         <option value="11st">11번가 (약 12%)</option>
         <option value="own">자사몰·기타 (약 3%)</option>
       </select> <span class="hint">마진 계산에 이 마켓 수수료가 적용돼요</span></div>
+    </div>
+
+    <div id="insDg" class="inspane" style="display:none">
+      <p class="ihint">📦 <b>도매꾹·도매매 공식 오픈API</b>로 상품을 검색해요. API 키(aid)만 넣으면 돼요(공급사 로그인 불필요).</p>
+      <div class="keyfld">
+        <label class="keylb">도매꾹 API 키 <span class="keylb-sub">(개발자센터 발급 · 이 브라우저에만 저장)</span></label>
+        <input id="dgKey" type="password" placeholder="도매꾹 API Key (aid)" autocomplete="off">
+      </div>
+      <div class="keyhint2">💡 <a href="https://mobile.domeggook.com/APIs/gate" target="_blank" rel="noopener">도매꾹 API 발급/관리</a>에서 키 발급 (무료)</div>
+      <div class="insrow" style="grid-template-columns:1fr auto auto;margin-top:8px">
+        <input id="dgKw" type="text" placeholder="검색어 예: 무선청소기">
+        <select id="dgMarket" style="min-width:92px">
+          <option value="dome">도매꾹</option>
+          <option value="supply">도매매</option>
+        </select>
+        <button id="dgGo" type="button">검색</button>
+      </div>
+      <div class="insrow" style="grid-template-columns:1fr auto;margin-top:8px">
+        <select id="dgSort">
+          <option value="rd">도매꾹 랭킹순</option>
+          <option value="ha">인기상품순</option>
+          <option value="aa">낮은 가격순</option>
+          <option value="ad">높은 가격순</option>
+          <option value="da">최근 등록순</option>
+        </select>
+        <label class="oc-sb"><input type="checkbox" id="dgFree"> 무료배송만</label>
+      </div>
+      <div class="insrow" style="grid-template-columns:1fr 1fr auto;margin-top:8px">
+        <input id="dgMinP" type="number" inputmode="numeric" placeholder="최저가(원)">
+        <input id="dgMaxP" type="number" inputmode="numeric" placeholder="최고가(원)">
+        <label class="oc-sb"><input type="checkbox" id="dgKr"> 국산만</label>
+      </div>
+      <p class="oc-note">※ 도매꾹은 <b>인기상품순(ha)</b>이 있어요 — 오너클랜과 달리 인기순 정렬이 공식 지원돼요. · 하루 15,000회·분당 180회 한도라 연속 검색은 잠깐 쉬어가며 하세요.</p>
+      <button id="dgBest" type="button" class="oc-bestbtn">⭐ 최적상품 골라줘 (인기순 + 네이버 수요 자동 매칭)</button>
     </div>
 
     <div id="insOut"></div>
@@ -1476,6 +1514,7 @@ function initIns(){
     $('#insNi').style.display  = m==='ni'  ? '' : 'none';
     if($('#insRb')) $('#insRb').style.display = m==='rb' ? '' : 'none';
     if($('#insOc')) $('#insOc').style.display = m==='oc' ? '' : 'none';
+    if($('#insDg')) $('#insDg').style.display = m==='dg' ? '' : 'none';
     $('#insOut').innerHTML = '';
   }));
 }
@@ -1754,6 +1793,227 @@ function renderOcBest(){
   box.innerHTML=`<div class="oc-head">⭐ '${esc(c.keyword)}' 최적 상품 ${c.sandbox?'<span class="oc-sbtag">샌드박스</span>':''}<span class="hint" style="font-weight:400"> · ${c.scanned}개 중 상위 ${items.length}</span></div>${matchNote}${bestNote}${demandLine}<div class="oc-grid">${cards}</div>`;
 }
 if($('#ocBest')) $('#ocBest').addEventListener('click', ownerclanBest);
+/* 📦 도매꾹·도매매 공식 오픈API 검색 */
+(function(){ const k=$('#dgKey'); if(k){ try{ k.value=localStorage.getItem('dg_key')||''; }catch(e){} } })();
+async function domeggookSearch(){
+  const key=($('#dgKey').value||'').trim(), kw=($('#dgKw').value||'').trim();
+  const market=$('#dgMarket').value, sort=$('#dgSort').value, free=$('#dgFree').checked;
+  const kr=$('#dgKr')&&$('#dgKr').checked, minp=+($('#dgMinP')&&$('#dgMinP').value||0), maxp=+($('#dgMaxP')&&$('#dgMaxP').value||0);
+  const box=$('#insOut');
+  if(!key){ box.innerHTML='<div class="err">도매꾹 API 키를 넣어주세요.</div>'; return; }
+  if(!kw){ box.innerHTML='<div class="err">검색어를 넣어주세요.</div>'; return; }
+  // 호출 안전장치: 연타 방지(2초 내 재요청 차단)
+  const now=Date.now();
+  if(window._dgLast && now-window._dgLast<2000){ box.innerHTML='<div class="hint">잠깐요 — 너무 빨라요. 1~2초 뒤 다시 눌러주세요(도매꾹 호출 한도 보호).</div>'; return; }
+  window._dgLast=now;
+  try{ localStorage.setItem('dg_key',key); }catch(e){}
+  box.innerHTML=`<div class="card"><span class="spin"></span>도매꾹에서 '${esc(kw)}' 검색 중…</div>`;
+  let d;
+  try{
+    const r=await fetch('/api/domeggook/search',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({api_key:key,keyword:kw,market,sort,free_ship:free,kr_only:!!kr,min_price:minp,max_price:maxp,size:40})});
+    if(!r.ok){ box.innerHTML=`<div class="err">서버 응답 ${r.status} — 최신 배포 확인.</div>`; return; }
+    d=await r.json();
+  }catch(e){ box.innerHTML='<div class="err">연결 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${esc(d.error||'검색 실패')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<p class="hint">'${esc(kw)}' 결과가 없어요.</p>`; return; }
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const st=d.stat||{};
+  const statLine=st.count?`<div class="oc-stat">📊 ${d.total?d.total.toLocaleString('ko-KR')+'개 중 '+st.count+'개 표시':st.count+'개'} · 최저 <b>${won(st.min)}</b> · 평균 ${won(st.avg)} · 최고 ${won(st.max)}</div>`:'';
+  const deliTxt=w=>w==='S'?'<span class="oc-ok">무료배송</span>':(w==='B'?'<span class="oc-na">착불</span>':(w==='P'?'<span class="oc-na">선결제</span>':(w==='C'?'<span class="oc-na">선택</span>':'')));
+  const cards=d.items.map(it=>{
+    const lm=ocLandmines({name:it.title,price:it.price||0});
+    const wtag=lm.length?` <span class="ocf-warn" title="${lm.map(x=>x.t).join(', ')}">⚠️</span>`:'';
+    return `<div class="oc-card" data-kw="${esc(it.title)}" data-price="${it.price||0}" data-no="${esc(it.no)}">
+      ${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener">`:''}${it.thumb?`<img class="oc-img" src="${esc(it.thumb)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${it.url?'</a>':''}
+      <div class="oc-body">
+        <div class="oc-name">${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.title)}${it.url?' ↗</a>':''}${wtag}</div>
+        <div class="oc-meta">${deliTxt(it.deli_who)} ${it.comOnly?'<span class="oc-na">사업자전용</span>':''} ${it.unitQty>1?`<span class="oc-cat">최소 ${it.unitQty}개</span>`:''}</div>
+        <div class="oc-price">${won(it.price)}${it.deli_fee&&it.deli_fee!=='0'?` <span class="hint">+배송 ${(+it.deli_fee).toLocaleString('ko-KR')}원</span>`:''}</div>
+        <div class="oc-acts">
+          <button class="oc-act" data-oc="dgdetail">🔎 상세</button>
+          <button class="oc-act" data-oc="dggender">👥 성별</button>
+          <button class="oc-act" data-oc="dgmargin">💰 마진</button>
+          <button class="oc-act" data-oc="dgkeep">📌 담기</button>
+          <button class="oc-act oc-mkdetail" data-oc="dgmkdetail">🪄 상세페이지</button>
+        </div>
+        <div class="oc-detail"></div>
+        <div class="oc-margin"></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="oc-head">📦 도매꾹 '${esc(kw)}' <span class="hint" style="font-weight:400">· ${d.market==='supply'?'도매매':'도매꾹'}</span></div>${statLine}<div class="oc-grid">${cards}</div>`;
+}
+if($('#dgGo')) $('#dgGo').addEventListener('click', domeggookSearch);
+/* ⭐ 도매꾹 최적상품 — 인기순 + 네이버 수요 */
+async function domeggookBest(){
+  const key=($('#dgKey').value||'').trim(), kw=($('#dgKw').value||'').trim(), market=$('#dgMarket').value;
+  const box=$('#insOut');
+  if(!key){ box.innerHTML='<div class="err">도매꾹 API 키를 넣어주세요.</div>'; return; }
+  if(!kw){ box.innerHTML='<div class="err">검색어를 넣어주세요.</div>'; return; }
+  const now=Date.now();
+  if(window._dgLast && now-window._dgLast<2000){ box.innerHTML='<div class="hint">잠깐요 — 1~2초 뒤 다시(도매꾹 한도 보호).</div>'; return; }
+  window._dgLast=now;
+  try{ localStorage.setItem('dg_key',key); }catch(e){}
+  const k=insKeys();
+  box.innerHTML=`<div class="card"><span class="spin"></span>인기순 + 네이버 수요로 '${esc(kw)}' 최적상품 고르는 중…</div>`;
+  let d;
+  try{
+    const r=await fetch('/api/domeggook/best',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({api_key:key,keyword:kw,market,client_id:k?k.id:'',client_secret:k?k.sec:''})});
+    if(!r.ok){ box.innerHTML=`<div class="err">서버 응답 ${r.status}</div>`; return; }
+    d=await r.json();
+  }catch(e){ box.innerHTML='<div class="err">연결 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="err">${esc(d.error||'실패')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-empty"><p class="hint">최적상품을 찾지 못했어요.</p>${d.note?`<p class="oc-emptynote">💡 ${esc(d.note)}</p>`:''}</div>`; return; }
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  let demandLine='';
+  if(d.demand){ const dr=Math.round(d.demand.rise||0); const col=dr>=10?'var(--go)':(dr<0?'var(--stop)':'var(--sub)');
+    demandLine=`<div class="oc-stat">📈 네이버 수요: '${esc(kw)}' 상승률 <b style="color:${col}">${dr}%</b>${d.demand.rollover?' · ⚠️ 꺾임':''}</div>`;
+  } else if(!k){ demandLine=`<div class="oc-stat hint">네이버 열쇠를 넣으면 수요까지 합쳐 더 정확해요(지금은 인기순·가격 기준).</div>`; }
+  const deliTxt=w=>w==='S'?'<span class="oc-ok">무료배송</span>':(w==='B'?'<span class="oc-na">착불</span>':(w==='P'?'<span class="oc-na">선결제</span>':(w==='C'?'<span class="oc-na">선택</span>':'')));
+  const cards=d.items.map((it,i)=>{
+    const sc=it.score||0; const scol=sc>=70?'var(--go)':(sc>=45?'var(--wait)':'var(--sub)');
+    const lm=ocLandmines({name:it.title,price:it.price||0});
+    const wtag=lm.length?` <span class="ocf-warn" title="${lm.map(x=>x.t).join(', ')}">⚠️</span>`:'';
+    return `<div class="oc-card best" data-kw="${esc(it.title)}" data-price="${it.price||0}" data-no="${esc(it.no)}">
+      <div class="oc-rank">${i+1}</div>
+      ${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener">`:''}${it.thumb?`<img class="oc-img" src="${esc(it.thumb)}" loading="lazy" alt="">`:'<div class="oc-img noimg">이미지<br>없음</div>'}${it.url?'</a>':''}
+      <div class="oc-body">
+        <div class="oc-score" style="color:${scol}">기회점수 ${sc}</div>
+        <div class="oc-name">${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener" class="oc-namelink">`:''}${esc(it.title)}${it.url?' ↗</a>':''}${wtag}</div>
+        <div class="oc-meta">${deliTxt(it.deli_who)} ${it.comOnly?'<span class="oc-na">사업자전용</span>':''} ${it.unitQty>1?`<span class="oc-cat">최소 ${it.unitQty}개</span>`:''}</div>
+        <div class="oc-price">${won(it.price)}${it.deli_fee&&it.deli_fee!=='0'?` <span class="hint">+배송 ${(+it.deli_fee).toLocaleString('ko-KR')}원</span>`:''}</div>
+        ${(it.why&&it.why.length)?`<div class="oc-why">${it.why.map(w=>`<span>＋${esc(w)}</span>`).join('')}</div>`:''}
+        <div class="oc-acts">
+          <button class="oc-act" data-oc="dgdetail">🔎 상세</button>
+          <button class="oc-act" data-oc="dggender">👥 성별</button>
+          <button class="oc-act" data-oc="dgmargin">💰 마진</button>
+          <button class="oc-act" data-oc="dgkeep">📌 담기</button>
+          <button class="oc-act oc-mkdetail" data-oc="dgmkdetail">🪄 상세페이지</button>
+        </div>
+        <div class="oc-detail"></div><div class="oc-margin"></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="oc-head">⭐ 도매꾹 '${esc(kw)}' 최적상품 <span class="hint" style="font-weight:400">· 인기순 ${d.scanned}개 중 상위 ${d.items.length}</span></div>${demandLine}<div class="oc-grid">${cards}</div>`;
+}
+if($('#dgBest')) $('#dgBest').addEventListener('click', domeggookBest);
+/* 📌 도매꾹 상품 관심목록 담기 */
+async function dgKeep(card, btn){
+  const name=card.dataset.kw, no=card.dataset.no, price=+(card.dataset.price||0);
+  if(!name) return;
+  const old=btn.textContent; btn.textContent='담는 중…';
+  try{
+    const r=await fetch('/api/watch/add',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({keyword:name, owner:ME, payload:{source:'domeggook', dg_no:no, dg_price:price,
+        dg_url:'https://domeggook.com/'+no}})});
+    const d=await r.json(); btn.textContent=d.ok?'담김 ✓':'실패';
+  }catch(e){ btn.textContent='실패'; }
+  setTimeout(()=>{ btn.textContent=old; }, 1400);
+}
+/* 🪄 도매꾹 상품 → 상세페이지 원클릭 */
+let DGD_HTML={};
+async function dgMakeDetail(card){
+  const box=card.querySelector('.oc-detail'); const no=card.dataset.no;
+  const akey=(localStorage.getItem('dg_key')||'').trim(), gkey=(localStorage.getItem('gem_key')||'').trim();
+  if(box.dataset.mk){ box.dataset.mk=''; box.innerHTML=''; return; }
+  if(!akey){ box.dataset.mk='1'; box.innerHTML='<div class="oc-dbox">📦 도매꾹 API 키가 필요해요.</div>'; return; }
+  if(!gkey){ box.dataset.mk='1'; box.innerHTML='<div class="oc-dbox">📄 Gemini 키를 <b>제목 최적화</b>에서 한 번 넣어주세요.</div>'; return; }
+  box.dataset.mk='1'; box.innerHTML='<div class="oc-dbox"><span class="spin"></span> 이 상품으로 상세페이지 만드는 중…</div>';
+  let d;
+  try{ d=await (await fetch('/api/detail/from_domeggook',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({gemini_key:gkey,api_key:akey,no})})).json(); }
+  catch(e){ box.innerHTML='<div class="oc-dbox err">요청 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="oc-dbox err">${esc(d.error||'실패')}</div>`; return; }
+  DGD_HTML[no]=d.html;
+  box.innerHTML=`<div class="dt-actions">
+      <button class="ti-aibtn dgd-copy" data-k="${esc(no)}">📋 HTML 복사</button>
+      <button class="oc-act dgd-download" data-k="${esc(no)}">💾 저장(.html)</button>
+      <span class="hint">${d.img_count?d.img_count+'장 이미지 포함':'이미지 자리'}</span>
+    </div><div class="dt-prevlabel">👁 미리보기</div><div class="dt-preview">${d.html}</div>`;
+}
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const cp=e.target.closest('.dgd-copy');
+  if(cp){ const h=DGD_HTML[cp.dataset.k]||''; navigator.clipboard?.writeText(h).then(()=>{ const o=cp.textContent; cp.textContent='복사됨 ✓'; setTimeout(()=>cp.textContent=o,1400); }); return; }
+  const dl=e.target.closest('.dgd-download');
+  if(dl){ const h=DGD_HTML[dl.dataset.k]||''; const blob=new Blob(['<!doctype html><meta charset="utf-8">\n'+h],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='상세페이지.html'; a.click(); URL.revokeObjectURL(a.href); }
+});
+/* 도매꾹 상세보기 + 성별 */
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const b=e.target.closest('.oc-act[data-oc="dgdetail"],.oc-act[data-oc="dggender"],.oc-act[data-oc="dgkeep"],.oc-act[data-oc="dgmkdetail"]'); if(!b) return;
+  const card=b.closest('.oc-card'); if(!card) return;
+  if(b.dataset.oc==='dgdetail') dgDetail(card);
+  else if(b.dataset.oc==='dggender') dgGender(card);
+  else if(b.dataset.oc==='dgkeep') dgKeep(card, b);
+  else if(b.dataset.oc==='dgmkdetail') dgMakeDetail(card);
+});
+async function dgDetail(card){
+  const box=card.querySelector('.oc-detail'); const key=(localStorage.getItem('dg_key')||'').trim(); const no=card.dataset.no;
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  if(!key||!no){ box.dataset.open='1'; box.innerHTML='<div class="oc-dbox">API 키·상품번호 확인 필요.</div>'; return; }
+  box.dataset.open='1'; box.innerHTML='<div class="oc-dbox"><span class="spin"></span> 상세 불러오는 중…</div>';
+  let d;
+  try{ d=await (await fetch('/api/domeggook/item',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,no})})).json(); }
+  catch(e){ box.innerHTML='<div class="oc-dbox err">상세 조회 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="oc-dbox err">${esc(d.error||'실패')}</div>`; return; }
+  const it=d.item; const won=v=>(v!=null&&v!=='')?(+v).toLocaleString('ko-KR')+'원':'-';
+  // 수량별 단가 표
+  let tierHtml='';
+  if(it.tiers&&it.tiers.length>1){
+    tierHtml='<div class="oc-drow" style="margin-top:4px"><b>수량별 단가</b></div><div class="dg-tiers">'
+      +it.tiers.map(t=>`<div class="dg-tier"><span>${t.qty}개~</span><span>${won(t.price)}</span></div>`).join('')+'</div>';
+  }
+  const kwHtml=(it.keywords&&it.keywords.length)?`<div class="oc-drow">🔑 ${it.keywords.map(esc).join(' · ')}</div>`:'';
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>실제 등록 상품 ✓</b> <span class="hint">도매꾹 API${it.status?' · '+esc(it.status):''}</span></div>
+    <div class="oc-drow">💵 단가 <b>${won(it.price)}</b>${it.sample?` · 샘플가 ${won(it.sample)}`:''}${it.tax?` · ${esc(it.tax)}`:''}</div>
+    ${tierHtml}
+    ${it.unitQty?`<div class="oc-drow">📦 최소구매 ${esc(String(it.unitQty))}개</div>`:''}
+    ${it.origin?`<div class="oc-drow">🏭 원산지 ${esc(String(it.origin))}</div>`:''}
+    ${it.deli_who?`<div class="oc-drow">🚚 배송 ${esc(it.deli_who)}${it.deli_fee?' · '+won(it.deli_fee):''}${it.deli_merge==='true'||it.deli_merge==='enable'?' · 묶음배송':''}</div>`:''}
+    ${it.seller_nick||it.seller_id?`<div class="oc-drow">👤 판매자 ${esc(it.seller_nick||it.seller_id)}${it.seller_grade?' ('+esc(it.seller_grade)+')':''}</div>`:''}
+    ${it.nego==='enable'?`<div class="oc-drow">💬 가격협상 가능</div>`:''}
+    ${it.date_reg?`<div class="oc-drow hint">등록 ${esc(it.date_reg.slice(0,10))}</div>`:''}
+    ${kwHtml}
+  </div>`;
+}
+async function dgGender(card){
+  const box=card.querySelector('.oc-detail');
+  const k=insKeys(); if(!k){ box.dataset.open='1'; box.innerHTML='<div class="oc-dbox err">성별 분석은 네이버 열쇠가 필요해요.</div>'; return; }
+  const name=(card.dataset.kw||'').replace(/[\[\]()]/g,' ').trim();
+  const kw=name.split(/\s+/).slice(0,2).join(' ')||name;
+  box.dataset.open='1'; box.innerHTML=`<div class="oc-dbox"><span class="spin"></span> '${esc(kw)}' 성별·연령 분석 중…</div>`;
+  let d;
+  try{ d=await (await fetch('/api/insight/target',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:k.id,client_secret:k.sec,keyword:kw})})).json(); }
+  catch(e){ box.innerHTML='<div class="oc-dbox err">분석 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="oc-dbox err">${esc(d.error||'실패')}</div>`; return; }
+  const gTop=(d.gender&&d.gender[0])?d.gender[0]:null, aTop=(d.age&&d.age[0])?d.age[0]:null;
+  const persona=[gTop?gTop.label:'',aTop?aTop.label:''].filter(Boolean).join(' · ');
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>👥 '${esc(kw)}' 주 고객: ${esc(persona||'-')}</b> <span class="hint">(네이버 클릭 기준)</span></div>
+    ${d.gender?'<div class="oc-drow">'+bar(d.gender)+'</div>':''}
+    ${d.age?'<div class="oc-drow">'+bar(d.age)+'</div>':''}
+  </div>`;
+}
+if($('#dgKw')) $('#dgKw').addEventListener('keydown', e=>{ if(e.key==='Enter') domeggookSearch(); });
+/* 도매꾹 카드 마진 계산 */
+if($('#insOut')) $('#insOut').addEventListener('click', e=>{
+  const b=e.target.closest('.oc-act[data-oc="dgmargin"]'); if(!b) return;
+  const card=b.closest('.oc-card'); const box=card.querySelector('.oc-margin');
+  if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
+  box.dataset.open='1';
+  const cost=+(card.dataset.price||0); const mk=ocMarketFee();
+  box.innerHTML=`<div class="mgrow"><input class="ocm-sell" type="number" inputmode="numeric" placeholder="내 판매가 (원)"><button class="oc-act ocm-go">계산</button></div><div class="ocm-out hint">원가 ${cost.toLocaleString('ko-KR')}원 기준</div>`;
+  const go=box.querySelector('.ocm-go'), out=box.querySelector('.ocm-out');
+  go.addEventListener('click',()=>{
+    const sell=+(box.querySelector('.ocm-sell').value||0);
+    if(!sell){ out.innerHTML='<span class="hint">판매가를 넣어주세요.</span>'; return; }
+    const fee=sell*mk.r, ship=3000, net=sell-cost-fee-ship, pct=Math.round(net/sell*100);
+    out.classList.remove('hint');
+    out.innerHTML=`개당 <b style="color:${net>0?'var(--go)':'var(--stop)'}">${net.toLocaleString('ko-KR')}원</b> 남음 · 마진율 <b>${pct}%</b> <span class="hint">(${mk.l} ${Math.round(mk.r*100)}%·택배3천 가정)</span>`;
+  });
+});
 (function(){ const m=$('#ocMarket'); if(!m) return;
   try{ m.value=localStorage.getItem('oc_market')||'smartstore'; }catch(e){}
   m.addEventListener('change',()=>{ try{ localStorage.setItem('oc_market',m.value); }catch(e){} if(OC_BEST_CACHE) renderOcBest(); });
@@ -2156,6 +2416,7 @@ function discCardHTML(it, i, isW){
         <button class="dc-act" data-act="target">👥 누가 사나</button>
         <button class="dc-act" data-act="dig">🧭 더 파기</button>
         <button class="dc-act oc-find" data-act="ocfind">🛍 오너클랜에서 찾기</button>
+        <button class="dc-act oc-find" data-act="dgfind">📦 도매꾹에서 찾기</button>
         <button class="dc-act" data-act="margin">💰 마진·종합등급</button>
         <span class="dc-fb">
           <button class="dc-fbbtn ${it.feedback===1?'on':''}" data-act="fbup" title="좋은 추천 — 다음에 더 위로">👍</button>
@@ -2576,6 +2837,7 @@ function cardActionHandler(e){
     return;
   }
   if(btn.dataset.act === 'ocfind'){ ownerclanFindFor(card); return; }
+  if(btn.dataset.act === 'dgfind'){ domeggookFindFor(card); return; }
   if(btn.dataset.act === 'fbup' || btn.dataset.act === 'fbdown'){ sendFeedback(card, btn); return; }
   if(btn.dataset.act === 'target'){ loadTarget(card); return; }
   loadTarget(card);
@@ -2596,6 +2858,35 @@ async function sendFeedback(card, btn){
   }catch(e){}
 }
 function ownerclanFindFor(card){ return _ownerclanFindFor(card); }
+/* 📦 발굴 카드에서 바로 도매꾹 원가 확인 */
+async function domeggookFindFor(card){
+  const box = card.querySelector('.dc-ocfind');
+  if(box.dataset.dgopen){ box.dataset.dgopen=''; box.innerHTML=''; return; }
+  const key=(localStorage.getItem('dg_key')||'').trim();
+  const kw=card.dataset.kw;
+  if(!key){ box.dataset.dgopen='1'; box.innerHTML='<div class="oc-dbox">📦 도매꾹 API 키를 먼저 <b>📦 도매꾹 탭</b>에서 넣어주세요(이 브라우저에 저장돼요).</div>'; return; }
+  box.dataset.dgopen='1';
+  box.innerHTML=`<div class="oc-dbox"><span class="spin"></span> 도매꾹에서 '${(kw||'').replace(/</g,'&lt;')}' 인기순 확인 중…</div>`;
+  let d;
+  try{
+    const r=await fetch('/api/domeggook/search',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({api_key:key,keyword:kw,market:'dome',sort:'ha',size:6})});
+    if(!r.ok){ box.innerHTML=`<div class="oc-dbox err">도매꾹 조회 실패(${r.status})</div>`; return; }
+    d=await r.json();
+  }catch(e){ box.innerHTML='<div class="oc-dbox err">도매꾹 연결 실패</div>'; return; }
+  if(!d.ok){ box.innerHTML=`<div class="oc-dbox err">${(d.error||'실패').replace(/</g,'&lt;')}</div>`; return; }
+  if(!(d.items||[]).length){ box.innerHTML=`<div class="oc-dbox">도매꾹에 '${(kw||'').replace(/</g,'&lt;')}' 상품이 없어요.</div>`; return; }
+  const won=v=>(typeof v==='number')?v.toLocaleString('ko-KR')+'원':'-';
+  const st=d.stat||{};
+  const rows=d.items.slice(0,6).map(it=>`<div class="ocf-row">
+    <span class="ocf-name">${(it.title||'').replace(/</g,'&lt;')}</span>
+    <span class="ocf-price">${won(it.price)}${it.deli_who==='S'?' <b class="oc-ok">무료</b>':''}</span></div>`).join('');
+  box.innerHTML=`<div class="oc-dbox">
+    <div class="oc-drow"><b>📦 도매꾹 인기순 최저가 ${st.min?won(st.min):'-'}</b> · 평균 ${st.avg?won(st.avg):'-'} <span class="hint">(인기상품순)</span></div>
+    ${rows}
+    <div class="ocf-tip hint">💡 도매꾹은 인기순이라 잘나가는 상품 위주예요. 수량별 단가는 📦 도매꾹 탭 상세에서 확인하세요.</div>
+  </div>`;
+}
 async function _ownerclanFindFor(card){
   const box = card.querySelector('.dc-ocfind');
   if(box.dataset.open){ box.dataset.open=''; box.innerHTML=''; return; }
@@ -2960,25 +3251,31 @@ async function showWatch(){
   const card = f => `<div class="card wc" data-kw="${esc(f.keyword)}">
       <div class="fhead"><span class="t">${esc(f.keyword)}</span> <span class="tag">${esc(f.category||'')}</span>
         ${f.source==='ownerclan'?'<span class="oc-ok">🛍 오너클랜</span>':''}
+        ${f.source==='domeggook'?'<span class="oc-ok">📦 도매꾹</span>':''}
         ${f.grade?`<span class="dc-grade g-${f.grade}">${f.grade}급</span>`:''}</div>
       ${f.source==='ownerclan'
         ? `<div class="wc-track">공급가 <b>${f.oc_price?(+f.oc_price).toLocaleString('ko-KR')+'원':'-'}</b>${f.oc_key?` · 코드 ${esc(f.oc_key)}`:''}${f.oc_url?` · <a href="${esc(f.oc_url)}" target="_blank" rel="noopener">상품 열기 ↗</a>`:''}</div>`
+        : f.source==='domeggook'
+        ? `<div class="wc-track">도매가 <b>${f.dg_price?(+f.dg_price).toLocaleString('ko-KR')+'원':'-'}</b>${f.dg_no?` · 상품 ${esc(f.dg_no)}`:''}${f.dg_url?` · <a href="${esc(f.dg_url)}" target="_blank" rel="noopener">상품 열기 ↗</a>`:''}</div>`
         : `<div class="wc-track hint">담을 때 상승률 ${f.rise!=null?f.rise+'%':'-'}${f.verdict?' · '+esc(f.verdict):''}</div>
       <div class="wc-hist">${histSparkFor(f.keyword)}</div>`}
       <div class="links"><button class="ghost" onclick="watchDel('${esc(f.keyword)}',this)">빼기</button></div>
     </div>`;
   // ── 대시보드 요약 ──
   const ocN = d.items.filter(x=>x.source==='ownerclan').length;
-  const kwN = d.items.length - ocN;
+  const dgN = d.items.filter(x=>x.source==='domeggook').length;
+  const kwN = d.items.length - ocN - dgN;
   const aGrade = d.items.filter(x=>x.grade==='A').length;
   const ocItems = d.items.filter(x=>x.source==='ownerclan');
-  const kwItems = d.items.filter(x=>x.source!=='ownerclan');
+  const dgItems = d.items.filter(x=>x.source==='domeggook');
+  const kwItems = d.items.filter(x=>x.source!=='ownerclan'&&x.source!=='domeggook');
   const summary = `<div class="wc-dash">
     <div class="wc-dash-row"><b>📌 관심 목록 ${d.count}개</b>
       ${ocN?`<span class="wc-pill">🛍 오너클랜 ${ocN}</span>`:''}
+      ${dgN?`<span class="wc-pill">📦 도매꾹 ${dgN}</span>`:''}
       ${kwN?`<span class="wc-pill">🔍 키워드 ${kwN}</span>`:''}
       ${aGrade?`<span class="wc-pill hot">🏆 A급 ${aGrade}</span>`:''}</div>
-    <div class="wc-dash-hint">🔄 다시 추적을 누르면 키워드 수요 변화를 새로 확인해요. 오너클랜 상품은 링크로 실시간 가격·재고를 확인하세요.</div>
+    <div class="wc-dash-hint">🔄 다시 추적을 누르면 키워드 수요 변화를 새로 확인해요. 오너클랜 상품은 실시간 가격·재고를 갱신할 수 있어요.</div>
   </div>`;
   const section = (title, arr, extra) => arr.length ? `<div class="wc-sec">${title} <span class="hint">${arr.length}개</span>${extra||''}</div><div class="cards">${arr.map(card).join('')}</div>` : '';
   const ocBtn = ocN ? ' <button id="ocRefresh" class="ghost sm" style="margin-left:6px">🔄 가격·재고 갱신</button>' : '';
@@ -2988,7 +3285,8 @@ async function showWatch(){
     <div id="entryZone"></div>
     ${summary}
     ${section('🔍 키워드 (수요 추적)', kwItems)}
-    ${section('🛍 오너클랜 상품 (원가·재고)', ocItems, ocBtn)}`;
+    ${section('🛍 오너클랜 상품 (원가·재고)', ocItems, ocBtn)}
+    ${section('📦 도매꾹 상품 (도매가)', dgItems)}`;
   const tb = document.getElementById('wtrack');
   if(tb) tb.addEventListener('click', trackWatch);
   const eb = document.getElementById('wentry');
