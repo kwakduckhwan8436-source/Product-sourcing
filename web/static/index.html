@@ -805,6 +805,15 @@
   .wc-dash-hint{font-size:11.5px;color:var(--sub);margin-top:6px;line-height:1.5}
   .wc-sec{font-size:12.5px;font-weight:700;color:var(--sub);margin:14px 0 6px}
   .wc-refresh{font-size:12px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+  .ez-box{background:var(--panel2);border:1px solid rgba(216,178,60,.4);border-radius:12px;padding:14px;margin:10px 0}
+  .ez-head{font-size:15px;font-weight:800;margin-bottom:10px}
+  .ez-sub{font-size:12.5px;font-weight:700;color:var(--sub);margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
+  .ez-row{padding:8px 0;border-top:1px solid var(--line)}
+  .ez-row:first-of-type{border-top:none}
+  .ez-name{font-size:13.5px;font-weight:700}
+  .ez-type{font-size:10px;font-weight:500;color:var(--sub);background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;margin-left:4px}
+  .ez-why{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .ez-why span{font-size:11px;color:var(--sub);background:var(--panel);border-radius:5px;padding:2px 7px}
   .oc-market select{padding:6px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--panel2);color:var(--ink);font-size:12.5px}
   .oc-namelink{color:var(--ink);text-decoration:none}
   .oc-warn{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
@@ -2974,14 +2983,90 @@ async function showWatch(){
   const section = (title, arr, extra) => arr.length ? `<div class="wc-sec">${title} <span class="hint">${arr.length}개</span>${extra||''}</div><div class="cards">${arr.map(card).join('')}</div>` : '';
   const ocBtn = ocN ? ' <button id="ocRefresh" class="ghost sm" style="margin-left:6px">🔄 가격·재고 갱신</button>' : '';
   out.innerHTML = `<div class="found">📌 관심 목록 <b>${d.count}개</b>
-      <button id="wtrack" class="ghost" style="margin-left:8px">🔄 지금 다시 추적</button></div>
+      <button id="wentry" class="ghost" style="margin-left:8px;background:linear-gradient(135deg,var(--brand),var(--gold-hi));color:#191307;font-weight:700">🎯 진입 타이밍 분석</button>
+      <button id="wtrack" class="ghost" style="margin-left:6px">🔄 지금 다시 추적</button></div>
+    <div id="entryZone"></div>
     ${summary}
     ${section('🔍 키워드 (수요 추적)', kwItems)}
     ${section('🛍 오너클랜 상품 (원가·재고)', ocItems, ocBtn)}`;
   const tb = document.getElementById('wtrack');
   if(tb) tb.addEventListener('click', trackWatch);
+  const eb = document.getElementById('wentry');
+  if(eb) eb.addEventListener('click', ()=>analyzeEntry(kwItems, ocItems));
   const rb = document.getElementById('ocRefresh');
   if(rb) rb.addEventListener('click', ()=>refreshOcWatch(ocItems));
+}
+/* 🎯 진입 타이밍 분석 — 수요(네이버) + 재고(오너클랜)를 합쳐 '지금 들어갈 후보' 자동 선별 */
+async function analyzeEntry(kwItems, ocItems){
+  const zone=document.getElementById('entryZone'); if(!zone) return;
+  const eb=document.getElementById('wentry'); if(eb){ eb.textContent='분석 중…'; eb.disabled=true; }
+  zone.innerHTML='<div class="oc-dbox"><span class="spin"></span> 수요·재고 확인해서 진입 타이밍 분석 중…</div>';
+  // [1] 키워드 수요 추적: 네이버
+  let demandMap={};
+  const nk=insKeys();
+  if(nk){
+    try{
+      const d=await (await fetch('/api/watch/track',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({client_id:nk.id,client_secret:nk.sec,owner:ME})})).json();
+      if(d.ok)(d.items||[]).forEach(x=>demandMap[x.keyword]=x);
+    }catch(e){}
+  }
+  // [2] 오너클랜 재고 확인
+  let stockMap={};
+  const ocId=(localStorage.getItem('oc_id')||'').trim(), ocPw=localStorage.getItem('oc_pw')||'';
+  const sandbox=localStorage.getItem('oc_sb')==='1';
+  const ocKeys=(ocItems||[]).map(x=>x.oc_key).filter(Boolean);
+  if(ocId&&ocPw&&ocKeys.length){
+    try{
+      const d=await (await fetch('/api/ownerclan/refresh',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username:ocId,password:ocPw,keys:ocKeys,sandbox})})).json();
+      if(d.ok) stockMap=d.items||{};
+    }catch(e){}
+  }
+  // [3] 각 항목 진입 점수 계산
+  const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const cands=[];
+  // 키워드 항목: 수요 기준
+  (kwItems||[]).forEach(it=>{
+    const x=demandMap[it.keyword];
+    if(!x) return;
+    const rise=x.now_rise||0; let score=0; const why=[];
+    if(x.turned){ score+=40; why.push('🔔 급상승 전환'); }
+    if(rise>=15){ score+=35; why.push(`수요 강함(${rise}%)`); }
+    else if(rise>=5){ score+=18; why.push(`수요 상승(${rise}%)`); }
+    if(x.dir==='up'){ score+=12; why.push('추세 상승'); }
+    if(x.rollover){ score-=40; why.push('⚠️ 되돌림(꺾임)'); }
+    if(rise<0){ score-=20; why.push('수요 하락'); }
+    cands.push({name:it.keyword, grade:it.grade, type:'키워드', score, why, rise});
+  });
+  // 오너클랜 항목: 재고 기준
+  (ocItems||[]).forEach(it=>{
+    const cur=stockMap[it.oc_key]; let score=10; const why=[];
+    if(cur){
+      if(cur.status==='available'){ score+=30; why.push('재고 있음'); }
+      else { score-=40; why.push('❌ 품절'); }
+      if(it.oc_price&&cur.price!=null){
+        const diff=cur.price-(+it.oc_price);
+        if(diff<0){ score+=15; why.push(`가격 내림(${diff.toLocaleString('ko-KR')}원)`); }
+        else if(diff>0){ score-=5; why.push(`가격 오름(+${diff.toLocaleString('ko-KR')}원)`); }
+      }
+    } else { why.push('재고 확인 필요'); }
+    cands.push({name:it.keyword, type:'오너클랜', score, why, oc:true});
+  });
+  cands.sort((a,b)=>b.score-a.score);
+  const go=cands.filter(c=>c.score>=45);
+  const wait=cands.filter(c=>c.score>=20&&c.score<45);
+  if(eb){ eb.textContent='🎯 진입 타이밍 분석'; eb.disabled=false; }
+  if(!cands.length){ zone.innerHTML='<div class="oc-dbox hint">분석할 항목이 없어요. 네이버 열쇠(키워드)·오너클랜 로그인(상품)이 필요해요.</div>'; return; }
+  const row=c=>`<div class="ez-row"><div class="ez-name">${esc(c.name)} <span class="ez-type">${c.type}</span></div>
+    <div class="ez-why">${c.why.map(w=>`<span>${esc(w)}</span>`).join('')}</div></div>`;
+  zone.innerHTML=`
+    <div class="ez-box">
+      <div class="ez-head">🎯 지금 들어갈 후보 <b>${go.length}개</b></div>
+      ${go.length?go.map(row).join(''):'<div class="hint" style="padding:6px 2px">지금 뚜렷한 진입 신호는 없어요. 관망 목록을 참고하세요.</div>'}
+      ${wait.length?`<div class="ez-sub">🟡 관망 (조건 더 지켜보기) ${wait.length}개</div>${wait.map(row).join('')}`:''}
+      <p class="hint" style="margin-top:8px">수요 급상승·재고 있음·가격 유리를 합친 신호예요. 최종 판단은 상세·마진 확인 후 본인이.</p>
+    </div>`;
 }
 /* 📌 관심목록 오너클랜 상품 일괄 가격·재고 갱신 (itemsByKeys) */
 async function refreshOcWatch(ocItems){
